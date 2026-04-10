@@ -5,55 +5,35 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Print App Android</title>
     <style>
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            padding: 30px; 
-            text-align: center; 
-            background-color: #f4f7f6;
-            color: #333;
-        }
-        .card {
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            max-width: 400px;
-            margin: auto;
-        }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; padding: 20px; text-align: center; background-color: #f4f7f6; color: #333; }
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); max-width: 400px; margin: auto; }
         h2 { margin-top: 0; color: #2c3e50; }
-        input[type="file"] { 
-            margin: 20px 0; 
-            padding: 10px;
-            width: 100%;
-            box-sizing: border-box;
+        .input-group { text-align: left; margin-bottom: 15px; }
+        .input-group label { font-size: 14px; font-weight: bold; color: #555; }
+        input[type="text"], input[type="file"] { 
+            width: 100%; padding: 10px; margin-top: 5px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 6px;
         }
         button { 
-            background-color: #3498db; 
-            color: white;
-            border: none;
-            padding: 15px 20px; 
-            font-size: 16px; 
-            border-radius: 8px;
-            cursor: pointer; 
-            width: 100%;
-            transition: background 0.3s;
+            background-color: #3498db; color: white; border: none; padding: 15px; font-size: 16px; border-radius: 8px; cursor: pointer; width: 100%; transition: background 0.3s; margin-top: 10px;
         }
         button:hover { background-color: #2980b9; }
-        #status { 
-            margin-top: 20px; 
-            font-weight: bold; 
-            padding: 10px;
-            border-radius: 6px;
-        }
+        #status { margin-top: 20px; font-weight: bold; padding: 10px; border-radius: 6px; }
     </style>
 </head>
 <body>
 
     <div class="card">
         <h2>Pusat Print Jaringan</h2>
-        <p>Pilih file dokumen (.pdf) dari HP kamu untuk dicetak ke PC.</p>
+        
+        <div class="input-group">
+            <label for="ipAddress">IP Address PC Tujuan:</label>
+            <input type="text" id="ipAddress" placeholder="Contoh: 192.168.1.46" value="192.168.1.46">
+        </div>
 
-        <input type="file" id="fileInput" accept=".pdf" />
+        <div class="input-group">
+            <label for="fileInput">Pilih File PDF:</label>
+            <input type="file" id="fileInput" accept=".pdf" />
+        </div>
         
         <button id="printBtn" onclick="uploadAndPrint()">Kirim & Print</button>
 
@@ -63,53 +43,49 @@
     <script>
         async function uploadAndPrint() {
             const fileInput = document.getElementById('fileInput');
+            const ipAddress = document.getElementById('ipAddress').value.trim(); // Mengambil IP dari inputan
             const statusDiv = document.getElementById('status');
             const printBtn = document.getElementById('printBtn');
 
-            // Cek apakah user sudah memilih file
+            if (!ipAddress) {
+                statusDiv.innerText = "⚠️ IP Address PC tidak boleh kosong!";
+                statusDiv.style.color = "#e74c3c";
+                return;
+            }
+
             if (fileInput.files.length === 0) {
                 statusDiv.innerText = "⚠️ Pilih file PDF terlebih dahulu!";
-                statusDiv.style.color = "#e74c3c"; // Merah
+                statusDiv.style.color = "#e74c3c";
                 return;
             }
 
             const file = fileInput.files[0];
             const formData = new FormData();
-            
-            // Nama 'document' di sini HARUS SAMA persis dengan upload.single('document') di server.js PC kamu
             formData.append('document', file); 
 
-            // Alamat IP PC kamu dan Port Server Node.js
-            const serverUrl = 'http://192.168.1.46:3000/print';
+            // Membuat URL server secara dinamis berdasarkan input IP
+            const serverUrl = `http://${ipAddress}:3000/print`;
 
-            // Ubah tampilan UI saat loading
-            statusDiv.innerText = "⏳ Sedang mengirim file ke PC...";
-            statusDiv.style.color = "#f39c12"; // Oranye
+            statusDiv.innerText = `⏳ Mengirim file ke ${ipAddress}...`;
+            statusDiv.style.color = "#f39c12";
             printBtn.disabled = true;
             printBtn.innerText = "Mengirim...";
 
             try {
-                // Proses mengirim file ke server PC melalui WiFi
-                const response = await fetch(serverUrl, {
-                    method: 'POST',
-                    body: formData
-                });
-
+                const response = await fetch(serverUrl, { method: 'POST', body: formData });
                 const resultText = await response.text();
 
                 if (response.ok) {
                     statusDiv.innerText = "✅ Sukses: " + resultText;
-                    statusDiv.style.color = "#27ae60"; // Hijau
+                    statusDiv.style.color = "#27ae60";
                 } else {
                     statusDiv.innerText = "❌ Gagal: " + resultText;
-                    statusDiv.style.color = "#e74c3c"; // Merah
+                    statusDiv.style.color = "#e74c3c";
                 }
             } catch (error) {
-                statusDiv.innerText = "🚨 Error: Tidak dapat terhubung. Pastikan server PC menyala (node server.js) dan HP satu WiFi dengan PC.";
-                statusDiv.style.color = "#e74c3c"; // Merah
-                console.error("Error Detail:", error);
+                statusDiv.innerText = `🚨 Error: Gagal terhubung ke ${ipAddress}. Pastikan PC tersebut menyala dan IP-nya benar.`;
+                statusDiv.style.color = "#e74c3c";
             } finally {
-                // Kembalikan tombol seperti semula
                 printBtn.disabled = false;
                 printBtn.innerText = "Kirim & Print";
             }
