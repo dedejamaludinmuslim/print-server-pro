@@ -3,191 +3,125 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Print App Enterprise</title>
-    
+    <title>Print App V4 - Enterprise</title>
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-    
-    <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
-    <script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
-
     <style>
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; padding: 15px; background-color: #ecf0f1; color: #333; margin: 0; }
-        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); max-width: 400px; margin: auto; margin-bottom: 20px;}
-        h2, h3 { margin-top: 0; color: #2c3e50; text-align: center;}
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; padding: 15px; background-color: #e9ecef; color: #333; margin: 0; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); max-width: 450px; margin: auto; margin-bottom: 20px;}
+        h2 { margin-top: 0; color: #2c3e50; text-align: center; font-size: 22px;}
+        .section-title { font-size: 12px; font-weight: bold; color: #7f8c8d; text-transform: uppercase; margin: 15px 0 10px 0; border-bottom: 1px solid #eee; padding-bottom: 5px; }
         .input-group { text-align: left; margin-bottom: 12px; }
         .input-group label { font-size: 13px; font-weight: bold; color: #555; display: block; margin-bottom: 4px;}
         .row { display: flex; gap: 10px; }
         .row .input-group { flex: 1; }
         input[type="text"], input[type="number"], input[type="password"], input[type="file"], select { 
-            width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 6px; font-family: inherit;
+            width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 6px; font-family: inherit; background: #fdfdfd;
         }
-        .pin-box { background-color: #fdf2e9; border: 1px solid #e67e22; padding: 10px; border-radius: 8px; margin-bottom: 15px;}
-        .pin-box label { color: #d35400; }
-        button { background-color: #27ae60; color: white; border: none; padding: 15px; font-size: 16px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; transition: background 0.3s; margin-top: 5px;}
-        button:hover { background-color: #2ecc71; }
+        .auth-box { background-color: #f8f9fa; border: 1px solid #ced4da; padding: 15px; border-radius: 8px;}
+        .adv-box { background-color: #f0f8ff; border: 1px solid #b8daff; padding: 15px; border-radius: 8px; margin-bottom: 15px;}
+        button { background-color: #007bff; color: white; border: none; padding: 15px; font-size: 16px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; transition: background 0.3s; margin-top: 10px;}
+        button:hover { background-color: #0056b3; }
         button:disabled { background-color: #95a5a6; cursor: not-allowed; }
-        .btn-scan { background-color: #34495e; padding: 10px; font-size: 14px; margin-bottom: 10px; }
-        
-        /* Tombol Google Drive */
-        .btn-drive { background-color: #fff; color: #3c4043; border: 1px solid #dadce0; padding: 10px; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3); border-radius: 4px;}
-        .btn-drive:hover { background-color: #f8f9fa; }
-        .btn-drive img { width: 18px; margin-right: 8px; }
-
-        #realtimeStatus { display:none; margin-top:15px; padding:15px; border-radius:8px; background:#f8f9fa; border:1px solid #dee2e6; text-align: left;}
+        .btn-scan { background-color: #6c757d; padding: 10px; font-size: 13px; margin-bottom: 5px; width: auto; float: right; margin-top: -35px;}
+        #realtimeStatus { display:none; margin-top:15px; padding:15px; border-radius:8px; background:#f8f9fa; border:1px solid #dee2e6;}
         #statusMessage { font-weight:bold; color:#2c3e50; font-size: 14px;}
         .progress-container { height:6px; background:#e9ecef; margin-top:10px; border-radius:10px; overflow:hidden;}
-        #progressBar { width:0%; height:100%; background:#27ae60; transition:width 0.4s ease, background 0.3s;}
-        
-        .history-item { background: #fdfdfd; border-left: 4px solid #3498db; padding: 10px; margin-bottom: 8px; border-radius: 4px; font-size: 13px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); word-wrap: break-word;}
+        #progressBar { width:0%; height:100%; background:#28a745; transition:width 0.4s ease;}
+        .history-item { background: white; border-left: 4px solid #007bff; padding: 10px; margin-bottom: 8px; border-radius: 4px; font-size: 13px; border: 1px solid #eee; word-wrap: break-word;}
         .history-list { list-style:none; padding:0; margin:0;}
-        .clear-btn { background-color: #e74c3c; padding: 8px; font-size: 12px; margin-top: 10px;}
+        .clear-btn { background-color: #dc3545; padding: 8px; font-size: 12px;}
     </style>
 </head>
 <body>
 
     <div class="card">
-        <h2>🖨️ Print Enterprise</h2>
+        <h2>🏢 Print Enterprise V4</h2>
         
-        <button class="btn-scan" id="scanBtn" onclick="scanNetwork()">🔍 Pindai Jaringan PC</button>
-        
+        <div class="section-title">A. Jaringan & Perangkat</div>
         <div class="input-group">
-            <label>🖥️ PC Target (IP):</label>
-            <select id="ipSelect" style="display:none; margin-bottom: 5px; background-color: #e8f8f5; border-color: #1abc9c;" onchange="updateIpAndFetchPrinters()"></select>
-            <input type="text" id="ipAddress" placeholder="Contoh: 192.168.1.46">
+            <label>🖥️ IP Address Server:</label>
+            <div style="display: flex; gap: 8px;">
+                <input type="text" id="ipAddress" placeholder="Contoh: 192.168.1.46" style="flex: 1; margin: 0;">
+                <button class="btn-scan" id="scanBtn" onclick="scanNetwork()" style="margin: 0; padding: 10px 15px; width: auto; float: none; border-radius: 6px;">🔍 Pindai</button>
+            </div>
+            <select id="ipSelect" style="display:none; margin-top: 8px;" onchange="updateIpAndFetchPrinters()"></select>
         </div>
 
         <div class="input-group">
-            <label>🖨️ Pilih Mesin Printer di PC:</label>
+            <label>🖨️ Mesin Printer:</label>
             <select id="printerSelect"><option value="">Default Printer (Otomatis)</option></select>
         </div>
 
-        <div class="pin-box">
-            <label>🔒 PIN Server:</label>
-            <input type="password" id="pinInput" placeholder="Masukkan PIN Server" value="12345">
+        <div class="section-title">B. Autentikasi Pengguna</div>
+        <div class="auth-box">
+            <div class="row">
+                <div class="input-group">
+                    <label>👤 Username:</label>
+                    <input type="text" id="usernameInput" placeholder="Cth: admin" value="admin">
+                </div>
+                <div class="input-group">
+                    <label>🔒 PIN:</label>
+                    <input type="password" id="pinInput" placeholder="****" value="8888">
+                </div>
+            </div>
         </div>
 
-        <div class="row">
-            <div class="input-group">
-                <label>📄 Jml Copy:</label><input type="number" id="copies" value="1" min="1">
+        <div class="section-title">C. Pengaturan Lanjutan (Advanced)</div>
+        <div class="adv-box">
+            <div class="row">
+                <div class="input-group">
+                    <label>🎨 Mode Warna:</label>
+                    <select id="colorMode">
+                        <option value="color">Berwarna (Color)</option>
+                        <option value="monochrome">Hitam Putih (Grayscale)</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>📏 Ukuran Kertas:</label>
+                    <select id="paperSize">
+                        <option value="A4">A4</option>
+                        <option value="Letter">Letter</option>
+                        <option value="Legal">Legal</option>
+                    </select>
+                </div>
             </div>
-            <div class="input-group">
-                <label>📑 Halaman:</label><input type="text" id="pages" placeholder="Cth: 1-3">
+            <div class="row">
+                <div class="input-group">
+                    <label>📄 Jml Copy:</label><input type="number" id="copies" value="1" min="1">
+                </div>
+                <div class="input-group">
+                    <label>📑 Halaman (Opsional):</label><input type="text" id="pages" placeholder="Cth: 1-3">
+                </div>
             </div>
         </div>
 
-        <button type="button" class="btn-drive" onclick="authAndPick()">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/d/da/Google_Drive_logo.png">
-            Pilih dari Google Drive
-        </button>
-
-        <div style="text-align: center; font-size: 12px; color: #7f8c8d; margin: 10px 0;">ATAU</div>
-
+        <div class="section-title">D. Dokumen</div>
         <div class="input-group">
             <label>📁 File Lokal (PDF/Word/IMG):</label>
             <input type="file" id="fileInput" accept=".pdf, image/png, image/jpeg, .docx, .doc, .xlsx, .xls" />
         </div>
-
-        <div class="input-group" style="display: none;">
-            <input type="text" id="fileUrl" placeholder="Link internet manual">
+        <div style="text-align: center; font-size: 12px; color: #7f8c8d; margin: 10px 0;">ATAU</div>
+        <div class="input-group">
+            <label>🔗 Link / URL Dokumen:</label>
+            <input type="text" id="fileUrl" placeholder="https://web.com/dokumen.pdf">
         </div>
         
-        <button id="printBtn" onclick="uploadAndPrint()">🚀 Eksekusi Print</button>
+        <button id="printBtn" onclick="uploadAndPrint()">🚀 EKSEKUSI PRINT</button>
         
         <div id="realtimeStatus">
-            <div style="font-size:11px; color:#7f8c8d; margin-bottom:3px;">MEMANTAU SERVER PC...</div>
+            <div style="font-size:11px; color:#7f8c8d; margin-bottom:3px;">MEMANTAU SERVER...</div>
             <div id="statusMessage">Menunggu instruksi...</div>
             <div class="progress-container"><div id="progressBar"></div></div>
         </div>
-        <div id="status"></div>
+    </div>
+
+    <div class="card">
+        <h3>🕒 Riwayat Aktivitas</h3>
+        <ul class="history-list" id="historyList"></ul>
+        <button class="clear-btn" onclick="clearHistory()">Hapus Riwayat Lokal</button>
     </div>
 
     <script>
-        // ==========================================
-        // 1. SISTEM GOOGLE DRIVE PICKER
-        // ==========================================
-        const API_KEY = 'AIzaSyDJwVqEvUPWN9yu5Jg00V-RXPQt7ldVRzg';
-        const CLIENT_ID = '391863261466-2hhb1lrr1u4bnm7vq9bred9bo55rarbt.apps.googleusercontent.com';
-        const APP_ID = '391863261466';
-        const SCOPES = 'https://www.googleapis.com/auth/drive.readonly';
-
-        let tokenClient;
-        let oauthToken;
-        let gapiInited = false;
-        let gisInited = false;
-        let driveFileToPrint = null; // Menyimpan file yang diunduh dari Drive
-
-        function gapiLoaded() { gapi.load('client:picker', () => { gapiInited = true; }); }
-        
-        function gisLoaded() {
-            tokenClient = google.accounts.oauth2.initTokenClient({
-                client_id: CLIENT_ID,
-                scope: SCOPES,
-                callback: (response) => {
-                    if (response.error !== undefined) throw (response);
-                    oauthToken = response.access_token;
-                    createPicker();
-                },
-            });
-            gisInited = true;
-        }
-
-        function authAndPick() {
-            if (!gapiInited || !gisInited) return alert("Google API sedang memuat, tunggu sebentar.");
-            if (oauthToken) { createPicker(); } 
-            else { tokenClient.requestAccessToken({prompt: 'consent'}); }
-        }
-
-        function createPicker() {
-            const view = new google.picker.View(google.picker.ViewId.DOCS);
-            view.setMimeTypes("application/pdf,image/png,image/jpeg,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-
-            const picker = new google.picker.PickerBuilder()
-                .enableFeature(google.picker.Feature.NAV_HIDDEN)
-                .setDeveloperKey(API_KEY)
-                .setAppId(APP_ID)
-                .setOAuthToken(oauthToken)
-                .addView(view)
-                .setCallback(pickerCallback)
-                .build();
-            picker.setVisible(true);
-        }
-
-        async function pickerCallback(data) {
-            if (data.action === google.picker.Action.PICKED) {
-                const doc = data.docs[0];
-                const fileId = doc.id;
-                const fileName = doc.name;
-
-                document.getElementById('realtimeStatus').style.display = 'block';
-                document.getElementById('statusMessage').innerText = `☁️ Mengunduh ${fileName} dari Google Drive...`;
-                document.getElementById('progressBar').style.width = '30%';
-
-                try {
-                    // Mengunduh file dari server Google ke RAM HP
-                    const response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
-                        headers: { 'Authorization': `Bearer ${oauthToken}` }
-                    });
-
-                    if(!response.ok) throw new Error("Gagal mengunduh file.");
-                    
-                    const blob = await response.blob();
-                    driveFileToPrint = new File([blob], fileName, { type: blob.type });
-
-                    document.getElementById('statusMessage').innerText = `✅ [Drive] ${fileName} siap dicetak!`;
-                    document.getElementById('progressBar').style.width = '100%';
-                    document.getElementById('fileInput').value = ""; // Reset input lokal
-
-                } catch(e) {
-                    console.error(e);
-                    document.getElementById('statusMessage').innerText = `🚨 Error: Gagal menarik file dari Drive.`;
-                    document.getElementById('progressBar').style.background = '#c0392b';
-                }
-            }
-        }
-
-        // ==========================================
-        // 2. SISTEM WEBSOCKET & PENCARIAN PC
-        // ==========================================
         let socket;
         function connectSocket(ip) {
             if(socket) socket.disconnect();
@@ -196,17 +130,13 @@
                 const statusBox = document.getElementById('realtimeStatus');
                 const msg = document.getElementById('statusMessage');
                 const bar = document.getElementById('progressBar');
-                
-                statusBox.style.display = 'block';
-                msg.innerText = data.message;
-                bar.style.background = '#27ae60'; 
-                
+                statusBox.style.display = 'block'; msg.innerText = data.message; bar.style.background = '#28a745'; 
                 if(data.type === 'processing') bar.style.width = '20%';
                 if(data.type === 'downloading') bar.style.width = '40%';
                 if(data.type === 'converting') bar.style.width = '60%';
                 if(data.type === 'printing') bar.style.width = '80%';
-                if(data.type === 'success') { bar.style.width = '100%'; setTimeout(() => { statusBox.style.display = 'none'; bar.style.width='0%'; }, 5000); }
-                if(data.type === 'error') { bar.style.width = '100%'; bar.style.background = '#e74c3c'; }
+                if(data.type === 'success') { bar.style.width = '100%'; setTimeout(() => { statusBox.style.display = 'none'; bar.style.width='0%'; }, 6000); }
+                if(data.type === 'error') { bar.style.width = '100%'; bar.style.background = '#dc3545'; }
             });
         }
 
@@ -221,12 +151,11 @@
         async function fetchPrinters(ip) {
             if(!ip) return;
             const printerSelect = document.getElementById('printerSelect');
-            printerSelect.innerHTML = '<option value="">⏳ Memuat printer...</option>';
+            printerSelect.innerHTML = '<option value="">⏳ Memuat...</option>';
             try {
                 const response = await fetch(`http://${ip}:3000/printers`);
                 if(!response.ok) throw new Error("Gagal");
                 const printers = await response.json();
-                
                 printerSelect.innerHTML = '<option value="">Default Printer (Otomatis)</option>';
                 printers.forEach(p => {
                     const option = document.createElement("option"); option.value = p.deviceId || p.name; option.text = p.name;
@@ -248,7 +177,6 @@
                 const targetIp = `${baseIp}.${i}`;
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 2000); 
-
                 const checkIp = fetch(`http://${targetIp}:3000/ping`, { signal: controller.signal })
                     .then(res => res.json())
                     .then(data => { if(data.status === 'PrintServerActive') foundPrinters.push({ ip: targetIp, name: data.hostname }); })
@@ -257,7 +185,7 @@
             }
 
             await Promise.allSettled(promises);
-            scanBtn.disabled = false; scanBtn.innerText = "🔍 Pindai Ulang";
+            scanBtn.disabled = false; scanBtn.innerText = "🔍 Pindai";
 
             if(foundPrinters.length > 0) {
                 ipSelect.style.display = "block"; ipSelect.innerHTML = "";
@@ -266,38 +194,33 @@
                     ipSelect.appendChild(option);
                 });
                 updateIpAndFetchPrinters(); 
-            } else { alert("PC tidak ditemukan. Pastikan Server jalan dan IP benar."); }
+            } else { alert("Server PC tidak ditemukan."); }
         }
 
-        // ==========================================
-        // 3. EKSEKUSI PRINT (GABUNGAN DRIVE & LOKAL)
-        // ==========================================
         async function uploadAndPrint() {
             const ipAddress = document.getElementById('ipAddress').value.trim();
+            const username = document.getElementById('usernameInput').value.trim();
             const pin = document.getElementById('pinInput').value.trim();
-            const printerName = document.getElementById('printerSelect').value;
             const fileInput = document.getElementById('fileInput');
             const fileUrl = document.getElementById('fileUrl').value.trim();
             const printBtn = document.getElementById('printBtn');
 
-            if (!ipAddress || !pin) return alert("IP Target dan PIN wajib diisi!");
-            if (fileInput.files.length === 0 && !fileUrl && !driveFileToPrint) return alert("Pilih file lokal ATAU dari Drive!");
+            if (!ipAddress || !username || !pin) return alert("IP, Username, dan PIN wajib diisi!");
+            if (fileInput.files.length === 0 && !fileUrl) return alert("Pilih file lokal ATAU link dokumen!");
 
             const formData = new FormData();
+            let logName = fileInput.files.length > 0 ? fileInput.files[0].name : "Dokumen dari Link URL";
+
+            if (fileInput.files.length > 0) formData.append('document', fileInput.files[0]); 
+            if (fileUrl) formData.append('fileUrl', fileUrl);
             
-            // Prioritas File: Drive -> File Lokal -> URL Link
-            if (driveFileToPrint) {
-                formData.append('document', driveFileToPrint);
-            } else if (fileInput.files.length > 0) {
-                formData.append('document', fileInput.files[0]); 
-            } else if (fileUrl) {
-                formData.append('fileUrl', fileUrl);
-            }
-            
+            formData.append('username', username);
+            formData.append('pin', pin);
             formData.append('copies', document.getElementById('copies').value);
             formData.append('pages', document.getElementById('pages').value.trim());
-            formData.append('pin', pin);
-            if (printerName) formData.append('printerName', printerName); 
+            formData.append('printerName', document.getElementById('printerSelect').value); 
+            formData.append('colorMode', document.getElementById('colorMode').value); 
+            formData.append('paperSize', document.getElementById('paperSize').value); 
 
             if(!socket || socket.disconnected) connectSocket(ipAddress);
 
@@ -311,17 +234,42 @@
                 const resultText = await response.text();
 
                 if (response.ok) {
-                    driveFileToPrint = null; // Reset setelah berhasil
+                    saveHistory(logName, username, "Sukses", document.getElementById('copies').value);
                     fileInput.value = ""; 
-                } else if (response.status === 401) {
-                    document.getElementById('statusMessage').innerText = "🚨 GAGAL: PIN Salah!";
-                    document.getElementById('progressBar').style.background = '#c0392b';
+                    // Server mengembalikan info sisa kuota di resultText
+                    alert(resultText); 
+                } else if (response.status === 401 || response.status === 403) {
+                    document.getElementById('statusMessage').innerText = `🚨 GAGAL: ${resultText}`;
+                    document.getElementById('progressBar').style.background = '#dc3545';
+                    saveHistory(logName, username, "Ditolak (Auth/Kuota)", 0);
+                    alert(resultText);
                 } else { throw new Error(resultText); }
             } catch (error) {
-                document.getElementById('statusMessage').innerText = `🚨 Error Koneksi`;
-                document.getElementById('progressBar').style.background = '#c0392b';
+                document.getElementById('statusMessage').innerText = `🚨 Error Koneksi Server`;
+                document.getElementById('progressBar').style.background = '#dc3545';
             } finally { printBtn.disabled = false; }
         }
+
+        document.addEventListener('DOMContentLoaded', loadHistory);
+        function saveHistory(fileName, user, status, copies) {
+            let history = JSON.parse(localStorage.getItem('printHistoryV4')) || [];
+            history.unshift({ file: fileName, user: user, status: status, copies: copies, date: new Date().toLocaleString('id-ID') });
+            if(history.length > 15) history.pop();
+            localStorage.setItem('printHistoryV4', JSON.stringify(history));
+            loadHistory();
+        }
+        function loadHistory() {
+            const historyList = document.getElementById('historyList'); historyList.innerHTML = '';
+            let history = JSON.parse(localStorage.getItem('printHistoryV4')) || [];
+            if(history.length === 0) { historyList.innerHTML = '<li style="text-align:center; font-size:12px; color:#95a5a6;">Belum ada aktivitas.</li>'; return; }
+            history.forEach(item => {
+                const li = document.createElement('li'); li.className = 'history-item';
+                if(item.status.includes('Ditolak')) li.style.borderLeftColor = '#dc3545';
+                li.innerHTML = `<strong>${item.file}</strong> (${item.copies} lbr) <br><span style="font-size: 11px; color: #7f8c8d;">Oleh: <strong>${item.user}</strong> | ${item.date} | ${item.status}</span>`;
+                historyList.appendChild(li);
+            });
+        }
+        function clearHistory() { if(confirm("Hapus semua riwayat lokal?")) { localStorage.removeItem('printHistoryV4'); loadHistory(); } }
     </script>
 </body>
 </html>
