@@ -25,12 +25,14 @@
         #status { margin-top: 15px; font-weight: bold; padding: 10px; border-radius: 6px; text-align: center; font-size: 14px;}
         
         .history-list { list-style: none; padding: 0; margin: 0; }
-        .history-item { background: #fdfdfd; border-left: 4px solid #3498db; padding: 10px; margin-bottom: 8px; border-radius: 4px; font-size: 13px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);}
+        .history-item { background: #fdfdfd; border-left: 4px solid #3498db; padding: 10px; margin-bottom: 8px; border-radius: 4px; font-size: 13px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); word-wrap: break-word;}
         .history-item .date { font-size: 11px; color: #7f8c8d; display: block; margin-top: 4px;}
         .clear-btn { background-color: #e74c3c; padding: 8px; font-size: 12px; margin-top: 10px;}
         
-        /* Dropdown custom saat PC ditemukan */
         #ipSelect { display: none; margin-bottom: 5px; background-color: #e8f8f5; border-color: #1abc9c;}
+        .divider { border: 0; border-top: 1px dashed #ccc; margin: 20px 0; }
+        .or-text { text-align: center; font-size: 12px; color: #7f8c8d; margin-top: -30px; margin-bottom: 15px; }
+        .or-text span { background: white; padding: 0 10px; }
     </style>
 </head>
 <body>
@@ -57,8 +59,16 @@
         </div>
 
         <div class="input-group">
-            <label>📁 Pilih File (PDF / JPG / PNG):</label>
-            <input type="file" id="fileInput" accept=".pdf, image/png, image/jpeg" />
+            <label>📁 Pilih File (PDF/IMG/Word/Excel):</label>
+            <input type="file" id="fileInput" accept=".pdf, image/png, image/jpeg, .docx, .doc, .xlsx, .xls" />
+        </div>
+
+        <hr class="divider">
+        <div class="or-text"><span>ATAU</span></div>
+
+        <div class="input-group">
+            <label>🔗 Cetak dari Link (URL Dokumen):</label>
+            <input type="text" id="fileUrl" placeholder="Contoh: https://web.com/dokumen.pdf">
         </div>
         
         <button id="printBtn" onclick="uploadAndPrint()">Kirim & Print</button>
@@ -74,39 +84,30 @@
     <script>
         document.addEventListener('DOMContentLoaded', loadHistory);
 
-        // --- FITUR AUTO DISCOVERY (PEMINDAI JARINGAN) ---
+        // --- FITUR AUTO DISCOVERY ---
         async function scanNetwork() {
             const scanBtn = document.getElementById('scanBtn');
             const ipSelect = document.getElementById('ipSelect');
             const ipAddressInput = document.getElementById('ipAddress');
             const statusDiv = document.getElementById('status');
 
-            // Mengambil 3 blok IP dari URL saat ini (misal: dari 192.168.1.46 menjadi 192.168.1)
-            const currentHostname = window.location.hostname;
-            const parts = currentHostname.split('.');
-                       
-            let baseIp = prompt("Masukkan 3 blok IP WiFi Anda (Contoh: 192.168.1 atau 192.168.0):", "192.168.1");
-            
-            // Jika user menekan Cancel, hentikan proses
-            if(!baseIp) {
-                return; 
-            }
+            // Meminta user memastikan 3 blok IP WiFi mereka (agar stabil jika beda jaringan)
+            let baseIp = prompt("Masukkan 3 blok awal IP WiFi Anda (Cek di pengaturan WiFi HP):", "192.168.1");
+            if(!baseIp) return; // Batal jika kosong
             
             scanBtn.disabled = true;
             scanBtn.innerText = "⏳ Sedang memindai jaringan...";
-            statusDiv.innerText = "Mencari Print Server di jaringan WiFi ini...";
+            statusDiv.innerText = "Mencari Print Server di jaringan " + baseIp + ".x ...";
             statusDiv.style.color = "#f39c12";
 
             const promises = [];
             const foundPrinters = [];
 
-            // Memindai IP dari .1 sampai .255 secara bersamaan
-            for(let i = 1; i <= 255; i++) {
+            // Memindai dari .1 sampai .254 (menghindari error .255)
+            for(let i = 1; i < 255; i++) {
                 const targetIp = `${baseIp}.${i}`;
-                
-                // Gunakan AbortController agar tidak menunggu terlalu lama jika IP kosong
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 2000); // Batas waktu 2 detik
+                const timeoutId = setTimeout(() => controller.abort(), 2000); 
 
                 const checkIp = fetch(`http://${targetIp}:3000/ping`, { signal: controller.signal })
                     .then(res => res.json())
@@ -115,13 +116,12 @@
                             foundPrinters.push({ ip: targetIp, name: data.hostname });
                         }
                     })
-                    .catch(() => {}) // Abaikan error (IP mati/kosong)
+                    .catch(() => {}) 
                     .finally(() => clearTimeout(timeoutId));
 
                 promises.push(checkIp);
             }
 
-            // Tunggu semua proses scan selesai
             await Promise.allSettled(promises);
 
             scanBtn.disabled = false;
@@ -131,20 +131,15 @@
                 statusDiv.innerText = `✅ Ditemukan ${foundPrinters.length} Print Server!`;
                 statusDiv.style.color = "#27ae60";
                 
-                // Tampilkan dropdown
                 ipSelect.style.display = "block";
                 ipSelect.innerHTML = "";
-                
                 foundPrinters.forEach(printer => {
                     const option = document.createElement("option");
                     option.value = printer.ip;
                     option.text = `🖥️ ${printer.name} (${printer.ip})`;
                     ipSelect.appendChild(option);
                 });
-
-                // Otomatis isi kolom teks dengan IP pertama yang ditemukan
                 ipAddressInput.value = foundPrinters[0].ip;
-
             } else {
                 statusDiv.innerText = "⚠️ Tidak menemukan PC yang menyala. Pastikan server.js aktif di PC.";
                 statusDiv.style.color = "#e74c3c";
@@ -155,25 +150,39 @@
         // --- FITUR KIRIM & PRINT ---
         async function uploadAndPrint() {
             const fileInput = document.getElementById('fileInput');
+            const fileUrl = document.getElementById('fileUrl').value.trim();
             const ipAddress = document.getElementById('ipAddress').value.trim();
             const copies = document.getElementById('copies').value;
             const pages = document.getElementById('pages').value.trim();
             const statusDiv = document.getElementById('status');
             const printBtn = document.getElementById('printBtn');
 
-            if (!ipAddress || fileInput.files.length === 0) {
-                statusDiv.innerText = "⚠️ IP Target dan File tidak boleh kosong!";
+            if (!ipAddress) {
+                statusDiv.innerText = "⚠️ IP Target tidak boleh kosong!";
                 statusDiv.style.color = "#e74c3c"; return;
             }
 
-            const file = fileInput.files[0];
+            if (fileInput.files.length === 0 && !fileUrl) {
+                statusDiv.innerText = "⚠️ Pilih file lokal ATAU masukkan link URL!";
+                statusDiv.style.color = "#e74c3c"; return;
+            }
+
             const formData = new FormData();
-            formData.append('document', file); 
+            let logName = "Dokumen dari Link URL";
+
+            if (fileInput.files.length > 0) {
+                formData.append('document', fileInput.files[0]); 
+                logName = fileInput.files[0].name;
+            }
+            if (fileUrl) {
+                formData.append('fileUrl', fileUrl);
+            }
+            
             formData.append('copies', copies);
             formData.append('pages', pages);
 
             const serverUrl = `http://${ipAddress}:3000/print`;
-            statusDiv.innerText = `⏳ Mengirim file ke ${ipAddress}...`;
+            statusDiv.innerText = `⏳ Mengirim instruksi ke ${ipAddress}...`;
             statusDiv.style.color = "#f39c12";
             printBtn.disabled = true;
 
@@ -184,12 +193,17 @@
                 if (response.ok) {
                     statusDiv.innerText = "✅ Sukses terkirim!";
                     statusDiv.style.color = "#27ae60";
-                    saveHistory(file.name, ipAddress, "Sukses", copies);
+                    saveHistory(logName, ipAddress, "Sukses", copies);
+                    
+                    // Reset input setelah sukses
+                    fileInput.value = "";
+                    document.getElementById('fileUrl').value = "";
                 } else { throw new Error(resultText); }
             } catch (error) {
-                statusDiv.innerText = `🚨 Error: Gagal terhubung ke server.`;
+                statusDiv.innerText = `🚨 Error: Gagal terhubung/mencetak.`;
                 statusDiv.style.color = "#e74c3c";
-                saveHistory(file.name, ipAddress, "Gagal", copies);
+                saveHistory(logName, ipAddress, "Gagal", copies);
+                console.error(error);
             } finally { printBtn.disabled = false; }
         }
 
