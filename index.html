@@ -84,13 +84,13 @@
             // Mengambil 3 blok IP dari URL saat ini (misal: dari 192.168.1.46 menjadi 192.168.1)
             const currentHostname = window.location.hostname;
             const parts = currentHostname.split('.');
+                       
+            let baseIp = prompt("Masukkan 3 blok IP WiFi Anda (Contoh: 192.168.1 atau 192.168.0):", "192.168.1");
             
-            if(parts.length !== 4) {
-                alert("Fitur ini hanya bekerja jika kamu membuka aplikasi menggunakan IP Address WiFi (seperti 192.168.x.x)");
-                return;
+            // Jika user menekan Cancel, hentikan proses
+            if(!baseIp) {
+                return; 
             }
-
-            const baseIp = `${parts[0]}.${parts[1]}.${parts[2]}`;
             
             scanBtn.disabled = true;
             scanBtn.innerText = "⏳ Sedang memindai jaringan...";
