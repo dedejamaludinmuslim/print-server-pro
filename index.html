@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Print App Android</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            padding: 30px; 
+            text-align: center; 
+            background-color: #f4f7f6;
+            color: #333;
+        }
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            max-width: 400px;
+            margin: auto;
+        }
+        h2 { margin-top: 0; color: #2c3e50; }
+        input[type="file"] { 
+            margin: 20px 0; 
+            padding: 10px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        button { 
+            background-color: #3498db; 
+            color: white;
+            border: none;
+            padding: 15px 20px; 
+            font-size: 16px; 
+            border-radius: 8px;
+            cursor: pointer; 
+            width: 100%;
+            transition: background 0.3s;
+        }
+        button:hover { background-color: #2980b9; }
+        #status { 
+            margin-top: 20px; 
+            font-weight: bold; 
+            padding: 10px;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h2>Pusat Print Jaringan</h2>
+        <p>Pilih file dokumen (.pdf) dari HP kamu untuk dicetak ke PC.</p>
+
+        <input type="file" id="fileInput" accept=".pdf" />
+        
+        <button id="printBtn" onclick="uploadAndPrint()">Kirim & Print</button>
+
+        <div id="status"></div>
+    </div>
+
+    <script>
+        async function uploadAndPrint() {
+            const fileInput = document.getElementById('fileInput');
+            const statusDiv = document.getElementById('status');
+            const printBtn = document.getElementById('printBtn');
+
+            // Cek apakah user sudah memilih file
+            if (fileInput.files.length === 0) {
+                statusDiv.innerText = "⚠️ Pilih file PDF terlebih dahulu!";
+                statusDiv.style.color = "#e74c3c"; // Merah
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const formData = new FormData();
+            
+            // Nama 'document' di sini HARUS SAMA persis dengan upload.single('document') di server.js PC kamu
+            formData.append('document', file); 
+
+            // Alamat IP PC kamu dan Port Server Node.js
+            const serverUrl = 'http://192.168.1.46:3000/print';
+
+            // Ubah tampilan UI saat loading
+            statusDiv.innerText = "⏳ Sedang mengirim file ke PC...";
+            statusDiv.style.color = "#f39c12"; // Oranye
+            printBtn.disabled = true;
+            printBtn.innerText = "Mengirim...";
+
+            try {
+                // Proses mengirim file ke server PC melalui WiFi
+                const response = await fetch(serverUrl, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const resultText = await response.text();
+
+                if (response.ok) {
+                    statusDiv.innerText = "✅ Sukses: " + resultText;
+                    statusDiv.style.color = "#27ae60"; // Hijau
+                } else {
+                    statusDiv.innerText = "❌ Gagal: " + resultText;
+                    statusDiv.style.color = "#e74c3c"; // Merah
+                }
+            } catch (error) {
+                statusDiv.innerText = "🚨 Error: Tidak dapat terhubung. Pastikan server PC menyala (node server.js) dan HP satu WiFi dengan PC.";
+                statusDiv.style.color = "#e74c3c"; // Merah
+                console.error("Error Detail:", error);
+            } finally {
+                // Kembalikan tombol seperti semula
+                printBtn.disabled = false;
+                printBtn.innerText = "Kirim & Print";
+            }
+        }
+    </script>
+</body>
+</html>
