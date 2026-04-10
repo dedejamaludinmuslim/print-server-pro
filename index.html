@@ -3,107 +3,247 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Print App Android Pro</title>
+    <title>Print App Enterprise</title>
+    
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    
+    <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
+    <script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
+
     <style>
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; padding: 20px; background-color: #f4f7f6; color: #333; margin: 0; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; padding: 15px; background-color: #ecf0f1; color: #333; margin: 0; }
         .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); max-width: 400px; margin: auto; margin-bottom: 20px;}
         h2, h3 { margin-top: 0; color: #2c3e50; text-align: center;}
         .input-group { text-align: left; margin-bottom: 12px; }
         .input-group label { font-size: 13px; font-weight: bold; color: #555; display: block; margin-bottom: 4px;}
         .row { display: flex; gap: 10px; }
         .row .input-group { flex: 1; }
-        input[type="text"], input[type="number"], input[type="file"], select { 
+        input[type="text"], input[type="number"], input[type="password"], input[type="file"], select { 
             width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 6px; font-family: inherit;
         }
-        button { 
-            background-color: #3498db; color: white; border: none; padding: 15px; font-size: 16px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; transition: background 0.3s;
-        }
-        button:hover { background-color: #2980b9; }
+        .pin-box { background-color: #fdf2e9; border: 1px solid #e67e22; padding: 10px; border-radius: 8px; margin-bottom: 15px;}
+        .pin-box label { color: #d35400; }
+        button { background-color: #27ae60; color: white; border: none; padding: 15px; font-size: 16px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; transition: background 0.3s; margin-top: 5px;}
+        button:hover { background-color: #2ecc71; }
         button:disabled { background-color: #95a5a6; cursor: not-allowed; }
-        .btn-scan { background-color: #9b59b6; padding: 10px; font-size: 14px; margin-top: 5px; }
-        .btn-scan:hover { background-color: #8e44ad; }
-        #status { margin-top: 15px; font-weight: bold; padding: 10px; border-radius: 6px; text-align: center; font-size: 14px;}
+        .btn-scan { background-color: #34495e; padding: 10px; font-size: 14px; margin-bottom: 10px; }
         
-        .history-list { list-style: none; padding: 0; margin: 0; }
+        /* Tombol Google Drive */
+        .btn-drive { background-color: #fff; color: #3c4043; border: 1px solid #dadce0; padding: 10px; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3); border-radius: 4px;}
+        .btn-drive:hover { background-color: #f8f9fa; }
+        .btn-drive img { width: 18px; margin-right: 8px; }
+
+        #realtimeStatus { display:none; margin-top:15px; padding:15px; border-radius:8px; background:#f8f9fa; border:1px solid #dee2e6; text-align: left;}
+        #statusMessage { font-weight:bold; color:#2c3e50; font-size: 14px;}
+        .progress-container { height:6px; background:#e9ecef; margin-top:10px; border-radius:10px; overflow:hidden;}
+        #progressBar { width:0%; height:100%; background:#27ae60; transition:width 0.4s ease, background 0.3s;}
+        
         .history-item { background: #fdfdfd; border-left: 4px solid #3498db; padding: 10px; margin-bottom: 8px; border-radius: 4px; font-size: 13px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); word-wrap: break-word;}
-        .history-item .date { font-size: 11px; color: #7f8c8d; display: block; margin-top: 4px;}
+        .history-list { list-style:none; padding:0; margin:0;}
         .clear-btn { background-color: #e74c3c; padding: 8px; font-size: 12px; margin-top: 10px;}
-        
-        #ipSelect { display: none; margin-bottom: 5px; background-color: #e8f8f5; border-color: #1abc9c;}
-        .divider { border: 0; border-top: 1px dashed #ccc; margin: 20px 0; }
-        .or-text { text-align: center; font-size: 12px; color: #7f8c8d; margin-top: -30px; margin-bottom: 15px; }
-        .or-text span { background: white; padding: 0 10px; }
     </style>
 </head>
 <body>
 
     <div class="card">
-        <h2>🖨️ Pusat Print Jaringan</h2>
+        <h2>🖨️ Print Enterprise</h2>
+        
+        <button class="btn-scan" id="scanBtn" onclick="scanNetwork()">🔍 Pindai Jaringan PC</button>
         
         <div class="input-group">
-            <label>🌐 IP Address PC Target:</label>
-            <select id="ipSelect" onchange="document.getElementById('ipAddress').value = this.value;"></select>
-            <input type="text" id="ipAddress" placeholder="Contoh: 192.168.1.46" value="192.168.1.46">
-            <button class="btn-scan" id="scanBtn" onclick="scanNetwork()">🔍 Pindai Jaringan (Cari PC)</button>
+            <label>🖥️ PC Target (IP):</label>
+            <select id="ipSelect" style="display:none; margin-bottom: 5px; background-color: #e8f8f5; border-color: #1abc9c;" onchange="updateIpAndFetchPrinters()"></select>
+            <input type="text" id="ipAddress" placeholder="Contoh: 192.168.1.46">
+        </div>
+
+        <div class="input-group">
+            <label>🖨️ Pilih Mesin Printer di PC:</label>
+            <select id="printerSelect"><option value="">Default Printer (Otomatis)</option></select>
+        </div>
+
+        <div class="pin-box">
+            <label>🔒 PIN Server:</label>
+            <input type="password" id="pinInput" placeholder="Masukkan PIN Server" value="12345">
         </div>
 
         <div class="row">
             <div class="input-group">
-                <label>📄 Jumlah Copy:</label>
-                <input type="number" id="copies" value="1" min="1">
+                <label>📄 Jml Copy:</label><input type="number" id="copies" value="1" min="1">
             </div>
             <div class="input-group">
-                <label>📑 Halaman (Opsional):</label>
-                <input type="text" id="pages" placeholder="Cth: 1-3">
+                <label>📑 Halaman:</label><input type="text" id="pages" placeholder="Cth: 1-3">
             </div>
         </div>
 
+        <button type="button" class="btn-drive" onclick="authAndPick()">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/d/da/Google_Drive_logo.png">
+            Pilih dari Google Drive
+        </button>
+
+        <div style="text-align: center; font-size: 12px; color: #7f8c8d; margin: 10px 0;">ATAU</div>
+
         <div class="input-group">
-            <label>📁 Pilih File (PDF/IMG/Word/Excel):</label>
+            <label>📁 File Lokal (PDF/Word/IMG):</label>
             <input type="file" id="fileInput" accept=".pdf, image/png, image/jpeg, .docx, .doc, .xlsx, .xls" />
         </div>
 
-        <hr class="divider">
-        <div class="or-text"><span>ATAU</span></div>
-
-        <div class="input-group">
-            <label>🔗 Cetak dari Link (URL Dokumen):</label>
-            <input type="text" id="fileUrl" placeholder="Contoh: https://web.com/dokumen.pdf">
+        <div class="input-group" style="display: none;">
+            <input type="text" id="fileUrl" placeholder="Link internet manual">
         </div>
         
-        <button id="printBtn" onclick="uploadAndPrint()">Kirim & Print</button>
+        <button id="printBtn" onclick="uploadAndPrint()">🚀 Eksekusi Print</button>
+        
+        <div id="realtimeStatus">
+            <div style="font-size:11px; color:#7f8c8d; margin-bottom:3px;">MEMANTAU SERVER PC...</div>
+            <div id="statusMessage">Menunggu instruksi...</div>
+            <div class="progress-container"><div id="progressBar"></div></div>
+        </div>
         <div id="status"></div>
     </div>
 
-    <div class="card">
-        <h3>🕒 Riwayat Cetak</h3>
-        <ul class="history-list" id="historyList"></ul>
-        <button class="clear-btn" onclick="clearHistory()">Hapus Riwayat</button>
-    </div>
-
     <script>
-        document.addEventListener('DOMContentLoaded', loadHistory);
+        // ==========================================
+        // 1. SISTEM GOOGLE DRIVE PICKER
+        // ==========================================
+        const API_KEY = 'AIzaSyDJwVqEvUPWN9yu5Jg00V-RXPQt7ldVRzg';
+        const CLIENT_ID = '391863261466-2hhb1lrr1u4bnm7vq9bred9bo55rarbt.apps.googleusercontent.com';
+        const APP_ID = '391863261466';
+        const SCOPES = 'https://www.googleapis.com/auth/drive.readonly';
 
-        // --- FITUR AUTO DISCOVERY ---
+        let tokenClient;
+        let oauthToken;
+        let gapiInited = false;
+        let gisInited = false;
+        let driveFileToPrint = null; // Menyimpan file yang diunduh dari Drive
+
+        function gapiLoaded() { gapi.load('client:picker', () => { gapiInited = true; }); }
+        
+        function gisLoaded() {
+            tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: CLIENT_ID,
+                scope: SCOPES,
+                callback: (response) => {
+                    if (response.error !== undefined) throw (response);
+                    oauthToken = response.access_token;
+                    createPicker();
+                },
+            });
+            gisInited = true;
+        }
+
+        function authAndPick() {
+            if (!gapiInited || !gisInited) return alert("Google API sedang memuat, tunggu sebentar.");
+            if (oauthToken) { createPicker(); } 
+            else { tokenClient.requestAccessToken({prompt: 'consent'}); }
+        }
+
+        function createPicker() {
+            const view = new google.picker.View(google.picker.ViewId.DOCS);
+            view.setMimeTypes("application/pdf,image/png,image/jpeg,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+
+            const picker = new google.picker.PickerBuilder()
+                .enableFeature(google.picker.Feature.NAV_HIDDEN)
+                .setDeveloperKey(API_KEY)
+                .setAppId(APP_ID)
+                .setOAuthToken(oauthToken)
+                .addView(view)
+                .setCallback(pickerCallback)
+                .build();
+            picker.setVisible(true);
+        }
+
+        async function pickerCallback(data) {
+            if (data.action === google.picker.Action.PICKED) {
+                const doc = data.docs[0];
+                const fileId = doc.id;
+                const fileName = doc.name;
+
+                document.getElementById('realtimeStatus').style.display = 'block';
+                document.getElementById('statusMessage').innerText = `☁️ Mengunduh ${fileName} dari Google Drive...`;
+                document.getElementById('progressBar').style.width = '30%';
+
+                try {
+                    // Mengunduh file dari server Google ke RAM HP
+                    const response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+                        headers: { 'Authorization': `Bearer ${oauthToken}` }
+                    });
+
+                    if(!response.ok) throw new Error("Gagal mengunduh file.");
+                    
+                    const blob = await response.blob();
+                    driveFileToPrint = new File([blob], fileName, { type: blob.type });
+
+                    document.getElementById('statusMessage').innerText = `✅ [Drive] ${fileName} siap dicetak!`;
+                    document.getElementById('progressBar').style.width = '100%';
+                    document.getElementById('fileInput').value = ""; // Reset input lokal
+
+                } catch(e) {
+                    console.error(e);
+                    document.getElementById('statusMessage').innerText = `🚨 Error: Gagal menarik file dari Drive.`;
+                    document.getElementById('progressBar').style.background = '#c0392b';
+                }
+            }
+        }
+
+        // ==========================================
+        // 2. SISTEM WEBSOCKET & PENCARIAN PC
+        // ==========================================
+        let socket;
+        function connectSocket(ip) {
+            if(socket) socket.disconnect();
+            socket = io(`http://${ip}:3000`);
+            socket.on('print-status', (data) => {
+                const statusBox = document.getElementById('realtimeStatus');
+                const msg = document.getElementById('statusMessage');
+                const bar = document.getElementById('progressBar');
+                
+                statusBox.style.display = 'block';
+                msg.innerText = data.message;
+                bar.style.background = '#27ae60'; 
+                
+                if(data.type === 'processing') bar.style.width = '20%';
+                if(data.type === 'downloading') bar.style.width = '40%';
+                if(data.type === 'converting') bar.style.width = '60%';
+                if(data.type === 'printing') bar.style.width = '80%';
+                if(data.type === 'success') { bar.style.width = '100%'; setTimeout(() => { statusBox.style.display = 'none'; bar.style.width='0%'; }, 5000); }
+                if(data.type === 'error') { bar.style.width = '100%'; bar.style.background = '#e74c3c'; }
+            });
+        }
+
+        document.getElementById('ipAddress').addEventListener('blur', function() { fetchPrinters(this.value); connectSocket(this.value); });
+
+        function updateIpAndFetchPrinters() {
+            const ip = document.getElementById('ipSelect').value;
+            document.getElementById('ipAddress').value = ip;
+            fetchPrinters(ip); connectSocket(ip); 
+        }
+
+        async function fetchPrinters(ip) {
+            if(!ip) return;
+            const printerSelect = document.getElementById('printerSelect');
+            printerSelect.innerHTML = '<option value="">⏳ Memuat printer...</option>';
+            try {
+                const response = await fetch(`http://${ip}:3000/printers`);
+                if(!response.ok) throw new Error("Gagal");
+                const printers = await response.json();
+                
+                printerSelect.innerHTML = '<option value="">Default Printer (Otomatis)</option>';
+                printers.forEach(p => {
+                    const option = document.createElement("option"); option.value = p.deviceId || p.name; option.text = p.name;
+                    printerSelect.appendChild(option);
+                });
+            } catch (error) { printerSelect.innerHTML = '<option value="">Default Printer (Gagal)</option>'; }
+        }
+
         async function scanNetwork() {
             const scanBtn = document.getElementById('scanBtn');
             const ipSelect = document.getElementById('ipSelect');
-            const ipAddressInput = document.getElementById('ipAddress');
-            const statusDiv = document.getElementById('status');
-
-            // Meminta user memastikan 3 blok IP WiFi mereka (agar stabil jika beda jaringan)
-            let baseIp = prompt("Masukkan 3 blok awal IP WiFi Anda (Cek di pengaturan WiFi HP):", "192.168.1");
-            if(!baseIp) return; // Batal jika kosong
+            let baseIp = prompt("Masukkan 3 blok IP WiFi:", "192.168.1");
+            if(!baseIp) return; 
             
-            scanBtn.disabled = true;
-            scanBtn.innerText = "⏳ Sedang memindai jaringan...";
-            statusDiv.innerText = "Mencari Print Server di jaringan " + baseIp + ".x ...";
-            statusDiv.style.color = "#f39c12";
+            scanBtn.disabled = true; scanBtn.innerText = "⏳ Memindai...";
+            const promises = []; const foundPrinters = [];
 
-            const promises = [];
-            const foundPrinters = [];
-
-            // Memindai dari .1 sampai .254 (menghindari error .255)
             for(let i = 1; i < 255; i++) {
                 const targetIp = `${baseIp}.${i}`;
                 const controller = new AbortController();
@@ -111,133 +251,76 @@
 
                 const checkIp = fetch(`http://${targetIp}:3000/ping`, { signal: controller.signal })
                     .then(res => res.json())
-                    .then(data => {
-                        if(data.status === 'PrintServerActive') {
-                            foundPrinters.push({ ip: targetIp, name: data.hostname });
-                        }
-                    })
-                    .catch(() => {}) 
-                    .finally(() => clearTimeout(timeoutId));
-
+                    .then(data => { if(data.status === 'PrintServerActive') foundPrinters.push({ ip: targetIp, name: data.hostname }); })
+                    .catch(() => {}) .finally(() => clearTimeout(timeoutId));
                 promises.push(checkIp);
             }
 
             await Promise.allSettled(promises);
-
-            scanBtn.disabled = false;
-            scanBtn.innerText = "🔍 Pindai Ulang";
+            scanBtn.disabled = false; scanBtn.innerText = "🔍 Pindai Ulang";
 
             if(foundPrinters.length > 0) {
-                statusDiv.innerText = `✅ Ditemukan ${foundPrinters.length} Print Server!`;
-                statusDiv.style.color = "#27ae60";
-                
-                ipSelect.style.display = "block";
-                ipSelect.innerHTML = "";
+                ipSelect.style.display = "block"; ipSelect.innerHTML = "";
                 foundPrinters.forEach(printer => {
-                    const option = document.createElement("option");
-                    option.value = printer.ip;
-                    option.text = `🖥️ ${printer.name} (${printer.ip})`;
+                    const option = document.createElement("option"); option.value = printer.ip; option.text = `🖥️ ${printer.name} (${printer.ip})`;
                     ipSelect.appendChild(option);
                 });
-                ipAddressInput.value = foundPrinters[0].ip;
-            } else {
-                statusDiv.innerText = "⚠️ Tidak menemukan PC yang menyala. Pastikan server.js aktif di PC.";
-                statusDiv.style.color = "#e74c3c";
-                ipSelect.style.display = "none";
-            }
+                updateIpAndFetchPrinters(); 
+            } else { alert("PC tidak ditemukan. Pastikan Server jalan dan IP benar."); }
         }
 
-        // --- FITUR KIRIM & PRINT ---
+        // ==========================================
+        // 3. EKSEKUSI PRINT (GABUNGAN DRIVE & LOKAL)
+        // ==========================================
         async function uploadAndPrint() {
+            const ipAddress = document.getElementById('ipAddress').value.trim();
+            const pin = document.getElementById('pinInput').value.trim();
+            const printerName = document.getElementById('printerSelect').value;
             const fileInput = document.getElementById('fileInput');
             const fileUrl = document.getElementById('fileUrl').value.trim();
-            const ipAddress = document.getElementById('ipAddress').value.trim();
-            const copies = document.getElementById('copies').value;
-            const pages = document.getElementById('pages').value.trim();
-            const statusDiv = document.getElementById('status');
             const printBtn = document.getElementById('printBtn');
 
-            if (!ipAddress) {
-                statusDiv.innerText = "⚠️ IP Target tidak boleh kosong!";
-                statusDiv.style.color = "#e74c3c"; return;
-            }
-
-            if (fileInput.files.length === 0 && !fileUrl) {
-                statusDiv.innerText = "⚠️ Pilih file lokal ATAU masukkan link URL!";
-                statusDiv.style.color = "#e74c3c"; return;
-            }
+            if (!ipAddress || !pin) return alert("IP Target dan PIN wajib diisi!");
+            if (fileInput.files.length === 0 && !fileUrl && !driveFileToPrint) return alert("Pilih file lokal ATAU dari Drive!");
 
             const formData = new FormData();
-            let logName = "Dokumen dari Link URL";
-
-            if (fileInput.files.length > 0) {
+            
+            // Prioritas File: Drive -> File Lokal -> URL Link
+            if (driveFileToPrint) {
+                formData.append('document', driveFileToPrint);
+            } else if (fileInput.files.length > 0) {
                 formData.append('document', fileInput.files[0]); 
-                logName = fileInput.files[0].name;
-            }
-            if (fileUrl) {
+            } else if (fileUrl) {
                 formData.append('fileUrl', fileUrl);
             }
             
-            formData.append('copies', copies);
-            formData.append('pages', pages);
+            formData.append('copies', document.getElementById('copies').value);
+            formData.append('pages', document.getElementById('pages').value.trim());
+            formData.append('pin', pin);
+            if (printerName) formData.append('printerName', printerName); 
 
-            const serverUrl = `http://${ipAddress}:3000/print`;
-            statusDiv.innerText = `⏳ Mengirim instruksi ke ${ipAddress}...`;
-            statusDiv.style.color = "#f39c12";
+            if(!socket || socket.disconnected) connectSocket(ipAddress);
+
             printBtn.disabled = true;
+            document.getElementById('realtimeStatus').style.display = 'block';
+            document.getElementById('statusMessage').innerText = '⏳ Mengautentikasi dan Mengirim...';
+            document.getElementById('progressBar').style.width = '10%';
 
             try {
-                const response = await fetch(serverUrl, { method: 'POST', body: formData });
+                const response = await fetch(`http://${ipAddress}:3000/print`, { method: 'POST', body: formData });
                 const resultText = await response.text();
 
                 if (response.ok) {
-                    statusDiv.innerText = "✅ Sukses terkirim!";
-                    statusDiv.style.color = "#27ae60";
-                    saveHistory(logName, ipAddress, "Sukses", copies);
-                    
-                    // Reset input setelah sukses
-                    fileInput.value = "";
-                    document.getElementById('fileUrl').value = "";
+                    driveFileToPrint = null; // Reset setelah berhasil
+                    fileInput.value = ""; 
+                } else if (response.status === 401) {
+                    document.getElementById('statusMessage').innerText = "🚨 GAGAL: PIN Salah!";
+                    document.getElementById('progressBar').style.background = '#c0392b';
                 } else { throw new Error(resultText); }
             } catch (error) {
-                statusDiv.innerText = `🚨 Error: Gagal terhubung/mencetak.`;
-                statusDiv.style.color = "#e74c3c";
-                saveHistory(logName, ipAddress, "Gagal", copies);
-                console.error(error);
+                document.getElementById('statusMessage').innerText = `🚨 Error Koneksi`;
+                document.getElementById('progressBar').style.background = '#c0392b';
             } finally { printBtn.disabled = false; }
-        }
-
-        // --- FITUR RIWAYAT ---
-        function saveHistory(fileName, targetIp, status, copies) {
-            let history = JSON.parse(localStorage.getItem('printHistory')) || [];
-            history.unshift({ file: fileName, ip: targetIp, status: status, copies: copies, date: new Date().toLocaleString('id-ID') });
-            if(history.length > 10) history.pop();
-            localStorage.setItem('printHistory', JSON.stringify(history));
-            loadHistory();
-        }
-
-        function loadHistory() {
-            const historyList = document.getElementById('historyList');
-            historyList.innerHTML = '';
-            let history = JSON.parse(localStorage.getItem('printHistory')) || [];
-            if(history.length === 0) {
-                historyList.innerHTML = '<li style="text-align:center; font-size:12px; color:#95a5a6;">Belum ada riwayat cetak.</li>';
-                return;
-            }
-            history.forEach(item => {
-                const li = document.createElement('li');
-                li.className = 'history-item';
-                if(item.status === 'Gagal') li.style.borderLeftColor = '#e74c3c';
-                li.innerHTML = `<strong>${item.file}</strong> (${item.copies} lbr) <span class="date">${item.date} | Target: ${item.ip} | Status: ${item.status}</span>`;
-                historyList.appendChild(li);
-            });
-        }
-
-        function clearHistory() {
-            if(confirm("Yakin ingin menghapus semua riwayat?")) {
-                localStorage.removeItem('printHistory');
-                loadHistory();
-            }
         }
     </script>
 </body>
