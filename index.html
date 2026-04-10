@@ -3,58 +3,83 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Print App Android</title>
+    <title>Print App Android Pro</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; padding: 20px; text-align: center; background-color: #f4f7f6; color: #333; }
-        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); max-width: 400px; margin: auto; }
-        h2 { margin-top: 0; color: #2c3e50; }
-        .input-group { text-align: left; margin-bottom: 15px; }
-        .input-group label { font-size: 14px; font-weight: bold; color: #555; }
-        input[type="text"], input[type="file"] { 
-            width: 100%; padding: 10px; margin-top: 5px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 6px;
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; padding: 20px; background-color: #f4f7f6; color: #333; margin: 0; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); max-width: 400px; margin: auto; margin-bottom: 20px;}
+        h2, h3 { margin-top: 0; color: #2c3e50; text-align: center;}
+        .input-group { text-align: left; margin-bottom: 12px; }
+        .input-group label { font-size: 13px; font-weight: bold; color: #555; display: block; margin-bottom: 4px;}
+        .row { display: flex; gap: 10px; }
+        .row .input-group { flex: 1; }
+        input[type="text"], input[type="number"], input[type="file"] { 
+            width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 6px;
         }
         button { 
-            background-color: #3498db; color: white; border: none; padding: 15px; font-size: 16px; border-radius: 8px; cursor: pointer; width: 100%; transition: background 0.3s; margin-top: 10px;
+            background-color: #3498db; color: white; border: none; padding: 15px; font-size: 16px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; transition: background 0.3s;
         }
         button:hover { background-color: #2980b9; }
-        #status { margin-top: 20px; font-weight: bold; padding: 10px; border-radius: 6px; }
+        button:disabled { background-color: #95a5a6; cursor: not-allowed; }
+        #status { margin-top: 15px; font-weight: bold; padding: 10px; border-radius: 6px; text-align: center; font-size: 14px;}
+        
+        /* Style untuk Riwayat */
+        .history-list { list-style: none; padding: 0; margin: 0; }
+        .history-item { background: #fdfdfd; border-left: 4px solid #3498db; padding: 10px; margin-bottom: 8px; border-radius: 4px; font-size: 13px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);}
+        .history-item .date { font-size: 11px; color: #7f8c8d; display: block; margin-top: 4px;}
+        .clear-btn { background-color: #e74c3c; padding: 8px; font-size: 12px; margin-top: 10px;}
     </style>
 </head>
 <body>
 
     <div class="card">
-        <h2>Pusat Print Jaringan</h2>
+        <h2>🖨️ Pusat Print Jaringan</h2>
         
         <div class="input-group">
-            <label for="ipAddress">IP Address PC Tujuan:</label>
+            <label for="ipAddress">🌐 IP Address PC Target:</label>
             <input type="text" id="ipAddress" placeholder="Contoh: 192.168.1.46" value="192.168.1.46">
         </div>
 
+        <div class="row">
+            <div class="input-group">
+                <label for="copies">📄 Jumlah Copy:</label>
+                <input type="number" id="copies" value="1" min="1">
+            </div>
+            <div class="input-group">
+                <label for="pages">📑 Halaman (Opsional):</label>
+                <input type="text" id="pages" placeholder="Cth: 1-3, 5">
+            </div>
+        </div>
+
         <div class="input-group">
-            <label for="fileInput">Pilih File PDF:</label>
+            <label for="fileInput">📁 Pilih File PDF:</label>
             <input type="file" id="fileInput" accept=".pdf" />
         </div>
         
         <button id="printBtn" onclick="uploadAndPrint()">Kirim & Print</button>
-
         <div id="status"></div>
     </div>
 
+    <div class="card">
+        <h3>🕒 Riwayat Cetak</h3>
+        <ul class="history-list" id="historyList">
+            </ul>
+        <button class="clear-btn" onclick="clearHistory()">Hapus Riwayat</button>
+    </div>
+
     <script>
+        // Jalankan saat aplikasi pertama kali dibuka untuk memuat riwayat
+        document.addEventListener('DOMContentLoaded', loadHistory);
+
         async function uploadAndPrint() {
             const fileInput = document.getElementById('fileInput');
-            const ipAddress = document.getElementById('ipAddress').value.trim(); // Mengambil IP dari inputan
+            const ipAddress = document.getElementById('ipAddress').value.trim();
+            const copies = document.getElementById('copies').value;
+            const pages = document.getElementById('pages').value.trim();
             const statusDiv = document.getElementById('status');
             const printBtn = document.getElementById('printBtn');
 
-            if (!ipAddress) {
-                statusDiv.innerText = "⚠️ IP Address PC tidak boleh kosong!";
-                statusDiv.style.color = "#e74c3c";
-                return;
-            }
-
-            if (fileInput.files.length === 0) {
-                statusDiv.innerText = "⚠️ Pilih file PDF terlebih dahulu!";
+            if (!ipAddress || fileInput.files.length === 0) {
+                statusDiv.innerText = "⚠️ IP Target dan File tidak boleh kosong!";
                 statusDiv.style.color = "#e74c3c";
                 return;
             }
@@ -62,32 +87,88 @@
             const file = fileInput.files[0];
             const formData = new FormData();
             formData.append('document', file); 
+            formData.append('copies', copies); // Kirim data copy ke server
+            formData.append('pages', pages);   // Kirim data halaman ke server
 
-            // Membuat URL server secara dinamis berdasarkan input IP
             const serverUrl = `http://${ipAddress}:3000/print`;
 
             statusDiv.innerText = `⏳ Mengirim file ke ${ipAddress}...`;
             statusDiv.style.color = "#f39c12";
             printBtn.disabled = true;
-            printBtn.innerText = "Mengirim...";
 
             try {
                 const response = await fetch(serverUrl, { method: 'POST', body: formData });
                 const resultText = await response.text();
 
                 if (response.ok) {
-                    statusDiv.innerText = "✅ Sukses: " + resultText;
+                    statusDiv.innerText = "✅ Sukses terkirim!";
                     statusDiv.style.color = "#27ae60";
+                    saveHistory(file.name, ipAddress, "Sukses", copies); // Simpan ke riwayat
                 } else {
-                    statusDiv.innerText = "❌ Gagal: " + resultText;
-                    statusDiv.style.color = "#e74c3c";
+                    throw new Error(resultText);
                 }
             } catch (error) {
-                statusDiv.innerText = `🚨 Error: Gagal terhubung ke ${ipAddress}. Pastikan PC tersebut menyala dan IP-nya benar.`;
+                statusDiv.innerText = `🚨 Error: Gagal terhubung ke server.`;
                 statusDiv.style.color = "#e74c3c";
+                saveHistory(file.name, ipAddress, "Gagal", copies);
             } finally {
                 printBtn.disabled = false;
-                printBtn.innerText = "Kirim & Print";
+            }
+        }
+
+        // --- SISTEM MANAJEMEN RIWAYAT LOKAL (LocalStorage) ---
+        function saveHistory(fileName, targetIp, status, copies) {
+            // Ambil data riwayat lama, jika kosong buat array baru
+            let history = JSON.parse(localStorage.getItem('printHistory')) || [];
+            
+            // Masukkan data baru di urutan paling atas
+            const now = new Date();
+            history.unshift({
+                file: fileName,
+                ip: targetIp,
+                status: status,
+                copies: copies,
+                date: now.toLocaleString('id-ID')
+            });
+
+            // Batasi riwayat maksimal 10 file terakhir agar HP tidak lemot
+            if(history.length > 10) history.pop();
+
+            // Simpan kembali ke penyimpanan internal HP (Browser)
+            localStorage.setItem('printHistory', JSON.stringify(history));
+            loadHistory(); // Render ulang tampilannya
+        }
+
+        function loadHistory() {
+            const historyList = document.getElementById('historyList');
+            historyList.innerHTML = ''; // Bersihkan list
+            
+            let history = JSON.parse(localStorage.getItem('printHistory')) || [];
+
+            if(history.length === 0) {
+                historyList.innerHTML = '<li style="text-align:center; font-size:12px; color:#95a5a6;">Belum ada riwayat cetak.</li>';
+                return;
+            }
+
+            // Tampilkan satu per satu
+            history.forEach(item => {
+                const li = document.createElement('li');
+                li.className = 'history-item';
+                // Jika status gagal, beri warna pinggir merah
+                if(item.status === 'Gagal') li.style.borderLeftColor = '#e74c3c';
+                
+                li.innerHTML = `
+                    <strong>${item.file}</strong> (${item.copies} lbr)
+                    <span class="date">${item.date} | Target: ${item.ip} | Status: ${item.status}</span>
+                `;
+                historyList.appendChild(li);
+            });
+        }
+
+        function clearHistory() {
+            if(confirm("Yakin ingin menghapus semua riwayat?")) {
+                localStorage.removeItem('printHistory');
+                loadHistory();
             }
         }
     </script>
