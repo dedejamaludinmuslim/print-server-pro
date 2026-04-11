@@ -39,7 +39,7 @@
         .input-group { text-align: left; margin-bottom: 16px; }
         .input-group label { font-size: 13px; font-weight: 600; color: var(--text-main); display: block; margin-bottom: 8px;}
         
-        .row { display: flex; gap: 12px; align-items: flex-end; }
+        .row { display: flex; gap: 12px; }
         .row .input-group { flex: 1; }
 
         input, select { width: 100%; padding: 12px; border: 1px solid var(--border-soft); background: #f9fafb; border-radius: var(--radius-md); font-size: 14px; transition: all 0.2s; box-sizing: border-box;}
@@ -49,9 +49,26 @@
         button:hover { background: var(--primary-hover); transform: translateY(-1.5px); }
         button:disabled { background: #9ca3af; cursor: not-allowed; transform: none; }
 
-        /* Tombol Pindai & Setting (Sejajar) */
-        .btn-side { background: #f3f4f6; color: var(--text-main); border: 1px solid var(--border-soft); padding: 0 16px; width: 100px; height: 45px; margin: 0; font-size: 13px; font-weight: 600; flex-shrink: 0;}
-        .btn-side:hover { background: #e5e7eb; }
+        /* Desain Tombol Icon Samping (Presisi Sejajar) */
+        .input-with-btn { display: flex; gap: 10px; align-items: stretch; } /* stretch memastikan tinggi tombol = tinggi input */
+        .input-with-btn input, .input-with-btn select { flex: 1; margin-bottom: 0; }
+        
+        .btn-icon { 
+            width: 48px; /* Bentuk kotak sempurna */
+            padding: 0; 
+            margin: 0; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 20px; 
+            background: #f3f4f6; 
+            color: var(--text-main); 
+            border: 1px solid var(--border-soft); 
+            border-radius: var(--radius-md);
+            flex-shrink: 0;
+            box-shadow: none;
+        }
+        .btn-icon:hover { background: #e5e7eb; transform: translateY(0); }
         .btn-config { background: var(--primary); color: white; border: none; }
         .btn-config:hover { background: var(--primary-hover); }
 
@@ -65,7 +82,7 @@
         .modal-content { background: white; padding: 30px; border-radius: var(--radius-lg); width: 90%; max-width: 400px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); animation: modalIn 0.3s ease-out; }
         @keyframes modalIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
-        /* Toast Notifications */
+        /* Toast Notifications (Snappy) */
         .toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 10000; display: flex; flex-direction: column; gap: 10px; width: 90%; max-width: 380px; pointer-events: none;}
         .toast { padding: 16px 20px; border-radius: var(--radius-md); color: white; font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 12px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); animation: toastIn 0.25s ease-out forwards; opacity: 0; pointer-events: auto;}
         .toast.success { background: var(--text-main); }
@@ -87,38 +104,39 @@
     <div class="card">
         <h2>🏢 Print Pro V4.5</h2>
         
-        <button id="installPwaBtn" style="display:none; background:#0891b2; margin-bottom:15px;">📲 Install Aplikasi</button>
+        <button id="installPwaBtn" style="display:none; background:#0891b2; margin-bottom:15px; box-shadow: 0 4px 6px -1px rgba(8, 145, 178, 0.2);">📲 Install Aplikasi ke Layar HP</button>
 
         <div class="section-title">
             <span>📍 Jaringan & Perangkat</span>
-            <span style="font-size:10px; color:var(--primary); cursor:pointer;" onclick="showHelpModal()">Bantuan IP?</span>
+            <span style="font-size:10px; font-weight:700; color:var(--primary); cursor:pointer;" onclick="showHelpModal()">BANTUAN IP?</span>
         </div>
         
-        <div class="row">
-            <div class="input-group">
-                <label>🖥️ IP Address Server:</label>
+        <div class="input-group">
+            <label>🖥️ IP Address Server:</label>
+            <div class="input-with-btn">
                 <input type="text" id="ipAddress" placeholder="192.168.1.xx">
+                <button class="btn-icon" id="scanBtn" onclick="scanNetwork()" title="Pindai Jaringan">🔍</button>
             </div>
-            <button class="btn-side" id="scanBtn" onclick="scanNetwork()">🔍 Pindai</button>
+            <select id="ipSelect" style="display:none; margin-top: 8px;" onchange="updateIpAndFetchPrinters()"></select>
         </div>
 
-        <div class="row">
-            <div class="input-group">
-                <label>🖨️ Pilih Mesin Printer:</label>
+        <div class="input-group">
+            <label>🖨️ Pilih Mesin Printer:</label>
+            <div class="input-with-btn">
                 <select id="printerSelect"><option value="">Default Printer...</option></select>
+                <button class="btn-icon btn-config" onclick="showConfigModal()" title="Pengaturan Dokumen">⚙️</button>
             </div>
-            <button class="btn-side btn-config" onclick="showConfigModal()">⚙️ Setting</button>
         </div>
 
         <div class="section-title"><span>📁 Pilih File</span></div>
         <div class="input-group">
-            <input type="file" id="fileInput" accept=".pdf, .docx, .doc, .xlsx, .xls, .png, .jpg, .jpeg" style="width:100%; padding:8px; border:1px dashed #cbd5e1; border-radius:var(--radius-md); font-size:12px;" />
+            <input type="file" id="fileInput" accept=".pdf, .docx, .doc, .xlsx, .xls, .png, .jpg, .jpeg" style="width:100%; padding:8px; border:1px dashed #cbd5e1; border-radius:var(--radius-md); font-size:13px; cursor:pointer;" />
         </div>
         
         <div id="previewContainer" style="display: none;">
             <div style="font-size: 10px; font-weight: 700; color: var(--primary); margin-bottom: 5px;">👀 PREVIEW:</div>
-            <canvas id="pdfPreview" style="width: 100%; border-radius: 8px; display: none;"></canvas>
-            <img id="imgPreview" style="width: 100%; border-radius: 8px; display: none;" />
+            <canvas id="pdfPreview" style="width: 100%; border-radius: 8px; display: none; border: 1px solid var(--border-soft);"></canvas>
+            <img id="imgPreview" style="width: 100%; border-radius: 8px; display: none; border: 1px solid var(--border-soft);" />
         </div>
 
         <div class="divider"><span>ATAU</span></div>
@@ -136,8 +154,8 @@
 
     <div class="card" style="padding: 20px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-            <span style="font-size:12px; font-weight:700; color:var(--text-muted);">🕒 RIWAYAT</span>
-            <span style="font-size:10px; color:var(--danger); cursor:pointer;" onclick="clearHistory()">Hapus Semua</span>
+            <span style="font-size:12px; font-weight:700; color:var(--text-muted);">🕒 RIWAYAT AKTIVITAS</span>
+            <span style="font-size:11px; font-weight:600; color:var(--danger); cursor:pointer;" onclick="clearHistory()">Hapus Semua</span>
         </div>
         <ul id="historyList" style="list-style:none; padding:0; margin:0;"></ul>
     </div>
@@ -161,7 +179,7 @@
                 <div class="input-group"><label>🔄 Orientasi:</label>
                     <select id="orientation"><option value="portrait">Potrait</option><option value="landscape">Landscape</option></select>
                 </div>
-                <div class="input-group"><label>🗂️ Hal per Sheet:</label>
+                <div class="input-group"><label>🗂️ Hal per Kertas:</label>
                     <select id="pagesPerSheet"><option value="1">1 Hal</option><option value="2">2 Hal</option></select>
                 </div>
             </div>
@@ -173,23 +191,49 @@
         <div class="modal-content" style="text-align:center;">
             <h3>🔑 PIN Keamanan</h3>
             <p style="font-size:13px; color:var(--text-muted);">Masukkan PIN untuk mulai mencetak</p>
-            <input type="password" id="modalPinInput" maxlength="6" inputmode="numeric" style="font-size:32px; letter-spacing:10px; text-align:center;">
+            <input type="password" id="modalPinInput" maxlength="6" inputmode="numeric" style="font-size:32px; letter-spacing:10px; text-align:center; padding: 15px;">
             <div class="row" style="margin-top:20px;">
-                <button style="background:#eee; color:#333;" onclick="closePinModal()">Batal</button>
+                <button style="background:white; color:var(--text-main); border:1px solid var(--border-soft); box-shadow:none;" onclick="closePinModal()">Batal</button>
                 <button onclick="confirmAndPrint()">Konfirmasi</button>
             </div>
         </div>
     </div>
 
     <div id="helpModal" class="modal">
-        <div class="modal-content">
-            <h3 style="text-align:center;">Cek IP Manual</h3>
-            <p style="font-size:13px; line-height:1.6;">Buka <strong>CMD</strong> di PC, ketik <strong>ipconfig</strong>, lalu cari <strong>IPv4 Address</strong>.</p>
-            <button onclick="document.getElementById('helpModal').style.display='none'">Mengerti</button>
+        <div class="modal-content" style="text-align: left;">
+            <h3 style="text-align: center; margin-bottom: 15px;">Cara Cek IP Manual</h3>
+            <p style="font-size: 14px; color: var(--text-muted); line-height: 1.5;">Jika pemindai otomatis diblokir oleh sistem keamanan jaringan, ikuti langkah ini di PC/Laptop yang terhubung ke printer:</p>
+            <ol style="font-size: 13px; color: var(--text-main); padding-left: 20px; line-height: 1.6;">
+                <li style="margin-bottom: 8px;">Tekan tombol <strong>Windows + R</strong> di keyboard.</li>
+                <li style="margin-bottom: 8px;">Ketik <strong>cmd</strong> lalu tekan Enter.</li>
+                <li style="margin-bottom: 8px;">Di layar hitam, ketik <strong>ipconfig</strong> dan Enter.</li>
+                <li>Cari baris <strong>IPv4 Address</strong> (contoh: 192.168.x.x). Masukkan angka tersebut ke aplikasi ini.</li>
+            </ol>
+            <button style="background:white; color:var(--text-main); border:1px solid var(--border-soft); box-shadow:none; margin-top: 15px;" onclick="document.getElementById('helpModal').style.display='none'">Tutup Bantuan</button>
         </div>
     </div>
 
     <script>
+        // PWA REGISTRATION
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW Registration failed'));
+            });
+        }
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault(); deferredPrompt = e;
+            document.getElementById('installPwaBtn').style.display = 'block';
+        });
+        document.getElementById('installPwaBtn').addEventListener('click', async () => {
+            if (deferredPrompt !== null) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') document.getElementById('installPwaBtn').style.display = 'none';
+                deferredPrompt = null;
+            }
+        });
+
         // MODAL HANDLERS
         function showConfigModal() { document.getElementById('configModal').style.display = 'flex'; }
         function closeConfigModal() { document.getElementById('configModal').style.display = 'none'; showToast("Konfigurasi disimpan", "info"); }
@@ -201,7 +245,7 @@
         function closePinModal() { document.getElementById('pinModal').style.display = 'none'; document.getElementById('modalPinInput').value = ''; }
         function showHelpModal() { document.getElementById('helpModal').style.display = 'flex'; }
 
-        // TOAST SYSTEM
+        // TOAST SYSTEM (Snappy)
         function showToast(message, type = 'info') {
             let container = document.getElementById('toastContainer');
             if(!container) {
@@ -210,7 +254,7 @@
             }
             const toast = document.createElement('div'); toast.className = `toast ${type}`;
             const icons = { success: '✅', error: '🚨', info: 'ℹ️' };
-            toast.innerHTML = `<span>${icons[type]}</span> <span>${message}</span>`;
+            toast.innerHTML = `<span style="font-size:18px;">${icons[type]}</span> <span style="line-height:1.4;">${message}</span>`;
             container.appendChild(toast);
             setTimeout(() => {
                 toast.style.animation = 'toastOut 0.3s ease-in forwards';
@@ -267,7 +311,7 @@
             const scanBtn = document.getElementById('scanBtn');
             const baseIp = prompt("Blok IP WiFi (Cth: 192.168.1):", "192.168.1");
             if(!baseIp) return;
-            scanBtn.disabled = true; scanBtn.innerText = "⏳...";
+            scanBtn.disabled = true; scanBtn.innerText = "⏳";
             let found = [];
             for(let attempt = 1; attempt <= 3 && found.length === 0; attempt++) {
                 const promises = [];
@@ -279,7 +323,7 @@
                 }
                 await Promise.allSettled(promises);
             }
-            scanBtn.disabled = false; scanBtn.innerText = "🔍 Pindai";
+            scanBtn.disabled = false; scanBtn.innerText = "🔍";
             if(found.length > 0) {
                 const sel = document.getElementById('ipSelect'); sel.style.display = "block"; sel.innerHTML = "";
                 found.forEach(p => sel.add(new Option(`${p.name} (${p.ip})`, p.ip)));
@@ -323,8 +367,9 @@
             try {
                 const r = await fetch(`http://${ip}:3000/print`, { method: 'POST', body: formData });
                 if(r.ok) {
-                    saveHistory(document.getElementById('fileInput').files[0]?.name || "Link URL");
+                    saveHistory(document.getElementById('fileInput').files[0]?.name || "Dokumen dari Link URL");
                     document.getElementById('fileInput').value = ""; document.getElementById('fileUrl').value = "";
+                    document.getElementById('previewContainer').style.display = 'none';
                 } else showToast(await r.text(), "error");
             } catch (e) { showToast("Koneksi gagal", "error"); }
         }
@@ -339,9 +384,14 @@
         function loadHistory() {
             const list = document.getElementById('historyList');
             const h = JSON.parse(localStorage.getItem('h_v45')) || [];
-            list.innerHTML = h.map(i => `<li class="history-item"><strong>${i.name}</strong><br><small>${i.time}</small></li>`).join('');
+            if(h.length === 0) {
+                list.innerHTML = '<li style="text-align:center; font-size:13px; color:var(--text-muted); padding: 15px;">Belum ada aktivitas.</li>'; return;
+            }
+            list.innerHTML = h.map(i => `<li class="history-item"><strong style="color:var(--text-main);">${i.name}</strong><br><small style="color:var(--text-muted);">${i.time}</small></li>`).join('');
         }
-        function clearHistory() { localStorage.removeItem('h_v45'); loadHistory(); }
+        function clearHistory() { 
+            if(confirm("Yakin hapus riwayat?")) { localStorage.removeItem('h_v45'); loadHistory(); showToast("Riwayat dibersihkan", "success"); }
+        }
         document.addEventListener('DOMContentLoaded', loadHistory);
     </script>
 </body>
