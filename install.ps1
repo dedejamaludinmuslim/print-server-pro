@@ -3,14 +3,15 @@ $path = "D:\APLIKASI\print-server"
 if (!(Test-Path $path)) { New-Item -ItemType Directory -Path $path }
 Set-Location $path
 
-# 2. Download server.js langsung dari GitHub kamu
+# 2. Download server.js & package.json langsung dari GitHub
 echo "[1/4] Mengambil kode server terbaru..."
 $baseUrl = "https://raw.githubusercontent.com/USERNAME_KAMU/REPO_KAMU/main"
 Invoke-WebRequest -Uri "$baseUrl/server.js" -OutFile "server.js"
+Invoke-WebRequest -Uri "$baseUrl/package.json" -OutFile "package.json"
 
 # 3. Instalasi Node Modules
 echo "[2/4] Menginstal library pendukung..."
-npm install express multer cors pdf-to-printer pdfkit convertapi socket.io
+npm install
 
 # 4. Pengaturan Firewall
 echo "[3/4] Membuka jalur akses jaringan..."
