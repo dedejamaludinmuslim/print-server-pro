@@ -5,7 +5,7 @@ Set-Location $path
 
 # 2. Download server.js & package.json langsung dari GitHub
 echo "[1/4] Mengambil kode server terbaru..."
-$baseUrl = "https://raw.githubusercontent.com/USERNAME_KAMU/REPO_KAMU/main"
+$baseUrl = "https://raw.githubusercontent.com/dedejamaludinmuslim/print-server/refs/heads/main/install.ps1"
 Invoke-WebRequest -Uri "$baseUrl/server.js" -OutFile "server.js"
 Invoke-WebRequest -Uri "$baseUrl/package.json" -OutFile "package.json"
 
