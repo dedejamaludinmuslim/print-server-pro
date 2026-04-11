@@ -8,6 +8,8 @@ const os = require('os');
 const https = require('https');
 const PDFDocument = require('pdfkit');
 const convertapi = require('convertapi')('gUmIBMyAwXTfTrNguDfGXJVnjDexR7XF');
+
+// Setup WebSockets untuk Status Real-Time
 const { Server } = require("socket.io");
 const http = require("http");
 
@@ -16,78 +18,85 @@ const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
 const port = 3000;
 
+// === PENGATURAN KEAMANAN ===
+const APP_PIN = "4545"; // Ganti dengan PIN rahasiamu
+
 app.use(cors());
 app.use(express.static(__dirname));
 const upload = multer({ dest: 'uploads/' });
 
-// ==========================================
-// 🗄️ DATABASE PENGGUNA & KUOTA (Simulasi)
-// ==========================================
-const usersDB = {
-    "admin": { pin: "8888", role: "SuperAdmin", quota: 9999, used: 0 },
-    "bos": { pin: "1234", role: "Manager", quota: 500, used: 0 },
-    "magang": { pin: "0000", role: "Intern", quota: 20, used: 0 }
-};
-
+// --- FUNGSI HELPER: PENGIRIM STATUS REAL-TIME ---
 function updateStatus(message, type = 'info') {
     console.log(`[Status]: ${message}`);
     io.emit('print-status', { message, type });
 }
 
+// ==========================================
+// 1. ENDPOINT: AUTO-DISCOVERY (PING)
+// ==========================================
 app.get('/ping', (req, res) => {
     res.json({ status: 'PrintServerActive', hostname: os.hostname(), platform: os.platform() });
 });
 
+// ==========================================
+// 2. ENDPOINT: MENGAMBIL DAFTAR PRINTER
+// ==========================================
 app.get('/printers', async (req, res) => {
-    try { res.json(await ptp.getPrinters()); } 
-    catch (error) { res.status(500).send("Gagal mengambil daftar printer"); }
+    try {
+        const printers = await ptp.getPrinters();
+        res.json(printers); 
+    } catch (error) {
+        console.error("Gagal membaca printer:", error);
+        res.status(500).send("Gagal mengambil daftar printer");
+    }
 });
 
 // ==========================================
-// 🚀 ENDPOINT PRINT (DENGAN AUTH & ADVANCED SETTINGS)
+// 3. ENDPOINT: EKSEKUSI CETAK UTAMA (V4.2)
 // ==========================================
 app.post('/print', upload.single('document'), async (req, res) => {
     let filePath = req.file ? path.join(__dirname, req.file.path) : '';
     
-    // --- 1. AUTENTIKASI & CEK KUOTA ---
-    const username = req.body.username ? req.body.username.toLowerCase() : '';
+    // --- CEK KEAMANAN PIN ---
     const pin = req.body.pin || '';
+    if (pin !== APP_PIN) {
+        if (filePath && fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        console.log("🚨 Akses ditolak! Seseorang mencoba print dengan PIN yang salah.");
+        return res.status(401).send('PIN Salah! Akses ditolak oleh Server PC.');
+    }
+
+    // --- BACA PENGATURAN DOKUMEN ---
     const copies = req.body.copies ? parseInt(req.body.copies) : 1;
-
-    const user = usersDB[username];
-    if (!user || user.pin !== pin) {
-        if (filePath && fs.existsSync(filePath)) fs.unlinkSync(filePath);
-        return res.status(401).send('Akses Ditolak: Username atau PIN salah!');
-    }
-
-    if (user.used + copies > user.quota) {
-        if (filePath && fs.existsSync(filePath)) fs.unlinkSync(filePath);
-        return res.status(403).send(`Kuota Habis! Sisa kuota ${username}: ${user.quota - user.used} lembar.`);
-    }
-
-    // --- 2. ADVANCED HARDWARE CONTROL ---
-    const pages = req.body.pages || ''; 
+    let pages = req.body.pages || ''; 
     const targetPrinter = req.body.printerName || ''; 
-    const colorMode = req.body.colorMode || 'color'; // color atau monochrome
-    const paperSize = req.body.paperSize || 'A4';
+    const colorMode = req.body.colorMode || 'color'; 
+    let paperSize = req.body.paperSize || 'A4';
 
-    // Menyusun argumen OS tingkat lanjut untuk pdf-to-printer
+    // Konversi F4 ke ukuran milimeter yang dipahami mesin printer
+    if (paperSize === 'F4') {
+        paperSize = '210x330mm'; 
+    }
+
+    // Susun perintah untuk driver printer
     const printOptions = { copies: copies, paperSize: paperSize };
-    if (pages !== '') printOptions.pages = pages;
-    if (targetPrinter !== '') printOptions.printer = targetPrinter; 
     
-    // Injeksi perintah warna khusus Windows
+    // Hapus spasi jika user mengetik halaman mix dengan spasi (cth: "1, 3, 5-7" -> "1,3,5-7")
+    if (pages !== '') {
+        printOptions.pages = pages.replace(/\s/g, ''); 
+    }
+    
+    // Perintah cetak hitam-putih
     if (colorMode === 'monochrome') {
         printOptions.monochrome = true; 
     }
 
-    let originalName = req.file ? req.file.originalname.toLowerCase() : '';
     const fileUrl = req.body.fileUrl;
+    let originalName = req.file ? req.file.originalname.toLowerCase() : '';
 
     try {
-        updateStatus(`[${user.role}] ${username} mengirim dokumen...`, "processing");
+        updateStatus("Menerima instruksi dari HP...", "processing");
 
-        // --- 3. PROSES FILE (LOKAL & URL SAJA) ---
+        // --- SUMBER FILE: DOWNLOAD LINK URL ---
         if (fileUrl) {
             updateStatus("Mendownload dokumen dari internet...", "downloading");
             filePath = path.join(__dirname, `downloaded_${Date.now()}.tmp`);
@@ -107,53 +116,59 @@ app.post('/print', upload.single('document'), async (req, res) => {
             return res.status(400).send('Pilih file atau masukkan link!');
         }
 
-        // --- 4. KONVERSI (GAMBAR & OFFICE) ---
+        // --- KONVERSI GAMBAR KE PDF ---
         if (['.jpg', '.jpeg', '.png'].some(ext => originalName.endsWith(ext))) {
             updateStatus("Membungkus gambar ke format PDF...", "converting");
             const pdfPath = filePath + '_converted.pdf';
             const doc = new PDFDocument({ autoFirstPage: false });
             const stream = fs.createWriteStream(pdfPath);
             await new Promise((resolve, reject) => {
-                doc.pipe(stream); const img = doc.openImage(filePath);
-                doc.addPage({ size: [img.width, img.height] }); doc.image(img, 0, 0); doc.end();
+                doc.pipe(stream);
+                const img = doc.openImage(filePath);
+                doc.addPage({ size: [img.width, img.height] });
+                doc.image(img, 0, 0);
+                doc.end();
                 stream.on('finish', resolve); stream.on('error', reject);
             });
             fs.unlinkSync(filePath); filePath = pdfPath; 
-        } else if (['.doc', '.docx', '.xls', '.xlsx'].some(ext => originalName.endsWith(ext))) {
-            updateStatus("Mengonversi dokumen Office di Cloud...", "converting");
+        }
+
+        // --- KONVERSI OFFICE (DOCX/XLSX) DI CLOUD ---
+        else if (['.doc', '.docx', '.xls', '.xlsx'].some(ext => originalName.endsWith(ext))) {
+            updateStatus("Mengonversi dokumen Word/Excel di Cloud...", "converting");
             const format = originalName.split('.').pop(); 
             const convertResult = await convertapi.convert('pdf', { File: filePath }, format);
             const savedFiles = await convertResult.saveFiles(__dirname);
             fs.unlinkSync(filePath); filePath = savedFiles[0];
         }
 
-        // --- 5. EKSEKUSI CETAK & POTONG KUOTA ---
+        // --- EKSEKUSI CETAK ---
         let namaMesin = targetPrinter ? targetPrinter : "Default Printer";
-        updateStatus(`Mencetak di [${namaMesin}] (${paperSize}, ${colorMode})...`, "printing");
+        updateStatus(`Mencetak di [${namaMesin}]...`, "printing");
         
         await ptp.print(filePath, printOptions);
         
-        // Memotong kuota pengguna setelah sukses
-        usersDB[username].used += copies;
-        console.log(`[Kuota] ${username} telah menggunakan ${usersDB[username].used}/${usersDB[username].quota}`);
-
         updateStatus("✅ Cetak Selesai!", "success");
-        res.send(`Sukses dicetak! Sisa kuota Anda: ${user.quota - user.used}`);
+        res.send('Dokumen berhasil dicetak!');
         
     } catch (error) {
         console.error('Error:', error); 
         updateStatus(`🚨 Error: ${error.message}`, "error");
         res.status(500).send('Gagal: ' + error.message);
     } finally {
+        // Membersihkan file sementara agar hardisk PC tidak penuh
         if (filePath && fs.existsSync(filePath)) fs.unlink(filePath, () => {});
     }
 });
 
+// ==========================================
+// MENYALAKAN SERVER 
+// ==========================================
 server.listen(port, '0.0.0.0', () => {
     console.log(`=========================================`);
-    console.log(`🏢  Print Server V4 (Enterprise/Multi-Tenant)`);
-    console.log(`🗄️  Database User & Kuota: ONLINE`);
-    console.log(`⚙️  Advanced Hardware Control: ONLINE`);
-    console.log(`⚡  WebSockets & Auto-Discovery: ONLINE`);
+    console.log(`🏢 Print Server V4.2 (Enterprise Mode)`);
+    console.log(`🔒 PIN Protection  : ACTIVE`);
+    console.log(`⚙️ Format F4 & Mono : ACTIVE`);
+    console.log(`⚡ WebSocket Status : ACTIVE`);
     console.log(`=========================================`);
 });
