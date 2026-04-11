@@ -7,7 +7,8 @@ const path = require('path');
 const os = require('os');
 const https = require('https');
 const PDFDocument = require('pdfkit');
-const convertapi = require('convertapi')('gUmIBMyAwXTfTrNguDfGXJVnjDexR7XF');
+const convertapi = require('convertapi')('AIzaSyDJwVqEvUPWN9yu5Jg00V-RXPQt7ldVRzg');
+const { PDFDocument, degrees } = require('pdf-lib');
 
 // Setup WebSockets untuk Status Real-Time
 const { Server } = require("socket.io");
@@ -16,7 +17,7 @@ const http = require("http");
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
-const port = 3000;
+const port = 4545;
 
 // === PENGATURAN KEAMANAN ===
 const APP_PIN = "4545"; // Ganti dengan PIN rahasiamu
@@ -69,7 +70,9 @@ app.post('/print', upload.single('document'), async (req, res) => {
     const copies = req.body.copies ? parseInt(req.body.copies) : 1;
     let pages = req.body.pages || ''; 
     const targetPrinter = req.body.printerName || ''; 
-    const colorMode = req.body.colorMode || 'color'; 
+    const colorMode = req.body.colorMode || 'color';
+    const orientation = req.body.orientation || 'portrait';
+    const pagesPerSheet = parseInt(req.body.pagesPerSheet) || 1; 
     let paperSize = req.body.paperSize || 'A4';
 
     // Konversi F4 ke ukuran milimeter yang dipahami mesin printer
@@ -94,7 +97,7 @@ app.post('/print', upload.single('document'), async (req, res) => {
     let originalName = req.file ? req.file.originalname.toLowerCase() : '';
 
     try {
-        updateStatus("Menerima instruksi dari HP...", "processing");
+        updateStatus("Menerima instruksi dari device...", "processing");
 
         // --- SUMBER FILE: DOWNLOAD LINK URL ---
         if (fileUrl) {
@@ -140,6 +143,54 @@ app.post('/print', upload.single('document'), async (req, res) => {
             const convertResult = await convertapi.convert('pdf', { File: filePath }, format);
             const savedFiles = await convertResult.saveFiles(__dirname);
             fs.unlinkSync(filePath); filePath = savedFiles[0];
+        }
+
+        // --- MANIPULASI TATA LETAK PDF (Landscape & N-Up) ---
+        if (orientation === 'landscape' || pagesPerSheet > 1) {
+            updateStatus("Menyesuaikan tata letak halaman (Orientation/N-Up)...", "converting");
+            
+            const pdfBytes = fs.readFileSync(filePath);
+            const pdfDoc = await PDFDocument.load(pdfBytes);
+            let finalPdfDoc = pdfDoc;
+
+            // Logika Rotasi Landscape (Hanya jika 1 hal/kertas)
+            if (orientation === 'landscape' && pagesPerSheet === 1) {
+                const pages = pdfDoc.getPages();
+                pages.forEach((page) => {
+                    page.setRotation(degrees(90));
+                });
+            }
+
+            // Logika 2-Up (Mencetak 2 Halaman dalam 1 Kertas A4)
+            if (pagesPerSheet === 2) {
+                finalPdfDoc = await PDFDocument.create();
+                const copiedPages = await finalPdfDoc.copyPages(pdfDoc, pdfDoc.getPageIndices());
+                
+                for (let i = 0; i < copiedPages.length; i += 2) {
+                    // Buat lembar kanvas baru (Ukuran A4 Landscape: 841.89 x 595.28 point)
+                    const newPage = finalPdfDoc.addPage([841.89, 595.28]); 
+                    
+                    // Tempel halaman ganjil di sisi KIRI
+                    const page1 = copiedPages[i];
+                    const embeddedPage1 = await finalPdfDoc.embedPage(page1);
+                    newPage.drawPage(embeddedPage1, {
+                        x: 0, y: 0, width: 420.94, height: 595.28,
+                    });
+
+                    // Tempel halaman genap di sisi KANAN (jika masih ada sisa halaman)
+                    if (i + 1 < copiedPages.length) {
+                        const page2 = copiedPages[i + 1];
+                        const embeddedPage2 = await finalPdfDoc.embedPage(page2);
+                        newPage.drawPage(embeddedPage2, {
+                            x: 420.94, y: 0, width: 420.94, height: 595.28,
+                        });
+                    }
+                }
+            }
+
+            // Timpa file lama dengan PDF yang sudah dimodifikasi
+            const modifiedPdfBytes = await finalPdfDoc.save();
+            fs.writeFileSync(filePath, modifiedPdfBytes);
         }
 
         // --- EKSEKUSI CETAK ---
