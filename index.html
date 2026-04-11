@@ -49,28 +49,29 @@
         button:hover { background: var(--primary-hover); transform: translateY(-1.5px); }
         button:disabled { background: #9ca3af; cursor: not-allowed; transform: none; }
 
-        /* Desain Tombol Icon Samping (Presisi Sejajar) */
-        .input-with-btn { display: flex; gap: 10px; align-items: stretch; } /* stretch memastikan tinggi tombol = tinggi input */
+        /* Tombol Install (Disamakan warnanya dengan Print) */
+        #installPwaBtn { display:none; margin-bottom:15px; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2); }
+
+        /* Desain Tombol Icon Samping (Sama warna: Primary) */
+        .input-with-btn { display: flex; gap: 10px; align-items: stretch; }
         .input-with-btn input, .input-with-btn select { flex: 1; margin-bottom: 0; }
         
         .btn-icon { 
-            width: 48px; /* Bentuk kotak sempurna */
+            width: 48px; 
             padding: 0; 
             margin: 0; 
             display: flex; 
             align-items: center; 
             justify-content: center; 
             font-size: 20px; 
-            background: #f3f4f6; 
-            color: var(--text-main); 
-            border: 1px solid var(--border-soft); 
+            background: var(--primary); 
+            color: white; 
+            border: none; 
             border-radius: var(--radius-md);
             flex-shrink: 0;
-            box-shadow: none;
+            box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
         }
-        .btn-icon:hover { background: #e5e7eb; transform: translateY(0); }
-        .btn-config { background: var(--primary); color: white; border: none; }
-        .btn-config:hover { background: var(--primary-hover); }
+        .btn-icon:hover { background: var(--primary-hover); transform: translateY(-1.5px); }
 
         /* Divider ATAU */
         .divider { display: flex; align-items: center; text-align: center; margin: 16px 0; color: #94a3b8; font-size: 10px; font-weight: 700; letter-spacing: 1px; }
@@ -82,11 +83,9 @@
         .modal-content { background: white; padding: 30px; border-radius: var(--radius-lg); width: 90%; max-width: 400px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); animation: modalIn 0.3s ease-out; }
         @keyframes modalIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
-        /* Toast Notifications (Snappy) */
+        /* Toast Notifications (Seragam: Satu Warna Gelap) */
         .toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 10000; display: flex; flex-direction: column; gap: 10px; width: 90%; max-width: 380px; pointer-events: none;}
-        .toast { padding: 16px 20px; border-radius: var(--radius-md); color: white; font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 12px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); animation: toastIn 0.25s ease-out forwards; opacity: 0; pointer-events: auto;}
-        .toast.success { background: var(--text-main); }
-        .toast.error { background: var(--danger); }
+        .toast { padding: 16px 20px; border-radius: var(--radius-md); background: var(--text-main); color: white; font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 12px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); animation: toastIn 0.25s ease-out forwards; opacity: 0; pointer-events: auto;}
         @keyframes toastIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         @keyframes toastOut { from { transform: translateY(0); opacity: 1; } to { transform: translateY(-20px); opacity: 0; } }
 
@@ -104,7 +103,7 @@
     <div class="card">
         <h2>🏢 Print Pro V4.5</h2>
         
-        <button id="installPwaBtn" style="display:none; background:#0891b2; margin-bottom:15px; box-shadow: 0 4px 6px -1px rgba(8, 145, 178, 0.2);">📲 Install Aplikasi ke Layar HP</button>
+        <button id="installPwaBtn">📲 Install Aplikasi ke Layar HP</button>
 
         <div class="section-title">
             <span>📍 Jaringan & Perangkat</span>
@@ -115,7 +114,7 @@
             <label>🖥️ IP Address Server:</label>
             <div class="input-with-btn">
                 <input type="text" id="ipAddress" placeholder="192.168.1.xx">
-                <button class="btn-icon" id="scanBtn" onclick="scanNetwork()" title="Pindai Jaringan">🔍</button>
+                <button class="btn-icon" id="scanBtn" onclick="showScanModal()" title="Pindai Jaringan">🔍</button>
             </div>
             <select id="ipSelect" style="display:none; margin-top: 8px;" onchange="updateIpAndFetchPrinters()"></select>
         </div>
@@ -124,7 +123,7 @@
             <label>🖨️ Pilih Mesin Printer:</label>
             <div class="input-with-btn">
                 <select id="printerSelect"><option value="">Default Printer...</option></select>
-                <button class="btn-icon btn-config" onclick="showConfigModal()" title="Pengaturan Dokumen">⚙️</button>
+                <button class="btn-icon" onclick="showConfigModal()" title="Pengaturan Dokumen">⚙️</button>
             </div>
         </div>
 
@@ -160,6 +159,18 @@
         <ul id="historyList" style="list-style:none; padding:0; margin:0;"></ul>
     </div>
 
+    <div id="scanModal" class="modal">
+        <div class="modal-content" style="text-align:center;">
+            <h3 style="margin:0 0 10px 0;">🔍 Pindai Jaringan</h3>
+            <p style="font-size:13px; color:var(--text-muted); margin-bottom:20px;">Masukkan 3 blok IP WiFi utama Anda.</p>
+            <input type="text" id="scanIpInput" value="192.168.1" style="font-size:20px; font-weight:600; letter-spacing:2px; text-align:center; padding:15px; margin-bottom:20px;">
+            <div class="row">
+                <button style="background:white; color:var(--text-main); border:1px solid var(--border-soft); box-shadow:none;" onclick="closeScanModal()">Batal</button>
+                <button onclick="startNetworkScan()">Pindai Sekarang</button>
+            </div>
+        </div>
+    </div>
+
     <div id="configModal" class="modal">
         <div class="modal-content">
             <h3 style="margin:0 0 20px 0; text-align:center;">⚙️ Pengaturan Dokumen</h3>
@@ -168,7 +179,10 @@
                     <select id="colorMode"><option value="color">Berwarna</option><option value="monochrome">B/W</option></select>
                 </div>
                 <div class="input-group"><label>📏 Kertas:</label>
-                    <select id="paperSize"><option value="A4">A4</option><option value="F4">F4</option><option value="Legal">Legal</option></select>
+                    <select id="paperSize">
+                        <option value="A4">A4</option>
+                        <option value="F4">F4</option>
+                    </select>
                 </div>
             </div>
             <div class="row">
@@ -235,24 +249,29 @@
         });
 
         // MODAL HANDLERS
+        function showScanModal() { document.getElementById('scanModal').style.display = 'flex'; document.getElementById('scanIpInput').focus(); }
+        function closeScanModal() { document.getElementById('scanModal').style.display = 'none'; }
+        
         function showConfigModal() { document.getElementById('configModal').style.display = 'flex'; }
         function closeConfigModal() { document.getElementById('configModal').style.display = 'none'; showToast("Konfigurasi disimpan", "info"); }
+        
         function showPinModal() { 
             if(!document.getElementById('fileInput').files[0] && !document.getElementById('fileUrl').value) return showToast("Pilih file dulu!", "error");
             document.getElementById('pinModal').style.display = 'flex'; 
             document.getElementById('modalPinInput').focus();
         }
         function closePinModal() { document.getElementById('pinModal').style.display = 'none'; document.getElementById('modalPinInput').value = ''; }
+        
         function showHelpModal() { document.getElementById('helpModal').style.display = 'flex'; }
 
-        // TOAST SYSTEM (Snappy)
+        // TOAST SYSTEM (Satu Warna Seragam)
         function showToast(message, type = 'info') {
             let container = document.getElementById('toastContainer');
             if(!container) {
                 container = document.createElement('div'); container.id = 'toastContainer'; container.className = 'toast-container';
                 document.body.appendChild(container);
             }
-            const toast = document.createElement('div'); toast.className = `toast ${type}`;
+            const toast = document.createElement('div'); toast.className = `toast`;
             const icons = { success: '✅', error: '🚨', info: 'ℹ️' };
             toast.innerHTML = `<span style="font-size:18px;">${icons[type]}</span> <span style="line-height:1.4;">${message}</span>`;
             container.appendChild(toast);
@@ -307,11 +326,14 @@
             });
         }
 
-        async function scanNetwork() {
+        async function startNetworkScan() {
+            const baseIp = document.getElementById('scanIpInput').value.trim();
+            if(!baseIp) return showToast("Blok IP tidak boleh kosong!", "error");
+            
+            closeScanModal();
             const scanBtn = document.getElementById('scanBtn');
-            const baseIp = prompt("Blok IP WiFi (Cth: 192.168.1):", "192.168.1");
-            if(!baseIp) return;
-            scanBtn.disabled = true; scanBtn.innerText = "⏳";
+            scanBtn.disabled = true; scanBtn.innerHTML = "⏳";
+            
             let found = [];
             for(let attempt = 1; attempt <= 3 && found.length === 0; attempt++) {
                 const promises = [];
@@ -323,11 +345,13 @@
                 }
                 await Promise.allSettled(promises);
             }
-            scanBtn.disabled = false; scanBtn.innerText = "🔍";
+            
+            scanBtn.disabled = false; scanBtn.innerHTML = "🔍";
             if(found.length > 0) {
                 const sel = document.getElementById('ipSelect'); sel.style.display = "block"; sel.innerHTML = "";
                 found.forEach(p => sel.add(new Option(`${p.name} (${p.ip})`, p.ip)));
                 updateIpAndFetchPrinters();
+                showToast(`Ditemukan ${found.length} Server PC`, "success");
             } else showToast("PC tidak ditemukan", "error");
         }
 
