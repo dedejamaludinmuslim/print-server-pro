@@ -1,5 +1,5 @@
 {
-  "name": "print-server",
+  "name": "print-server-enterprise",
   "version": "4.0.0",
   "description": "Sistem Print Jaringan Enterprise dengan Manajemen Kuota dan Status Real-Time",
   "main": "server.js",

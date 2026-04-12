@@ -1,5 +1,5 @@
 # 1. Buat Folder Kerja
-$path = "D:\APLIKASI\print-server"
+$path = "D:\print-server"
 if (!(Test-Path $path)) { New-Item -ItemType Directory -Path $path }
 Set-Location $path
 
@@ -12,6 +12,7 @@ Invoke-WebRequest -Uri "$baseUrl/package.json" -OutFile "package.json"
 # 3. Instalasi Node Modules
 echo "[2/4] Menginstal library pendukung..."
 npm install
+npm install pdf-lib
 
 # 4. Pengaturan Firewall
 echo "[3/4] Membuka jalur akses jaringan..."
@@ -25,6 +26,6 @@ pm2 start server.js --name print-server
 pm2-startup install
 pm2 save --force
 
-echo "`n=========================================="
+echo "=========================================="
 echo " BERHASIL! Server Print Aktif Selamanya."
 echo "=========================================="

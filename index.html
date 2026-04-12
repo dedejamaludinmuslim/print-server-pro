@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#2563eb">
     <link rel="manifest" href="manifest.json">
-    <title>Print Pro V4.5</title>
+    <title>Print Server Pro</title>
     
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
@@ -24,42 +24,20 @@
         body { font-family: 'Inter', sans-serif; padding: 20px 15px; background-color: var(--bg-page); color: var(--text-main); margin: 0; -webkit-font-smoothing: antialiased;}
         
         /* TATA LETAK RESPONSIVE (MOBILE & DESKTOP) */
-        .app-wrapper {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            max-width: 480px;
-            margin: 0 auto;
-        }
-        
-        .left-col { display: contents; } /* Hack agar urutan card bisa disusun di mobile */
+        .app-wrapper { display: flex; flex-direction: column; gap: 20px; max-width: 480px; margin: 0 auto; }
+        .left-col { display: contents; } 
         .main-card { order: 1; }
         .preview-col { order: 2; display: none; width: 100%; }
         .history-card { order: 3; }
 
         @media (min-width: 992px) {
             body { padding: 40px 20px; }
-            .app-wrapper {
-                display: grid;
-                grid-template-columns: 420px 1fr; /* Membagi dua kolom: Kiri 420px, Kanan sisa layar */
-                gap: 30px;
-                max-width: 1200px;
-                align-items: start;
-            }
-            .left-col {
-                display: flex;
-                flex-direction: column;
-                gap: 20px;
-            }
+            .app-wrapper { display: grid; grid-template-columns: 420px 1fr; gap: 30px; max-width: 1200px; align-items: start; }
+            .left-col { display: flex; flex-direction: column; gap: 20px; }
             .main-card, .history-card { order: unset; }
-            .preview-col {
-                position: sticky;
-                top: 40px; /* Preview akan diam menempel saat di-scroll */
-                order: unset;
-                height: calc(100vh - 80px); /* Memaksimalkan tinggi layar desktop */
-            }
+            .preview-col { position: sticky; top: 40px; order: unset; height: calc(100vh - 80px); }
             .preview-col .card { height: 100%; display: flex; flex-direction: column; padding: 0; overflow: hidden; }
-            .preview-body { flex: 1; padding: 40px; overflow-y: auto;} /* Canvas lebih lega */
+            .preview-body { flex: 1; padding: 40px; overflow-y: auto;} 
         }
 
         .card { background: var(--bg-card); padding: 28px 24px; border-radius: var(--radius-lg); box-shadow: var(--shadow-float); width: 100%; box-sizing: border-box; border: 1px solid var(--border-soft); }
@@ -74,7 +52,7 @@
         input, select { width: 100%; padding: 12px; border: 1px solid var(--border-soft); background: #f9fafb; border-radius: var(--radius-md); font-size: 14px; transition: all 0.2s; box-sizing: border-box;}
         input:focus, select:focus { outline: none; border-color: var(--primary); background: #fff; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
 
-        button { background: var(--primary); color: white; border: none; padding: 16px; font-size: 15px; border-radius: var(--radius-md); cursor: pointer; width: 100%; font-weight: 600; transition: all 0.2s; margin-top: 10px; }
+        button { background: var(--primary); color: white; border: none; padding: 16px; font-size: 15px; border-radius: var(--radius-md); cursor: pointer; width: 100%; font-weight: 600; transition: all 0.2s; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 8px;}
         button:hover { background: var(--primary-hover); transform: translateY(-1.5px); }
         button:disabled { background: #9ca3af; cursor: not-allowed; transform: none; }
 
@@ -103,7 +81,6 @@
         #progressBar { width:0%; height:100%; background: var(--success); transition: width 0.4s; }
         .history-item { background: white; border-left: 4px solid var(--primary); padding: 14px; margin-bottom: 10px; border-radius: 8px; font-size: 13px; border: 1px solid var(--border-soft); }
         
-        /* Grid & Pagination Preview Design */
         .preview-header { font-size: 11px; font-weight: 700; color: white; background: var(--text-main); padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; text-transform: uppercase; letter-spacing: 0.5px;}
         .preview-body { padding: 20px; background: #e2e8f0; display: flex; justify-content: center; align-items: center; }
         .preview-canvas { max-width: 100%; height: auto; border-radius: 4px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.2); background: white; transition: filter 0.3s ease; }
@@ -116,11 +93,9 @@
 <body>
 
     <div class="app-wrapper">
-        
         <div class="left-col">
             <div class="card main-card">
                 <h2>🏢 Print Server Pro v4.5</h2>
-                
                 <button id="installPwaBtn">📲 Install Aplikasi ke Layar</button>
 
                 <div class="section-title">
@@ -131,7 +106,7 @@
                 <div class="input-group">
                     <label>🖥️ IP Address Server:</label>
                     <div class="input-with-btn">
-                        <input type="text" id="ipAddress" placeholder="192.168.1.xxx">
+                        <input type="text" id="ipAddress" placeholder="192.168.xxx.xxx">
                         <button class="btn-icon" id="scanBtn" onclick="showScanModal()" title="Pindai Jaringan">🔍</button>
                     </div>
                     <select id="ipSelect" style="display:none; margin-top: 8px;" onchange="updateIpAndFetchPrinters()"></select>
@@ -155,7 +130,10 @@
                     <input type="text" id="fileUrl" placeholder="https://file.pdf, https://foto.jpg, ...">
                 </div>
                 
-                <button id="printBtn" onclick="showPinModal()">🚀 GASSS CETAK !!!</button>
+                <div class="row" style="margin-top: 24px; gap: 10px;">
+                    <button id="simulateBtn" onclick="simulatePrint()" style="background: var(--text-main); color: white; flex: 1; font-size: 13px; padding: 14px 10px;">📥 SIMULASI</button>
+                    <button id="printBtn" onclick="showPinModal()" style="flex: 2; padding: 14px;">🚀 GASSS CETAK !!!</button>
+                </div>
                 
                 <div id="realtimeStatus">
                     <div id="statusMessage" style="font-size:12px; font-weight:600;">Menunggu...</div>
@@ -166,7 +144,7 @@
             <div class="card history-card" style="padding: 20px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
                     <span style="font-size:12px; font-weight:700; color:var(--text-muted);">🕒 RIWAYAT CETAK</span>
-                    <span style="font-size:11px; font-weight:600; color:var(--danger); cursor:pointer;" onclick="clearHistory()">HAPUS RIWAYAT?</span>
+                    <span style="font-size:11px; font-weight:600; color:var(--danger); cursor:pointer;" onclick="showDeleteHistoryModal()">HAPUS RIWAYAT?</span>
                 </div>
                 <ul id="historyList" style="list-style:none; padding:0; margin:0;"></ul>
             </div>
@@ -175,7 +153,7 @@
         <div class="preview-col" id="previewCol">
             <div class="card" style="padding: 0; overflow: hidden; border: 1px solid var(--border-soft);">
                 <div class="preview-header">
-                    <span>👀 LIVE PREVIEW</span>
+                    <span>PREVIEW</span>
                     <span id="previewPagination" style="display:none; align-items:center; gap:8px;">
                         <button class="btn-nav" id="btnPrevPage" onclick="changePreviewSheet(-1)">◀</button>
                         <span id="previewSheetText" style="color:white; font-size:11px;">1 / 1</span>
@@ -208,24 +186,24 @@
         <div class="modal-content">
             <h3 style="margin:0 0 20px 0; text-align:center;">⚙️ Pengaturan Dokumen</h3>
             <div class="row">
-                <div class="input-group"><label>🎨 Warna:</label>
-                    <select id="colorMode"><option value="color">Berwarna</option><option value="monochrome">Hitam Putih</option></select>
-                </div>
                 <div class="input-group"><label>📏 Kertas:</label>
                     <select id="paperSize"><option value="A4">A4</option><option value="F4">F4</option></select>
+                </div>
+                <div class="input-group"><label>🎨 Warna:</label>
+                    <select id="colorMode"><option value="color">Berwarna</option><option value="monochrome">Hitam Putih</option></select>
                 </div>
             </div>
             <div class="row">
                 <div class="input-group"><label>🔄 Orientasi:</label>
                     <select id="orientation"><option value="portrait">Potrait</option><option value="landscape">Landscape</option></select>
                 </div>
+                <div class="input-group"><label>📑 Rincian Halaman:</label><input type="text" id="pages" placeholder="1,3,5-7,..."></div>
+            </div>
+            <div class="row">
                 <div class="input-group"><label>🗂️ Hal / Lembar:</label>
                     <input type="number" id="pagesPerSheet" value="1" min="1" max="16" placeholder="1, 2, 4, 6...">
                 </div>
-            </div>
-            <div class="row">
                 <div class="input-group"><label>📄 Jumlah Copy:</label><input type="number" id="copies" value="1" min="1"></div>
-                <div class="input-group"><label>📑 Rincian Halaman:</label><input type="text" id="pages" placeholder="Cth: 1,3,5-7"></div>
             </div>
             <div class="row" style="margin-top:20px;">
                 <button style="background:white; color:var(--text-main); border:1px solid var(--border-soft); box-shadow:none;" onclick="cancelConfigModal()">Batal</button>
@@ -246,17 +224,27 @@
         </div>
     </div>
 
+    <div id="deleteHistoryModal" class="modal">
+        <div class="modal-content" style="text-align:center;">
+            <h3 style="margin:0 0 10px 0;">🗑️ Hapus Riwayat</h3>
+            <p style="font-size:13px; color:var(--text-muted); margin-bottom:24px;">Apakah Anda yakin ingin menghapus semua daftar riwayat cetak? Tindakan ini permanen.</p>
+            <div class="row">
+                <button style="background:white; color:var(--text-main); border:1px solid var(--border-soft); box-shadow:none;" onclick="closeDeleteHistoryModal()">Batal</button>
+                <button style="background:var(--danger);" onclick="executeClearHistory()">Ya, Hapus</button>
+            </div>
+        </div>
+    </div>
+
     <div id="helpModal" class="modal">
         <div class="modal-content" style="text-align: left;">
             <h3 style="text-align: center; margin-bottom: 15px;">Cara Cek IP Manual</h3>
-            <p style="font-size: 14px; color: var(--text-muted); line-height: 1.5;">Jika pemindai otomatis diblokir, ikuti langkah ini di PC Server:</p>
             <ol style="font-size: 13px; color: var(--text-main); padding-left: 20px; line-height: 1.6;">
-                <li style="margin-bottom: 8px;">Tekan tombol <strong>Windows + R</strong> di keyboard.</li>
-                <li style="margin-bottom: 8px;">Ketik <strong>cmd</strong> lalu tekan Enter.</li>
-                <li style="margin-bottom: 8px;">Di layar hitam, ketik <strong>ipconfig</strong> dan Enter.</li>
-                <li>Cari baris <strong>IPv4 Address</strong> (contoh: 192.168.x.x). Masukkan ke aplikasi ini.</li>
+                <li style="margin-bottom: 8px;">Tekan tombol <strong>Windows + R</strong> di PC Server.</li>
+                <li style="margin-bottom: 8px;">Ketik <strong>cmd</strong> lalu Enter.</li>
+                <li style="margin-bottom: 8px;">Ketik <strong>ipconfig</strong> dan Enter.</li>
+                <li>Cari <strong>IPv4 Address</strong> (cth: 192.168.x.x) lalu masukkan ke aplikasi.</li>
             </ol>
-            <button style="background:white; color:var(--text-main); border:1px solid var(--border-soft); box-shadow:none; margin-top: 15px;" onclick="document.getElementById('helpModal').style.display='none'">Tutup Bantuan</button>
+            <button style="background:white; color:var(--text-main); border:1px solid var(--border-soft); box-shadow:none; margin-top: 15px;" onclick="document.getElementById('helpModal').style.display='none'">Tutup</button>
         </div>
     </div>
 
@@ -266,11 +254,9 @@
         window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; document.getElementById('installPwaBtn').style.display = 'block'; });
         document.getElementById('installPwaBtn').addEventListener('click', async () => { if (deferredPrompt !== null) { deferredPrompt.prompt(); const { outcome } = await deferredPrompt.userChoice; if (outcome === 'accepted') document.getElementById('installPwaBtn').style.display = 'none'; deferredPrompt = null; } });
 
-        // LOGIKA MEMORI POPUP CONFIGURASI (BATAL & SIMPAN)
         let appliedConfig = {};
 
         function showConfigModal() { 
-            // Amankan/Backup nilai terakhir sebelum modal terbuka
             appliedConfig = {
                 colorMode: document.getElementById('colorMode').value,
                 paperSize: document.getElementById('paperSize').value,
@@ -283,20 +269,18 @@
         }
 
         function cancelConfigModal() {
-            // Restore ke nilai backup (Tidak disimpen)
             document.getElementById('colorMode').value = appliedConfig.colorMode;
             document.getElementById('paperSize').value = appliedConfig.paperSize;
             document.getElementById('orientation').value = appliedConfig.orientation;
             document.getElementById('pagesPerSheet').value = appliedConfig.pagesPerSheet;
             document.getElementById('copies').value = appliedConfig.copies;
             document.getElementById('pages').value = appliedConfig.pages;
-            
             document.getElementById('configModal').style.display = 'none';
         }
 
         function applyConfigModal() { 
             document.getElementById('configModal').style.display = 'none'; 
-            currentPreviewSheet = 0; // Reset ke halaman pertama setelah setting berubah
+            currentPreviewSheet = 0; 
             updateDynamicPreview(); 
             showToast("Pengaturan diterapkan", "success");
         }
@@ -310,6 +294,20 @@
         }
         function closePinModal() { document.getElementById('pinModal').style.display = 'none'; document.getElementById('modalPinInput').value = ''; }
         function showHelpModal() { document.getElementById('helpModal').style.display = 'flex'; }
+
+        // FUNGSI MODAL HAPUS RIWAYAT
+        function showDeleteHistoryModal() {
+            document.getElementById('deleteHistoryModal').style.display = 'flex';
+        }
+        function closeDeleteHistoryModal() {
+            document.getElementById('deleteHistoryModal').style.display = 'none';
+        }
+        function executeClearHistory() {
+            localStorage.removeItem('h_v45'); 
+            loadHistory(); 
+            closeDeleteHistoryModal();
+            showToast("Riwayat dibersihkan", "success");
+        }
 
         function showToast(message, type = 'info') {
             let container = document.getElementById('toastContainer');
@@ -435,7 +433,6 @@
                 else if (pagesPerSheet <= 16) { cols = 4; rows = 4; }
                 else { cols = Math.ceil(Math.sqrt(pagesPerSheet)); rows = Math.ceil(pagesPerSheet / cols); }
 
-                // Resolusi Kanvas di-upgrade jadi 1000 agar HD di Desktop
                 const baseWidth = 1000;
                 let cWidth = baseWidth, cHeight = baseWidth * 1.414;
                 if (orientation === 'landscape') { cWidth = baseWidth * 1.414; cHeight = baseWidth; }
@@ -537,6 +534,50 @@
             } catch (e) { showToast("Gagal muat printer", "error"); }
         }
 
+        async function simulatePrint() {
+            if(!document.getElementById('fileInput').files[0] && !document.getElementById('fileUrl').value) return showToast("Pilih file dulu!", "error");
+            
+            const ip = document.getElementById('ipAddress').value;
+            if(!ip) return showToast("Isi IP Server PC dulu!", "error");
+
+            const btn = document.getElementById('simulateBtn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = "⏳ Proses...";
+            btn.disabled = true;
+
+            const formData = new FormData();
+            formData.append('document', document.getElementById('fileInput').files[0]);
+            formData.append('fileUrl', document.getElementById('fileUrl').value);
+            formData.append('pages', document.getElementById('pages').value);
+            formData.append('colorMode', document.getElementById('colorMode').value);
+            formData.append('paperSize', document.getElementById('paperSize').value);
+            formData.append('orientation', document.getElementById('orientation').value);
+            formData.append('pagesPerSheet', document.getElementById('pagesPerSheet').value);
+
+            try {
+                const r = await fetch(`http://${ip}:3000/simulate`, { method: 'POST', body: formData });
+                if(r.ok) {
+                    const blob = await r.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = 'Simulasi_Hasil_Cetak.pdf';
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    showToast("Simulasi berhasil didownload", "success");
+                } else {
+                    showToast(await r.text(), "error");
+                }
+            } catch (e) {
+                showToast("Gagal memproses simulasi", "error");
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
         async function confirmAndPrint() {
             const pin = document.getElementById('modalPinInput').value;
             if(!pin) return showToast("Isi PIN!", "error");
@@ -577,7 +618,7 @@
             if(h.length === 0) { list.innerHTML = '<li style="text-align:center; font-size:13px; color:var(--text-muted); padding: 15px;">Belum ada aktivitas.</li>'; return; }
             list.innerHTML = h.map(i => `<li class="history-item"><strong style="color:var(--text-main);">${i.name}</strong><br><small style="color:var(--text-muted);">${i.time}</small></li>`).join('');
         }
-        function clearHistory() { if(confirm("Yakin hapus riwayat?")) { localStorage.removeItem('h_v45'); loadHistory(); showToast("Riwayat dibersihkan", "success"); } }
+        
         document.addEventListener('DOMContentLoaded', loadHistory);
     </script>
 </body>

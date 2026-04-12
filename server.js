@@ -212,6 +212,130 @@ app.post('/print', upload.single('document'), async (req, res) => {
     }
 });
 
+// ====================================================
+// ENDPOINT SIMULASI: KEMBALIKAN PDF TANPA MENCETAK
+// ====================================================
+app.post('/simulate', upload.single('document'), async (req, res) => {
+    try {
+        let filePath = '';
+        if (req.file) {
+            filePath = req.file.path;
+        } else if (req.body.fileUrl) {
+            // Jika Anda punya logika download URL di /print, pastikan berjalan juga di sini
+            return res.status(400).send("Simulasi URL belum didukung. Harap upload file.");
+        }
+
+        if (!filePath) return res.status(400).send("File tidak ditemukan.");
+
+        const orientation = req.body.orientation || 'portrait';
+        const pagesPerSheetVal = parseInt(req.body.pagesPerSheet) || 1;
+        const pagesInput = req.body.pages || '';
+
+        const { PDFDocument, degrees } = require('pdf-lib');
+
+        // 1. FILTER HALAMAN (Sama seperti print asli)
+        if (pagesInput) {
+            const pdfBytes = fs.readFileSync(filePath);
+            const pdfDoc = await PDFDocument.load(pdfBytes);
+            const totalPages = pdfDoc.getPageCount();
+            
+            let pagesToKeep = new Set();
+            let parts = pagesInput.split(',');
+            for (let part of parts) {
+                if (part.includes('-')) {
+                    let [start, end] = part.split('-').map(n => parseInt(n.trim()));
+                    if (!isNaN(start) && !isNaN(end)) {
+                        start = Math.max(1, start); end = Math.min(totalPages, end);
+                        for (let i = start; i <= end; i++) pagesToKeep.add(i);
+                    }
+                } else {
+                    let num = parseInt(part.trim());
+                    if (!isNaN(num) && num >= 1 && num <= totalPages) pagesToKeep.add(num);
+                }
+            }
+
+            let sortedPages = Array.from(pagesToKeep).sort((a,b) => a-b);
+            if (sortedPages.length > 0) {
+                const newPdf = await PDFDocument.create();
+                const copiedPages = await newPdf.copyPages(pdfDoc, sortedPages.map(p => p - 1));
+                copiedPages.forEach(page => newPdf.addPage(page));
+                const newBytes = await newPdf.save();
+                fs.writeFileSync(filePath, newBytes);
+            }
+        }
+
+        // 2. MANIPULASI GRID N-UP & ROTASI (Sama persis seperti algoritma print asli)
+        if (orientation === 'landscape' || pagesPerSheetVal > 1) {
+            const pdfBytes = fs.readFileSync(filePath);
+            const pdfDoc = await PDFDocument.load(pdfBytes);
+            const pages = pdfDoc.getPages();
+            const finalPdfDoc = await PDFDocument.create();
+
+            let cols = 1, rows = 1;
+            if (pagesPerSheetVal === 1) { cols = 1; rows = 1; }
+            else if (pagesPerSheetVal === 2) { if (orientation === 'landscape') { cols = 2; rows = 1; } else { cols = 1; rows = 2; } }
+            else if (pagesPerSheetVal <= 4) { cols = 2; rows = 2; }
+            else if (pagesPerSheetVal <= 6) { if (orientation === 'landscape') { cols = 3; rows = 2; } else { cols = 2; rows = 3; } }
+            else if (pagesPerSheetVal <= 9) { cols = 3; rows = 3; }
+            else if (pagesPerSheetVal <= 16) { cols = 4; rows = 4; }
+            else { cols = Math.ceil(Math.sqrt(pagesPerSheetVal)); rows = Math.ceil(pagesPerSheetVal / cols); }
+
+            let sheetWidth = 595.28, sheetHeight = 841.89;
+            if (orientation === 'landscape') { sheetWidth = 841.89; sheetHeight = 595.28; }
+
+            const cellWidth = sheetWidth / cols;
+            const cellHeight = sheetHeight / rows;
+
+            let currentSheet;
+            for (let i = 0; i < pages.length; i++) {
+                if (i % pagesPerSheetVal === 0) currentSheet = finalPdfDoc.addPage([sheetWidth, sheetHeight]);
+                
+                const embeddedPage = await finalPdfDoc.embedPage(pages[i]);
+                
+                let isRotated = false;
+                if (cellWidth > cellHeight && embeddedPage.width < embeddedPage.height) isRotated = true;
+                else if (cellWidth < cellHeight && embeddedPage.width > embeddedPage.height) isRotated = true;
+
+                let drawW = embeddedPage.width; let drawH = embeddedPage.height;
+                if (isRotated) { drawW = embeddedPage.height; drawH = embeddedPage.width; }
+                
+                const scale = Math.min((cellWidth - 10) / drawW, (cellHeight - 10) / drawH);
+                const origW = embeddedPage.width * scale; const origH = embeddedPage.height * scale;
+
+                const col = (i % pagesPerSheetVal) % cols;
+                const row = Math.floor((i % pagesPerSheetVal) / cols);
+
+                const cellX = col * cellWidth;
+                const cellY = sheetHeight - ((row + 1) * cellHeight);
+                const centerX = cellX + cellWidth / 2;
+                const centerY = cellY + cellHeight / 2;
+
+                if (isRotated) {
+                    currentSheet.drawPage(embeddedPage, {
+                        x: centerX + origH / 2, y: centerY - origW / 2, width: origW, height: origH, rotate: degrees(90)
+                    });
+                } else {
+                    currentSheet.drawPage(embeddedPage, {
+                        x: centerX - origW / 2, y: centerY - origH / 2, width: origW, height: origH
+                    });
+                }
+            }
+
+            const modifiedPdfBytes = await finalPdfDoc.save();
+            fs.writeFileSync(filePath, modifiedPdfBytes);
+        }
+
+        // 3. JANGAN CETAK! KEMBALIKAN FILE KE USER SEBAGAI DOWNLOAD
+        res.download(filePath, 'Simulasi_Print.pdf', (err) => {
+            if (fs.existsSync(filePath)) fs.unlinkSync(filePath); // Bersihkan file temporary
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).send("Gagal memproses simulasi.");
+    }
+});
+
 // ==========================================
 // MENYALAKAN SERVER 
 // ==========================================

@@ -1,0 +1,1 @@
+Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12; iwr -Uri "https://raw.githubusercontent.com/dedejamaludinmuslim/print-server/refs/heads/main/install.ps1" -OutFile "install.ps1"; .\install.ps1
