@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#2563eb">
     <link rel="manifest" href="manifest.json">
-    <title>Print Pro V4.5</title>
+    <title>Print Server Pro V4.7</title>
     
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
@@ -15,30 +15,19 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
         :root {
-            --primary: #2563eb; 
-            --primary-hover: #1d4ed8;
-            --success: #10b981;
-            --danger: #ef4444;
-            --text-main: #1f2937;
-            --text-muted: #6b7280;
-            --bg-page: #f3f4f6;
-            --bg-card: #ffffff;
-            --border-soft: #e5e7eb;
-            --radius-lg: 16px;
-            --radius-md: 10px;
+            --primary: #2563eb; --primary-hover: #1d4ed8; --success: #10b981; --danger: #ef4444;
+            --text-main: #1f2937; --text-muted: #6b7280; --bg-page: #f3f4f6; --bg-card: #ffffff;
+            --border-soft: #e5e7eb; --radius-lg: 16px; --radius-md: 10px;
             --shadow-float: 0 20px 25px -5px rgba(0, 0, 0, 0.05);
         }
 
         body { font-family: 'Inter', sans-serif; padding: 20px 15px; background-color: var(--bg-page); color: var(--text-main); margin: 0; -webkit-font-smoothing: antialiased;}
         .card { background: var(--bg-card); padding: 28px 24px; border-radius: var(--radius-lg); box-shadow: var(--shadow-float); max-width: 460px; margin: 0 auto 20px auto; border: 1px solid var(--border-soft); }
-        
         h2 { margin: 0 0 24px 0; text-align: center; font-size: 24px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 10px; }
 
         .section-title { font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin: 24px 0 12px 0; border-bottom: 2px solid var(--bg-page); padding-bottom: 8px; display: flex; justify-content: space-between; align-items: center;}
-
         .input-group { text-align: left; margin-bottom: 16px; }
         .input-group label { font-size: 13px; font-weight: 600; color: var(--text-main); display: block; margin-bottom: 8px;}
-        
         .row { display: flex; gap: 12px; }
         .row .input-group { flex: 1; }
 
@@ -49,71 +38,58 @@
         button:hover { background: var(--primary-hover); transform: translateY(-1.5px); }
         button:disabled { background: #9ca3af; cursor: not-allowed; transform: none; }
 
-        /* Tombol Install (Disamakan warnanya dengan Print) */
         #installPwaBtn { display:none; margin-bottom:15px; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2); }
 
-        /* Desain Tombol Icon Samping (Sama warna: Primary) */
         .input-with-btn { display: flex; gap: 10px; align-items: stretch; }
         .input-with-btn input, .input-with-btn select { flex: 1; margin-bottom: 0; }
-        
-        .btn-icon { 
-            width: 48px; 
-            padding: 0; 
-            margin: 0; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            font-size: 20px; 
-            background: var(--primary); 
-            color: white; 
-            border: none; 
-            border-radius: var(--radius-md);
-            flex-shrink: 0;
-            box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
-        }
+        .btn-icon { width: 48px; padding: 0; margin: 0; display: flex; align-items: center; justify-content: center; font-size: 20px; background: var(--primary); color: white; border: none; border-radius: var(--radius-md); flex-shrink: 0; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);}
         .btn-icon:hover { background: var(--primary-hover); transform: translateY(-1.5px); }
 
-        /* Divider ATAU */
         .divider { display: flex; align-items: center; text-align: center; margin: 16px 0; color: #94a3b8; font-size: 10px; font-weight: 700; letter-spacing: 1px; }
         .divider::before, .divider::after { content: ''; flex: 1; border-bottom: 1px solid #e2e8f0; }
         .divider span { padding: 0 10px; }
 
-        /* Modal Design */
         .modal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(17, 24, 39, 0.7); align-items: center; justify-content: center; backdrop-filter: blur(5px); }
         .modal-content { background: white; padding: 30px; border-radius: var(--radius-lg); width: 90%; max-width: 400px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); animation: modalIn 0.3s ease-out; }
         @keyframes modalIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
-        /* Toast Notifications (Seragam: Satu Warna Gelap) */
         .toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 10000; display: flex; flex-direction: column; gap: 10px; width: 90%; max-width: 380px; pointer-events: none;}
         .toast { padding: 16px 20px; border-radius: var(--radius-md); background: var(--text-main); color: white; font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 12px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); animation: toastIn 0.25s ease-out forwards; opacity: 0; pointer-events: auto;}
         @keyframes toastIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         @keyframes toastOut { from { transform: translateY(0); opacity: 1; } to { transform: translateY(-20px); opacity: 0; } }
 
-        /* Status & History */
         #realtimeStatus { display:none; margin-top:20px; padding:16px; border-radius:var(--radius-md); background:#f8fafc; border: 1px solid var(--border-soft); }
         .progress-container { height:6px; background:#e2e8f0; margin-top:12px; border-radius:10px; overflow:hidden;}
         #progressBar { width:0%; height:100%; background: var(--success); transition: width 0.4s; }
         .history-item { background: white; border-left: 4px solid var(--primary); padding: 14px; margin-bottom: 10px; border-radius: 8px; font-size: 13px; border: 1px solid var(--border-soft); }
         
-        #previewContainer { margin-top: 15px; border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--border-soft); }
+        /* Grid & Pagination Preview Design */
+        #previewContainer { margin-top: 15px; border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--border-soft); background: var(--bg-card); }
+        .preview-header { font-size: 10px; font-weight: 700; color: white; background: var(--text-main); padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; text-transform: uppercase; letter-spacing: 0.5px;}
+        .preview-body { padding: 15px; background: #e2e8f0; display: flex; justify-content: center; align-items: center; }
+        .preview-canvas { max-width: 100%; height: auto; border-radius: 4px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); background: white; transition: filter 0.3s ease; }
+        
+        .btn-nav { background: rgba(255,255,255,0.2); border: none; color: white; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; margin: 0; width: auto; font-weight: bold; transition: 0.2s;}
+        .btn-nav:hover { background: rgba(255,255,255,0.4); transform: none; }
+        .btn-nav:disabled { opacity: 0.3; cursor: not-allowed; }
     </style>
 </head>
 <body>
 
     <div class="card">
-        <h2>🏢 Print Pro V4.5</h2>
+        <h2>🏢 Print Server Pro v4.7</h2>
         
         <button id="installPwaBtn">📲 Install Aplikasi ke Layar HP</button>
 
         <div class="section-title">
             <span>📍 Jaringan & Perangkat</span>
-            <span style="font-size:10px; font-weight:700; color:var(--primary); cursor:pointer;" onclick="showHelpModal()">BANTUAN IP?</span>
+            <span style="font-size:10px; font-weight:700; color:var(--primary); cursor:pointer;" onclick="showHelpModal()">BANTU CARI IP?</span>
         </div>
         
         <div class="input-group">
             <label>🖥️ IP Address Server:</label>
             <div class="input-with-btn">
-                <input type="text" id="ipAddress" placeholder="192.168.1.xx">
+                <input type="text" id="ipAddress" placeholder="192.168.1.xxx">
                 <button class="btn-icon" id="scanBtn" onclick="showScanModal()" title="Pindai Jaringan">🔍</button>
             </div>
             <select id="ipSelect" style="display:none; margin-top: 8px;" onchange="updateIpAndFetchPrinters()"></select>
@@ -133,17 +109,27 @@
         </div>
         
         <div id="previewContainer" style="display: none;">
-            <div style="font-size: 10px; font-weight: 700; color: var(--primary); margin-bottom: 5px;">👀 PREVIEW:</div>
-            <canvas id="pdfPreview" style="width: 100%; border-radius: 8px; display: none; border: 1px solid var(--border-soft);"></canvas>
-            <img id="imgPreview" style="width: 100%; border-radius: 8px; display: none; border: 1px solid var(--border-soft);" />
+            <div class="preview-header">
+                <span>👀 LIVE PREVIEW</span>
+                <span id="previewPagination" style="display:none; align-items:center; gap:8px;">
+                    <button class="btn-nav" id="btnPrevPage" onclick="changePreviewSheet(-1)">◀</button>
+                    <span id="previewSheetText" style="color:white; font-size:11px;">1 / 1</span>
+                    <button class="btn-nav" id="btnNextPage" onclick="changePreviewSheet(1)">▶</button>
+                </span>
+                <span id="previewBadge" style="color: #cbd5e1;">Warna</span>
+            </div>
+            <div class="preview-body">
+                <canvas id="mainPreviewCanvas" class="preview-canvas" style="display: none;"></canvas>
+                <img id="imgPreview" class="preview-canvas" style="display: none;" />
+            </div>
         </div>
 
         <div class="divider"><span>ATAU</span></div>
         <div class="input-group">
-            <input type="text" id="fileUrl" placeholder="Tempel Link (https://...)">
+            <input type="text" id="fileUrl" placeholder="https://file.pdf, https://foto.jpg, ...">
         </div>
         
-        <button id="printBtn" onclick="showPinModal()">🚀 EKSEKUSI PRINT</button>
+        <button id="printBtn" onclick="showPinModal()">🚀 GASSS CETAK !!!</button>
         
         <div id="realtimeStatus">
             <div id="statusMessage" style="font-size:12px; font-weight:600;">Menunggu...</div>
@@ -153,8 +139,8 @@
 
     <div class="card" style="padding: 20px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-            <span style="font-size:12px; font-weight:700; color:var(--text-muted);">🕒 RIWAYAT AKTIVITAS</span>
-            <span style="font-size:11px; font-weight:600; color:var(--danger); cursor:pointer;" onclick="clearHistory()">Hapus Semua</span>
+            <span style="font-size:12px; font-weight:700; color:var(--text-muted);">🕒 RIWAYAT CETAK</span>
+            <span style="font-size:11px; font-weight:600; color:var(--danger); cursor:pointer;" onclick="clearHistory()">HAPUS RIWAYAT?</span>
         </div>
         <ul id="historyList" style="list-style:none; padding:0; margin:0;"></ul>
     </div>
@@ -176,28 +162,25 @@
             <h3 style="margin:0 0 20px 0; text-align:center;">⚙️ Pengaturan Dokumen</h3>
             <div class="row">
                 <div class="input-group"><label>🎨 Warna:</label>
-                    <select id="colorMode"><option value="color">Berwarna</option><option value="monochrome">B/W</option></select>
+                    <select id="colorMode" onchange="onConfigChange()"><option value="color">Berwarna</option><option value="monochrome">Hitam Putih</option></select>
                 </div>
                 <div class="input-group"><label>📏 Kertas:</label>
-                    <select id="paperSize">
-                        <option value="A4">A4</option>
-                        <option value="F4">F4</option>
-                    </select>
+                    <select id="paperSize"><option value="A4">A4</option><option value="F4">F4</option></select>
                 </div>
-            </div>
-            <div class="row">
-                <div class="input-group"><label>📄 Jml Copy:</label><input type="number" id="copies" value="1" min="1"></div>
-                <div class="input-group"><label>📑 Halaman:</label><input type="text" id="pages" placeholder="Cth: 1,3,5-7"></div>
             </div>
             <div class="row">
                 <div class="input-group"><label>🔄 Orientasi:</label>
-                    <select id="orientation"><option value="portrait">Potrait</option><option value="landscape">Landscape</option></select>
+                    <select id="orientation" onchange="onConfigChange()"><option value="portrait">Potrait</option><option value="landscape">Landscape</option></select>
                 </div>
-                <div class="input-group"><label>🗂️ Hal per Kertas:</label>
-                    <select id="pagesPerSheet"><option value="1">1 Hal</option><option value="2">2 Hal</option></select>
+                <div class="input-group"><label>🗂️ Hal / Lembar:</label>
+                    <input type="number" id="pagesPerSheet" value="1" min="1" max="16" placeholder="1, 2, 4, 6..." oninput="onConfigChange()">
                 </div>
             </div>
-            <button onclick="closeConfigModal()" style="margin-top:20px;">Simpan & Tutup</button>
+            <div class="row">
+                <div class="input-group"><label>📄 Jumlah Copy:</label><input type="number" id="copies" value="1" min="1"></div>
+                <div class="input-group"><label>📑 Rincian Halaman:</label><input type="text" id="pages" placeholder="Cth: 1,3,5-7" oninput="onConfigChange()"></div>
+            </div>
+            <button onclick="closeConfigModal()" style="margin-top:20px;">Terapkan & Tutup</button>
         </div>
     </div>
 
@@ -216,101 +199,215 @@
     <div id="helpModal" class="modal">
         <div class="modal-content" style="text-align: left;">
             <h3 style="text-align: center; margin-bottom: 15px;">Cara Cek IP Manual</h3>
-            <p style="font-size: 14px; color: var(--text-muted); line-height: 1.5;">Jika pemindai otomatis diblokir oleh sistem keamanan jaringan, ikuti langkah ini di PC/Laptop yang terhubung ke printer:</p>
+            <p style="font-size: 14px; color: var(--text-muted); line-height: 1.5;">Jika pemindai otomatis diblokir, ikuti langkah ini di PC Server:</p>
             <ol style="font-size: 13px; color: var(--text-main); padding-left: 20px; line-height: 1.6;">
                 <li style="margin-bottom: 8px;">Tekan tombol <strong>Windows + R</strong> di keyboard.</li>
                 <li style="margin-bottom: 8px;">Ketik <strong>cmd</strong> lalu tekan Enter.</li>
                 <li style="margin-bottom: 8px;">Di layar hitam, ketik <strong>ipconfig</strong> dan Enter.</li>
-                <li>Cari baris <strong>IPv4 Address</strong> (contoh: 192.168.x.x). Masukkan angka tersebut ke aplikasi ini.</li>
+                <li>Cari baris <strong>IPv4 Address</strong> (contoh: 192.168.x.x). Masukkan ke aplikasi ini.</li>
             </ol>
             <button style="background:white; color:var(--text-main); border:1px solid var(--border-soft); box-shadow:none; margin-top: 15px;" onclick="document.getElementById('helpModal').style.display='none'">Tutup Bantuan</button>
         </div>
     </div>
 
     <script>
-        // PWA REGISTRATION
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW Registration failed'));
-            });
-        }
+        if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW fail')); }); }
         let deferredPrompt;
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault(); deferredPrompt = e;
-            document.getElementById('installPwaBtn').style.display = 'block';
-        });
-        document.getElementById('installPwaBtn').addEventListener('click', async () => {
-            if (deferredPrompt !== null) {
-                deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
-                if (outcome === 'accepted') document.getElementById('installPwaBtn').style.display = 'none';
-                deferredPrompt = null;
-            }
-        });
+        window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; document.getElementById('installPwaBtn').style.display = 'block'; });
+        document.getElementById('installPwaBtn').addEventListener('click', async () => { if (deferredPrompt !== null) { deferredPrompt.prompt(); const { outcome } = await deferredPrompt.userChoice; if (outcome === 'accepted') document.getElementById('installPwaBtn').style.display = 'none'; deferredPrompt = null; } });
 
-        // MODAL HANDLERS
         function showScanModal() { document.getElementById('scanModal').style.display = 'flex'; document.getElementById('scanIpInput').focus(); }
         function closeScanModal() { document.getElementById('scanModal').style.display = 'none'; }
-        
         function showConfigModal() { document.getElementById('configModal').style.display = 'flex'; }
-        function closeConfigModal() { document.getElementById('configModal').style.display = 'none'; showToast("Konfigurasi disimpan", "info"); }
-        
+        function closeConfigModal() { document.getElementById('configModal').style.display = 'none'; updateDynamicPreview(); }
         function showPinModal() { 
             if(!document.getElementById('fileInput').files[0] && !document.getElementById('fileUrl').value) return showToast("Pilih file dulu!", "error");
-            document.getElementById('pinModal').style.display = 'flex'; 
-            document.getElementById('modalPinInput').focus();
+            document.getElementById('pinModal').style.display = 'flex'; document.getElementById('modalPinInput').focus();
         }
         function closePinModal() { document.getElementById('pinModal').style.display = 'none'; document.getElementById('modalPinInput').value = ''; }
-        
         function showHelpModal() { document.getElementById('helpModal').style.display = 'flex'; }
 
-        // TOAST SYSTEM (Satu Warna Seragam)
         function showToast(message, type = 'info') {
             let container = document.getElementById('toastContainer');
-            if(!container) {
-                container = document.createElement('div'); container.id = 'toastContainer'; container.className = 'toast-container';
-                document.body.appendChild(container);
-            }
+            if(!container) { container = document.createElement('div'); container.id = 'toastContainer'; container.className = 'toast-container'; document.body.appendChild(container); }
             const toast = document.createElement('div'); toast.className = `toast`;
             const icons = { success: '✅', error: '🚨', info: 'ℹ️' };
             toast.innerHTML = `<span style="font-size:18px;">${icons[type]}</span> <span style="line-height:1.4;">${message}</span>`;
             container.appendChild(toast);
-            setTimeout(() => {
-                toast.style.animation = 'toastOut 0.3s ease-in forwards';
-                setTimeout(() => toast.remove(), 300);
-            }, 6000);
+            setTimeout(() => { toast.style.animation = 'toastOut 0.3s ease-in forwards'; setTimeout(() => toast.remove(), 300); }, 6000);
         }
 
-        // PREVIEW LOGIC
+        // ==========================================
+        // MESIN LIVE DYNAMIC GRID & SMART ROTATION
+        // ==========================================
+        let currentPdfDoc = null;
+        let currentImgSrc = null;
+        let currentPreviewSheet = 0; 
+        let totalPreviewSheets = 1;
+
+        function onConfigChange() {
+            currentPreviewSheet = 0;
+            updateDynamicPreview();
+        }
+
+        function changePreviewSheet(direction) {
+            currentPreviewSheet += direction;
+            if (currentPreviewSheet < 0) currentPreviewSheet = 0;
+            if (currentPreviewSheet >= totalPreviewSheets) currentPreviewSheet = totalPreviewSheets - 1;
+            updateDynamicPreview();
+        }
+
+        function parsePageRange(input, maxPages) {
+            if (!input) return Array.from({length: maxPages}, (_, i) => i + 1); 
+            let pages = new Set();
+            let parts = input.split(',');
+            for (let part of parts) {
+                if (part.includes('-')) {
+                    let [start, end] = part.split('-').map(n => parseInt(n.trim()));
+                    if (!isNaN(start) && !isNaN(end)) {
+                        start = Math.max(1, start);
+                        end = Math.min(maxPages, end);
+                        for (let i = start; i <= end; i++) pages.add(i);
+                    }
+                } else {
+                    let num = parseInt(part.trim());
+                    if (!isNaN(num) && num >= 1 && num <= maxPages) pages.add(num);
+                }
+            }
+            let arr = Array.from(pages).sort((a,b) => a-b);
+            return arr.length > 0 ? arr : [1]; 
+        }
+
         document.getElementById('fileInput').addEventListener('change', async function(e) {
             const file = e.target.files[0];
             const container = document.getElementById('previewContainer');
-            const pdfCanvas = document.getElementById('pdfPreview');
-            const imgPreview = document.getElementById('imgPreview');
-            if(!file) { container.style.display='none'; return; }
-            container.style.display='block'; pdfCanvas.style.display='none'; imgPreview.style.display='none';
+            
+            if(!file) { container.style.display='none'; currentPdfDoc = null; currentImgSrc = null; return; }
+            container.style.display='block';
+            currentPreviewSheet = 0; 
 
             if(file.type === 'application/pdf') {
-                pdfCanvas.style.display='block';
                 const reader = new FileReader();
                 reader.onload = async function() {
-                    const pdf = await pdfjsLib.getDocument(new Uint8Array(this.result)).promise;
-                    const page = await pdf.getPage(1);
-                    const viewport = page.getViewport({scale: 1});
-                    const context = pdfCanvas.getContext('2d');
-                    pdfCanvas.height = viewport.height; pdfCanvas.width = viewport.width;
-                    await page.render({canvasContext: context, viewport: viewport}).promise;
+                    currentPdfDoc = await pdfjsLib.getDocument(new Uint8Array(this.result)).promise;
+                    currentImgSrc = null;
+                    updateDynamicPreview(); 
                 };
                 reader.readAsArrayBuffer(file);
             } else if(file.type.startsWith('image/')) {
-                imgPreview.style.display='block';
                 const reader = new FileReader();
-                reader.onload = e => imgPreview.src = e.target.result;
+                reader.onload = function(e) {
+                    currentImgSrc = e.target.result; currentPdfDoc = null;
+                    updateDynamicPreview(); 
+                };
                 reader.readAsDataURL(file);
             }
         });
 
-        // SOCKET & PRINT LOGIC
+        async function updateDynamicPreview() {
+            if (!currentPdfDoc && !currentImgSrc) return;
+
+            const colorMode = document.getElementById('colorMode').value;
+            const orientation = document.getElementById('orientation').value;
+            const pagesPerSheet = parseInt(document.getElementById('pagesPerSheet').value) || 1;
+            const pagesInput = document.getElementById('pages').value.trim();
+
+            const mainCanvas = document.getElementById('mainPreviewCanvas');
+            const img = document.getElementById('imgPreview');
+            const badge = document.getElementById('previewBadge');
+            const paginationUI = document.getElementById('previewPagination');
+
+            const cssFilter = colorMode === 'monochrome' ? 'grayscale(100%) contrast(120%)' : 'none';
+            mainCanvas.style.filter = cssFilter;
+            img.style.filter = cssFilter;
+            badge.innerText = `${colorMode === 'monochrome' ? 'B/W' : 'Warna'}`;
+
+            if (currentImgSrc) {
+                mainCanvas.style.display = 'none'; img.style.display = 'block'; img.src = currentImgSrc; 
+                paginationUI.style.display = 'none';
+                return;
+            }
+
+            if (currentPdfDoc) {
+                img.style.display = 'none'; mainCanvas.style.display = 'block';
+
+                const pageArray = parsePageRange(pagesInput, currentPdfDoc.numPages);
+                totalPreviewSheets = Math.ceil(pageArray.length / pagesPerSheet);
+                
+                if (totalPreviewSheets > 1) {
+                    paginationUI.style.display = 'flex';
+                    document.getElementById('previewSheetText').innerText = `Lbr ${currentPreviewSheet + 1} / ${totalPreviewSheets}`;
+                    document.getElementById('btnPrevPage').disabled = currentPreviewSheet === 0;
+                    document.getElementById('btnNextPage').disabled = currentPreviewSheet === totalPreviewSheets - 1;
+                } else {
+                    paginationUI.style.display = 'none';
+                }
+
+                // ==========================================
+                // BUG FIX: LOGIKA GRID & SMART AUTO-ROTATION
+                // ==========================================
+                let cols = 1, rows = 1;
+                if (pagesPerSheet === 1) { cols = 1; rows = 1; }
+                else if (pagesPerSheet === 2) { 
+                    if (orientation === 'landscape') { cols = 2; rows = 1; } else { cols = 1; rows = 2; }
+                }
+                else if (pagesPerSheet <= 4) { cols = 2; rows = 2; }
+                else if (pagesPerSheet <= 6) { 
+                    if (orientation === 'landscape') { cols = 3; rows = 2; } else { cols = 2; rows = 3; }
+                }
+                else if (pagesPerSheet <= 9) { cols = 3; rows = 3; }
+                else if (pagesPerSheet <= 16) { cols = 4; rows = 4; }
+                else { cols = Math.ceil(Math.sqrt(pagesPerSheet)); rows = Math.ceil(pagesPerSheet / cols); }
+
+                // Resolusi Kanvas Kertas Virtual
+                const baseWidth = 800;
+                let cWidth = baseWidth, cHeight = baseWidth * 1.414;
+                if (orientation === 'landscape') { cWidth = baseWidth * 1.414; cHeight = baseWidth; }
+                
+                mainCanvas.width = cWidth; mainCanvas.height = cHeight;
+                const ctx = mainCanvas.getContext('2d');
+                ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, cWidth, cHeight); 
+
+                const cellW = cWidth / cols;
+                const cellH = cHeight / rows;
+
+                const startIndex = currentPreviewSheet * pagesPerSheet;
+                const pagesToRender = pageArray.slice(startIndex, startIndex + pagesPerSheet);
+
+                for (let i = 0; i < pagesToRender.length; i++) {
+                    let pageNum = pagesToRender[i];
+                    const page = await currentPdfDoc.getPage(pageNum);
+                    
+                    // SMART FIT: Cek ukuran Halaman Asli VS Ukuran Sel Grid
+                    const rawVp = page.getViewport({ scale: 1 });
+                    let rotationAngle = 0;
+                    
+                    // Jika Sel berbentuk Lebar, tapi Halamannya Tinggi -> Putar 90 drajat
+                    if (cellW > cellH && rawVp.width < rawVp.height) { rotationAngle = 90; } 
+                    // Jika Sel berbentuk Tinggi, tapi Halamannya Lebar -> Putar 270 drajat
+                    else if (cellW < cellH && rawVp.width > rawVp.height) { rotationAngle = 270; }
+
+                    const vp = page.getViewport({ scale: 1, rotation: rotationAngle });
+                    const scale = Math.min((cellW - 20) / vp.width, (cellH - 20) / vp.height); 
+                    const scaledVp = page.getViewport({ scale, rotation: rotationAngle });
+
+                    const offCanvas = document.createElement('canvas');
+                    offCanvas.width = scaledVp.width; offCanvas.height = scaledVp.height;
+                    await page.render({ canvasContext: offCanvas.getContext('2d'), viewport: scaledVp }).promise;
+
+                    const col = i % cols;
+                    const row = Math.floor(i / cols);
+                    const x = (col * cellW) + (cellW - scaledVp.width) / 2;
+                    const y = (row * cellH) + (cellH - scaledVp.height) / 2;
+
+                    ctx.shadowColor = 'rgba(0,0,0,0.15)'; ctx.shadowBlur = 8;
+                    ctx.fillStyle = 'white'; ctx.fillRect(x, y, scaledVp.width, scaledVp.height);
+                    ctx.shadowColor = 'transparent';
+                    ctx.drawImage(offCanvas, x, y);
+                }
+            }
+        }
+
         let socket;
         function connectSocket(ip) {
             if(socket) socket.disconnect();
@@ -329,10 +426,8 @@
         async function startNetworkScan() {
             const baseIp = document.getElementById('scanIpInput').value.trim();
             if(!baseIp) return showToast("Blok IP tidak boleh kosong!", "error");
-            
             closeScanModal();
-            const scanBtn = document.getElementById('scanBtn');
-            scanBtn.disabled = true; scanBtn.innerHTML = "⏳";
+            const scanBtn = document.getElementById('scanBtn'); scanBtn.disabled = true; scanBtn.innerHTML = "⏳";
             
             let found = [];
             for(let attempt = 1; attempt <= 3 && found.length === 0; attempt++) {
@@ -345,13 +440,11 @@
                 }
                 await Promise.allSettled(promises);
             }
-            
             scanBtn.disabled = false; scanBtn.innerHTML = "🔍";
             if(found.length > 0) {
                 const sel = document.getElementById('ipSelect'); sel.style.display = "block"; sel.innerHTML = "";
                 found.forEach(p => sel.add(new Option(`${p.name} (${p.ip})`, p.ip)));
-                updateIpAndFetchPrinters();
-                showToast(`Ditemukan ${found.length} Server PC`, "success");
+                updateIpAndFetchPrinters(); showToast(`Ditemukan ${found.length} Server PC`, "success");
             } else showToast("PC tidak ditemukan", "error");
         }
 
@@ -394,6 +487,7 @@
                     saveHistory(document.getElementById('fileInput').files[0]?.name || "Dokumen dari Link URL");
                     document.getElementById('fileInput').value = ""; document.getElementById('fileUrl').value = "";
                     document.getElementById('previewContainer').style.display = 'none';
+                    currentPdfDoc = null; currentImgSrc = null;
                 } else showToast(await r.text(), "error");
             } catch (e) { showToast("Koneksi gagal", "error"); }
         }
@@ -401,21 +495,16 @@
         function saveHistory(name) {
             let h = JSON.parse(localStorage.getItem('h_v45')) || [];
             h.unshift({ name, time: new Date().toLocaleString() });
-            localStorage.setItem('h_v45', JSON.stringify(h.slice(0, 5)));
-            loadHistory();
+            localStorage.setItem('h_v45', JSON.stringify(h.slice(0, 5))); loadHistory();
         }
 
         function loadHistory() {
             const list = document.getElementById('historyList');
             const h = JSON.parse(localStorage.getItem('h_v45')) || [];
-            if(h.length === 0) {
-                list.innerHTML = '<li style="text-align:center; font-size:13px; color:var(--text-muted); padding: 15px;">Belum ada aktivitas.</li>'; return;
-            }
+            if(h.length === 0) { list.innerHTML = '<li style="text-align:center; font-size:13px; color:var(--text-muted); padding: 15px;">Belum ada aktivitas.</li>'; return; }
             list.innerHTML = h.map(i => `<li class="history-item"><strong style="color:var(--text-main);">${i.name}</strong><br><small style="color:var(--text-muted);">${i.time}</small></li>`).join('');
         }
-        function clearHistory() { 
-            if(confirm("Yakin hapus riwayat?")) { localStorage.removeItem('h_v45'); loadHistory(); showToast("Riwayat dibersihkan", "success"); }
-        }
+        function clearHistory() { if(confirm("Yakin hapus riwayat?")) { localStorage.removeItem('h_v45'); loadHistory(); showToast("Riwayat dibersihkan", "success"); } }
         document.addEventListener('DOMContentLoaded', loadHistory);
     </script>
 </body>
