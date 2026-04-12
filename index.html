@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#2563eb">
     <link rel="manifest" href="manifest.json">
-    <title>Print Server Pro V4.7</title>
+    <title>Print Pro V4.5</title>
     
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
@@ -22,7 +22,47 @@
         }
 
         body { font-family: 'Inter', sans-serif; padding: 20px 15px; background-color: var(--bg-page); color: var(--text-main); margin: 0; -webkit-font-smoothing: antialiased;}
-        .card { background: var(--bg-card); padding: 28px 24px; border-radius: var(--radius-lg); box-shadow: var(--shadow-float); max-width: 460px; margin: 0 auto 20px auto; border: 1px solid var(--border-soft); }
+        
+        /* TATA LETAK RESPONSIVE (MOBILE & DESKTOP) */
+        .app-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            max-width: 480px;
+            margin: 0 auto;
+        }
+        
+        .left-col { display: contents; } /* Hack agar urutan card bisa disusun di mobile */
+        .main-card { order: 1; }
+        .preview-col { order: 2; display: none; width: 100%; }
+        .history-card { order: 3; }
+
+        @media (min-width: 992px) {
+            body { padding: 40px 20px; }
+            .app-wrapper {
+                display: grid;
+                grid-template-columns: 420px 1fr; /* Membagi dua kolom: Kiri 420px, Kanan sisa layar */
+                gap: 30px;
+                max-width: 1200px;
+                align-items: start;
+            }
+            .left-col {
+                display: flex;
+                flex-direction: column;
+                gap: 20px;
+            }
+            .main-card, .history-card { order: unset; }
+            .preview-col {
+                position: sticky;
+                top: 40px; /* Preview akan diam menempel saat di-scroll */
+                order: unset;
+                height: calc(100vh - 80px); /* Memaksimalkan tinggi layar desktop */
+            }
+            .preview-col .card { height: 100%; display: flex; flex-direction: column; padding: 0; overflow: hidden; }
+            .preview-body { flex: 1; padding: 40px; overflow-y: auto;} /* Canvas lebih lega */
+        }
+
+        .card { background: var(--bg-card); padding: 28px 24px; border-radius: var(--radius-lg); box-shadow: var(--shadow-float); width: 100%; box-sizing: border-box; border: 1px solid var(--border-soft); }
         h2 { margin: 0 0 24px 0; text-align: center; font-size: 24px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 10px; }
 
         .section-title { font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin: 24px 0 12px 0; border-bottom: 2px solid var(--bg-page); padding-bottom: 8px; display: flex; justify-content: space-between; align-items: center;}
@@ -64,85 +104,92 @@
         .history-item { background: white; border-left: 4px solid var(--primary); padding: 14px; margin-bottom: 10px; border-radius: 8px; font-size: 13px; border: 1px solid var(--border-soft); }
         
         /* Grid & Pagination Preview Design */
-        #previewContainer { margin-top: 15px; border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--border-soft); background: var(--bg-card); }
-        .preview-header { font-size: 10px; font-weight: 700; color: white; background: var(--text-main); padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; text-transform: uppercase; letter-spacing: 0.5px;}
-        .preview-body { padding: 15px; background: #e2e8f0; display: flex; justify-content: center; align-items: center; }
-        .preview-canvas { max-width: 100%; height: auto; border-radius: 4px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); background: white; transition: filter 0.3s ease; }
+        .preview-header { font-size: 11px; font-weight: 700; color: white; background: var(--text-main); padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; text-transform: uppercase; letter-spacing: 0.5px;}
+        .preview-body { padding: 20px; background: #e2e8f0; display: flex; justify-content: center; align-items: center; }
+        .preview-canvas { max-width: 100%; height: auto; border-radius: 4px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.2); background: white; transition: filter 0.3s ease; }
         
-        .btn-nav { background: rgba(255,255,255,0.2); border: none; color: white; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; margin: 0; width: auto; font-weight: bold; transition: 0.2s;}
+        .btn-nav { background: rgba(255,255,255,0.2); border: none; color: white; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; margin: 0; width: auto; font-weight: bold; transition: 0.2s;}
         .btn-nav:hover { background: rgba(255,255,255,0.4); transform: none; }
         .btn-nav:disabled { opacity: 0.3; cursor: not-allowed; }
     </style>
 </head>
 <body>
 
-    <div class="card">
-        <h2>🏢 Print Server Pro v4.7</h2>
+    <div class="app-wrapper">
         
-        <button id="installPwaBtn">📲 Install Aplikasi ke Layar HP</button>
+        <div class="left-col">
+            <div class="card main-card">
+                <h2>🏢 Print Server Pro v4.5</h2>
+                
+                <button id="installPwaBtn">📲 Install Aplikasi ke Layar</button>
 
-        <div class="section-title">
-            <span>📍 Jaringan & Perangkat</span>
-            <span style="font-size:10px; font-weight:700; color:var(--primary); cursor:pointer;" onclick="showHelpModal()">BANTU CARI IP?</span>
-        </div>
-        
-        <div class="input-group">
-            <label>🖥️ IP Address Server:</label>
-            <div class="input-with-btn">
-                <input type="text" id="ipAddress" placeholder="192.168.1.xxx">
-                <button class="btn-icon" id="scanBtn" onclick="showScanModal()" title="Pindai Jaringan">🔍</button>
+                <div class="section-title">
+                    <span>📍 Jaringan & Perangkat</span>
+                    <span style="font-size:10px; font-weight:700; color:var(--primary); cursor:pointer;" onclick="showHelpModal()">BANTU CARI IP?</span>
+                </div>
+                
+                <div class="input-group">
+                    <label>🖥️ IP Address Server:</label>
+                    <div class="input-with-btn">
+                        <input type="text" id="ipAddress" placeholder="192.168.1.xxx">
+                        <button class="btn-icon" id="scanBtn" onclick="showScanModal()" title="Pindai Jaringan">🔍</button>
+                    </div>
+                    <select id="ipSelect" style="display:none; margin-top: 8px;" onchange="updateIpAndFetchPrinters()"></select>
+                </div>
+
+                <div class="input-group">
+                    <label>🖨️ Pilih Mesin Printer:</label>
+                    <div class="input-with-btn">
+                        <select id="printerSelect"><option value="">Default Printer...</option></select>
+                        <button class="btn-icon" onclick="showConfigModal()" title="Pengaturan Dokumen">⚙️</button>
+                    </div>
+                </div>
+
+                <div class="section-title"><span>📁 Pilih File</span></div>
+                <div class="input-group">
+                    <input type="file" id="fileInput" accept=".pdf, .docx, .doc, .xlsx, .xls, .png, .jpg, .jpeg" style="width:100%; padding:8px; border:1px dashed #cbd5e1; border-radius:var(--radius-md); font-size:13px; cursor:pointer;" />
+                </div>
+                
+                <div class="divider"><span>ATAU</span></div>
+                <div class="input-group">
+                    <input type="text" id="fileUrl" placeholder="https://file.pdf, https://foto.jpg, ...">
+                </div>
+                
+                <button id="printBtn" onclick="showPinModal()">🚀 GASSS CETAK !!!</button>
+                
+                <div id="realtimeStatus">
+                    <div id="statusMessage" style="font-size:12px; font-weight:600;">Menunggu...</div>
+                    <div class="progress-container"><div id="progressBar"></div></div>
+                </div>
             </div>
-            <select id="ipSelect" style="display:none; margin-top: 8px;" onchange="updateIpAndFetchPrinters()"></select>
-        </div>
 
-        <div class="input-group">
-            <label>🖨️ Pilih Mesin Printer:</label>
-            <div class="input-with-btn">
-                <select id="printerSelect"><option value="">Default Printer...</option></select>
-                <button class="btn-icon" onclick="showConfigModal()" title="Pengaturan Dokumen">⚙️</button>
+            <div class="card history-card" style="padding: 20px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                    <span style="font-size:12px; font-weight:700; color:var(--text-muted);">🕒 RIWAYAT CETAK</span>
+                    <span style="font-size:11px; font-weight:600; color:var(--danger); cursor:pointer;" onclick="clearHistory()">HAPUS RIWAYAT?</span>
+                </div>
+                <ul id="historyList" style="list-style:none; padding:0; margin:0;"></ul>
             </div>
         </div>
 
-        <div class="section-title"><span>📁 Pilih File</span></div>
-        <div class="input-group">
-            <input type="file" id="fileInput" accept=".pdf, .docx, .doc, .xlsx, .xls, .png, .jpg, .jpeg" style="width:100%; padding:8px; border:1px dashed #cbd5e1; border-radius:var(--radius-md); font-size:13px; cursor:pointer;" />
-        </div>
-        
-        <div id="previewContainer" style="display: none;">
-            <div class="preview-header">
-                <span>👀 LIVE PREVIEW</span>
-                <span id="previewPagination" style="display:none; align-items:center; gap:8px;">
-                    <button class="btn-nav" id="btnPrevPage" onclick="changePreviewSheet(-1)">◀</button>
-                    <span id="previewSheetText" style="color:white; font-size:11px;">1 / 1</span>
-                    <button class="btn-nav" id="btnNextPage" onclick="changePreviewSheet(1)">▶</button>
-                </span>
-                <span id="previewBadge" style="color: #cbd5e1;">Warna</span>
-            </div>
-            <div class="preview-body">
-                <canvas id="mainPreviewCanvas" class="preview-canvas" style="display: none;"></canvas>
-                <img id="imgPreview" class="preview-canvas" style="display: none;" />
+        <div class="preview-col" id="previewCol">
+            <div class="card" style="padding: 0; overflow: hidden; border: 1px solid var(--border-soft);">
+                <div class="preview-header">
+                    <span>👀 LIVE PREVIEW</span>
+                    <span id="previewPagination" style="display:none; align-items:center; gap:8px;">
+                        <button class="btn-nav" id="btnPrevPage" onclick="changePreviewSheet(-1)">◀</button>
+                        <span id="previewSheetText" style="color:white; font-size:11px;">1 / 1</span>
+                        <button class="btn-nav" id="btnNextPage" onclick="changePreviewSheet(1)">▶</button>
+                    </span>
+                    <span id="previewBadge" style="color: #cbd5e1;">Warna</span>
+                </div>
+                <div class="preview-body">
+                    <canvas id="mainPreviewCanvas" class="preview-canvas" style="display: none;"></canvas>
+                    <img id="imgPreview" class="preview-canvas" style="display: none;" />
+                </div>
             </div>
         </div>
 
-        <div class="divider"><span>ATAU</span></div>
-        <div class="input-group">
-            <input type="text" id="fileUrl" placeholder="https://file.pdf, https://foto.jpg, ...">
-        </div>
-        
-        <button id="printBtn" onclick="showPinModal()">🚀 GASSS CETAK !!!</button>
-        
-        <div id="realtimeStatus">
-            <div id="statusMessage" style="font-size:12px; font-weight:600;">Menunggu...</div>
-            <div class="progress-container"><div id="progressBar"></div></div>
-        </div>
-    </div>
-
-    <div class="card" style="padding: 20px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-            <span style="font-size:12px; font-weight:700; color:var(--text-muted);">🕒 RIWAYAT CETAK</span>
-            <span style="font-size:11px; font-weight:600; color:var(--danger); cursor:pointer;" onclick="clearHistory()">HAPUS RIWAYAT?</span>
-        </div>
-        <ul id="historyList" style="list-style:none; padding:0; margin:0;"></ul>
     </div>
 
     <div id="scanModal" class="modal">
@@ -162,7 +209,7 @@
             <h3 style="margin:0 0 20px 0; text-align:center;">⚙️ Pengaturan Dokumen</h3>
             <div class="row">
                 <div class="input-group"><label>🎨 Warna:</label>
-                    <select id="colorMode" onchange="onConfigChange()"><option value="color">Berwarna</option><option value="monochrome">Hitam Putih</option></select>
+                    <select id="colorMode"><option value="color">Berwarna</option><option value="monochrome">Hitam Putih</option></select>
                 </div>
                 <div class="input-group"><label>📏 Kertas:</label>
                     <select id="paperSize"><option value="A4">A4</option><option value="F4">F4</option></select>
@@ -170,17 +217,20 @@
             </div>
             <div class="row">
                 <div class="input-group"><label>🔄 Orientasi:</label>
-                    <select id="orientation" onchange="onConfigChange()"><option value="portrait">Potrait</option><option value="landscape">Landscape</option></select>
+                    <select id="orientation"><option value="portrait">Potrait</option><option value="landscape">Landscape</option></select>
                 </div>
                 <div class="input-group"><label>🗂️ Hal / Lembar:</label>
-                    <input type="number" id="pagesPerSheet" value="1" min="1" max="16" placeholder="1, 2, 4, 6..." oninput="onConfigChange()">
+                    <input type="number" id="pagesPerSheet" value="1" min="1" max="16" placeholder="1, 2, 4, 6...">
                 </div>
             </div>
             <div class="row">
                 <div class="input-group"><label>📄 Jumlah Copy:</label><input type="number" id="copies" value="1" min="1"></div>
-                <div class="input-group"><label>📑 Rincian Halaman:</label><input type="text" id="pages" placeholder="Cth: 1,3,5-7" oninput="onConfigChange()"></div>
+                <div class="input-group"><label>📑 Rincian Halaman:</label><input type="text" id="pages" placeholder="Cth: 1,3,5-7"></div>
             </div>
-            <button onclick="closeConfigModal()" style="margin-top:20px;">Terapkan & Tutup</button>
+            <div class="row" style="margin-top:20px;">
+                <button style="background:white; color:var(--text-main); border:1px solid var(--border-soft); box-shadow:none;" onclick="cancelConfigModal()">Batal</button>
+                <button onclick="applyConfigModal()">Simpan</button>
+            </div>
         </div>
     </div>
 
@@ -216,10 +266,44 @@
         window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; document.getElementById('installPwaBtn').style.display = 'block'; });
         document.getElementById('installPwaBtn').addEventListener('click', async () => { if (deferredPrompt !== null) { deferredPrompt.prompt(); const { outcome } = await deferredPrompt.userChoice; if (outcome === 'accepted') document.getElementById('installPwaBtn').style.display = 'none'; deferredPrompt = null; } });
 
+        // LOGIKA MEMORI POPUP CONFIGURASI (BATAL & SIMPAN)
+        let appliedConfig = {};
+
+        function showConfigModal() { 
+            // Amankan/Backup nilai terakhir sebelum modal terbuka
+            appliedConfig = {
+                colorMode: document.getElementById('colorMode').value,
+                paperSize: document.getElementById('paperSize').value,
+                orientation: document.getElementById('orientation').value,
+                pagesPerSheet: document.getElementById('pagesPerSheet').value,
+                copies: document.getElementById('copies').value,
+                pages: document.getElementById('pages').value
+            };
+            document.getElementById('configModal').style.display = 'flex'; 
+        }
+
+        function cancelConfigModal() {
+            // Restore ke nilai backup (Tidak disimpen)
+            document.getElementById('colorMode').value = appliedConfig.colorMode;
+            document.getElementById('paperSize').value = appliedConfig.paperSize;
+            document.getElementById('orientation').value = appliedConfig.orientation;
+            document.getElementById('pagesPerSheet').value = appliedConfig.pagesPerSheet;
+            document.getElementById('copies').value = appliedConfig.copies;
+            document.getElementById('pages').value = appliedConfig.pages;
+            
+            document.getElementById('configModal').style.display = 'none';
+        }
+
+        function applyConfigModal() { 
+            document.getElementById('configModal').style.display = 'none'; 
+            currentPreviewSheet = 0; // Reset ke halaman pertama setelah setting berubah
+            updateDynamicPreview(); 
+            showToast("Pengaturan diterapkan", "success");
+        }
+
         function showScanModal() { document.getElementById('scanModal').style.display = 'flex'; document.getElementById('scanIpInput').focus(); }
         function closeScanModal() { document.getElementById('scanModal').style.display = 'none'; }
-        function showConfigModal() { document.getElementById('configModal').style.display = 'flex'; }
-        function closeConfigModal() { document.getElementById('configModal').style.display = 'none'; updateDynamicPreview(); }
+        
         function showPinModal() { 
             if(!document.getElementById('fileInput').files[0] && !document.getElementById('fileUrl').value) return showToast("Pilih file dulu!", "error");
             document.getElementById('pinModal').style.display = 'flex'; document.getElementById('modalPinInput').focus();
@@ -244,11 +328,6 @@
         let currentImgSrc = null;
         let currentPreviewSheet = 0; 
         let totalPreviewSheets = 1;
-
-        function onConfigChange() {
-            currentPreviewSheet = 0;
-            updateDynamicPreview();
-        }
 
         function changePreviewSheet(direction) {
             currentPreviewSheet += direction;
@@ -280,7 +359,7 @@
 
         document.getElementById('fileInput').addEventListener('change', async function(e) {
             const file = e.target.files[0];
-            const container = document.getElementById('previewContainer');
+            const container = document.getElementById('previewCol');
             
             if(!file) { container.style.display='none'; currentPdfDoc = null; currentImgSrc = null; return; }
             container.style.display='block';
@@ -343,9 +422,6 @@
                     paginationUI.style.display = 'none';
                 }
 
-                // ==========================================
-                // BUG FIX: LOGIKA GRID & SMART AUTO-ROTATION
-                // ==========================================
                 let cols = 1, rows = 1;
                 if (pagesPerSheet === 1) { cols = 1; rows = 1; }
                 else if (pagesPerSheet === 2) { 
@@ -359,8 +435,8 @@
                 else if (pagesPerSheet <= 16) { cols = 4; rows = 4; }
                 else { cols = Math.ceil(Math.sqrt(pagesPerSheet)); rows = Math.ceil(pagesPerSheet / cols); }
 
-                // Resolusi Kanvas Kertas Virtual
-                const baseWidth = 800;
+                // Resolusi Kanvas di-upgrade jadi 1000 agar HD di Desktop
+                const baseWidth = 1000;
                 let cWidth = baseWidth, cHeight = baseWidth * 1.414;
                 if (orientation === 'landscape') { cWidth = baseWidth * 1.414; cHeight = baseWidth; }
                 
@@ -378,13 +454,10 @@
                     let pageNum = pagesToRender[i];
                     const page = await currentPdfDoc.getPage(pageNum);
                     
-                    // SMART FIT: Cek ukuran Halaman Asli VS Ukuran Sel Grid
                     const rawVp = page.getViewport({ scale: 1 });
                     let rotationAngle = 0;
                     
-                    // Jika Sel berbentuk Lebar, tapi Halamannya Tinggi -> Putar 90 drajat
                     if (cellW > cellH && rawVp.width < rawVp.height) { rotationAngle = 90; } 
-                    // Jika Sel berbentuk Tinggi, tapi Halamannya Lebar -> Putar 270 drajat
                     else if (cellW < cellH && rawVp.width > rawVp.height) { rotationAngle = 270; }
 
                     const vp = page.getViewport({ scale: 1, rotation: rotationAngle });
@@ -400,7 +473,7 @@
                     const x = (col * cellW) + (cellW - scaledVp.width) / 2;
                     const y = (row * cellH) + (cellH - scaledVp.height) / 2;
 
-                    ctx.shadowColor = 'rgba(0,0,0,0.15)'; ctx.shadowBlur = 8;
+                    ctx.shadowColor = 'rgba(0,0,0,0.15)'; ctx.shadowBlur = 10;
                     ctx.fillStyle = 'white'; ctx.fillRect(x, y, scaledVp.width, scaledVp.height);
                     ctx.shadowColor = 'transparent';
                     ctx.drawImage(offCanvas, x, y);
@@ -486,7 +559,7 @@
                 if(r.ok) {
                     saveHistory(document.getElementById('fileInput').files[0]?.name || "Dokumen dari Link URL");
                     document.getElementById('fileInput').value = ""; document.getElementById('fileUrl').value = "";
-                    document.getElementById('previewContainer').style.display = 'none';
+                    document.getElementById('previewCol').style.display = 'none';
                     currentPdfDoc = null; currentImgSrc = null;
                 } else showToast(await r.text(), "error");
             } catch (e) { showToast("Koneksi gagal", "error"); }
