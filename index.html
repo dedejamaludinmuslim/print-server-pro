@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#2563eb">
     <link rel="manifest" href="manifest.json">
-    <title>Print Pro V4.5 - Light</title>
+    <title>Print Pro V4.5 - Final Layout</title>
     
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
@@ -45,10 +45,7 @@
         .section-title { font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin: 24px 0 12px 0; border-bottom: 2px solid var(--bg-page); padding-bottom: 8px; display: flex; justify-content: space-between; align-items: center;}
         .input-group { text-align: left; margin-bottom: 16px; }
         .input-group label { font-size: 13px; font-weight: 600; color: var(--text-main); display: block; margin-bottom: 8px;}
-        .row { display: flex; gap: 12px; }
-        .row .input-group { flex: 1; }
-
-        /* PERBAIKAN SEJAJAR KOTAK & TOMBOL */
+        
         .input-with-btn { display: flex; gap: 10px; align-items: stretch; height: 46px; }
         .input-with-btn input, .input-with-btn select { flex: 1; margin: 0; box-sizing: border-box; height: 100%; border: 1px solid var(--border-soft); border-radius: var(--radius-md); padding: 0 15px; background: #f9fafb; font-size: 14px;}
         .input-with-btn input:focus, .input-with-btn select:focus { outline: none; border-color: var(--primary); background: #fff; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
@@ -59,7 +56,7 @@
         .input-standard { width: 100%; padding: 12px 15px; border: 1px solid var(--border-soft); background: #f9fafb; border-radius: var(--radius-md); font-size: 14px; transition: all 0.2s; box-sizing: border-box;}
         .input-standard:focus { outline: none; border-color: var(--primary); background: #fff; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
 
-        button.btn-block { background: var(--primary); color: white; border: none; padding: 16px; font-size: 15px; border-radius: var(--radius-md); cursor: pointer; width: 100%; font-weight: 600; transition: all 0.2s; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 8px;}
+        button.btn-block { background: var(--primary); color: white; border: none; padding: 16px; font-size: 15px; border-radius: var(--radius-md); cursor: pointer; width: 100%; font-weight: 600; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px;}
         button.btn-block:hover { background: var(--primary-hover); transform: translateY(-1.5px); }
 
         .divider { display: flex; align-items: center; text-align: center; margin: 16px 0; color: #94a3b8; font-size: 10px; font-weight: 700; letter-spacing: 1px; }
@@ -96,10 +93,10 @@
                 <div class="input-group">
                     <label>🖥️ IP Address Server:</label>
                     <div class="input-with-btn">
-                        <input type="text" id="ipAddress" placeholder="192.168.1.xxx">
+                        <input type="text" id="ipAddress" placeholder="192.168.1.xxx" onblur="updateIpAndFetchPrinters()" onkeyup="if(event.key === 'Enter') updateIpAndFetchPrinters()">
                         <button class="btn-icon" id="scanBtn" onclick="showScanModal()" title="Pindai Jaringan">🔍</button>
                     </div>
-                    <select id="ipSelect" class="input-standard" style="display:none; margin-top: 8px;" onchange="updateIpAndFetchPrinters()"></select>
+                    <select id="ipSelect" class="input-standard" style="display:none; margin-top: 8px;" onchange="document.getElementById('ipAddress').value = this.value; updateIpAndFetchPrinters();"></select>
                 </div>
 
                 <div class="input-group">
@@ -117,10 +114,8 @@
                 
                 <div class="divider"><span>ATAU</span></div>
                 <div class="input-group">
-                    <input type="text" id="fileUrl" class="input-standard" placeholder="https://domain.com/file.pdf">
+                    <input type="text" id="fileUrl" class="input-standard" placeholder="https://file.pdf atau https://foto.jpg">
                 </div>
-                
-                <button id="printBtn" class="btn-block" onclick="showPinModal()" style="margin-top: 24px;">🚀 GASSS CETAK !!!</button>
                 
                 <div id="realtimeStatus" style="display:none; margin-top:20px;">
                     <div id="statusMessage" style="font-size:12px; font-weight:600;">Menunggu...</div>
@@ -154,6 +149,9 @@
                     <canvas id="mainPreviewCanvas" class="preview-canvas" style="display: none;"></canvas>
                     <img id="imgPreview" class="preview-canvas" style="display: none;" />
                 </div>
+                <div style="padding: 20px; border-top: 1px solid var(--border-soft); background: white;">
+                    <button id="printBtn" class="btn-block" onclick="showPinModal()">🚀 GASSS CETAK !!!</button>
+                </div>
             </div>
         </div>
     </div>
@@ -161,16 +159,11 @@
     <div id="scanModal" class="modal">
         <div class="modal-content" style="text-align:center;">
             <h3 style="margin:0 0 10px 0;">🔍 Deteksi Jaringan</h3>
-            <p style="font-size:13px; color:var(--text-muted); margin-bottom:20px; line-height: 1.5;">Pilih <strong>Auto Detect</strong> untuk mencari server secara buta di jaringan WIFI umum, atau masukkan 3 blok IP WiFi Anda secara manual.</p>
-            
+            <p style="font-size:13px; color:var(--text-muted); margin-bottom:20px; line-height: 1.5;">Pilih <strong>Auto Detect</strong> atau masukkan 3 blok IP WiFi secara manual.</p>
             <button class="btn-block" style="background: var(--success); margin-bottom: 20px;" onclick="startSmartAutoScan()">⚡ AUTO DETECT SERVER</button>
-            
             <div class="divider"><span>ATAU MANUAL</span></div>
-            <div class="input-group" style="margin-bottom: 20px;">
-                <input type="text" id="scanIpInput" class="input-standard" value="192.168.1" style="text-align:center; font-weight:bold; letter-spacing:1px;">
-            </div>
-            
-            <div class="row">
+            <div class="input-group" style="margin-bottom: 20px;"><input type="text" id="scanIpInput" class="input-standard" value="192.168.1" style="text-align:center; font-weight:bold;"></div>
+            <div style="display:flex; gap:10px;">
                 <button class="btn-block" style="background:white; color:#333; border:1px solid #ddd;" onclick="closeScanModal()">Batal</button>
                 <button class="btn-block" onclick="startNetworkScan()">Pindai Manual</button>
             </div>
@@ -180,19 +173,19 @@
     <div id="configModal" class="modal">
         <div class="modal-content">
             <h3 style="text-align:center; margin:0 0 20px 0;">⚙️ Pengaturan</h3>
-            <div class="row">
-                <div class="input-group"><label>Warna:</label><select id="colorMode" class="input-standard"><option value="color">Warna</option><option value="monochrome">Hitam Putih</option></select></div>
-                <div class="input-group"><label>Kertas:</label><select id="paperSize" class="input-standard"><option value="A4">A4</option><option value="F4">F4</option></select></div>
+            <div style="display:flex; gap:12px;">
+                <div class="input-group" style="flex:1;"><label>Warna:</label><select id="colorMode" class="input-standard"><option value="color">Warna</option><option value="monochrome">Hitam Putih</option></select></div>
+                <div class="input-group" style="flex:1;"><label>Ukuran Kertas:</label><select id="paperSize" class="input-standard"><option value="A4">A4</option><option value="F4">F4</option></select></div>
             </div>
-            <div class="row">
-                <div class="input-group"><label>Orientasi:</label><select id="orientation" class="input-standard"><option value="portrait">Portrait</option><option value="landscape">Landscape</option></select></div>
-                <div class="input-group"><label>Hal/Lembar:</label><input type="number" id="pagesPerSheet" class="input-standard" value="1" min="1" max="16"></div>
+            <div style="display:flex; gap:12px;">
+                <div class="input-group" style="flex:1;"><label>Orientasi:</label><select id="orientation" class="input-standard"><option value="portrait">Portrait</option><option value="landscape">Landscape</option></select></div>
+                <div class="input-group" style="flex:1;"><label>Hal/Lembar:</label><input type="number" id="pagesPerSheet" class="input-standard" value="1" min="1" max="16"></div>
             </div>
-            <div class="row">
-                <div class="input-group"><label>Jumlah Copy:</label><input type="number" id="copies" class="input-standard" value="1" min="1"></div>
-                <div class="input-group"><label>Rincian Halaman:</label><input type="text" id="pages" class="input-standard" placeholder="Cth: 1,3,5-7"></div>
+            <div style="display:flex; gap:12px;">
+                <div class="input-group" style="flex:1;"><label>Jumlah Copy:</label><input type="number" id="copies" class="input-standard" value="1" min="1"></div>
+                <div class="input-group" style="flex:1;"><label>Rincian Halaman:</label><input type="text" id="pages" class="input-standard" placeholder="1,3,5-7,..."></div>
             </div>
-            <div class="row" style="margin-top:20px;">
+            <div style="display:flex; gap:10px; margin-top:20px;">
                 <button class="btn-block" style="background:white; color:#333; border:1px solid #ddd;" onclick="cancelConfigModal()">Batal</button>
                 <button class="btn-block" onclick="applyConfigModal()">Simpan</button>
             </div>
@@ -203,7 +196,7 @@
         <div class="modal-content" style="text-align:center;">
             <h3 style="margin:0 0 10px 0;">🔑 PIN Keamanan</h3>
             <input type="password" id="modalPinInput" class="input-standard" maxlength="6" inputmode="numeric" style="font-size:32px; letter-spacing:10px; text-align:center; padding:15px; margin-bottom: 20px;">
-            <div class="row">
+            <div style="display:flex; gap:10px;">
                 <button class="btn-block" style="background:white; color:#333; border:1px solid #ddd;" onclick="closePinModal()">Batal</button>
                 <button class="btn-block" onclick="confirmAndPrint()">Cetak</button>
             </div>
@@ -214,7 +207,7 @@
         <div class="modal-content" style="text-align:center;">
             <h3 style="margin:0 0 10px 0;">🗑️ Hapus Riwayat</h3>
             <p style="font-size:13px; color:var(--text-muted); margin-bottom: 20px;">Yakin ingin menghapus semua daftar riwayat cetak?</p>
-            <div class="row">
+            <div style="display:flex; gap:10px;">
                 <button class="btn-block" style="background:white; color:#333; border:1px solid #ddd;" onclick="closeDeleteHistoryModal()">Batal</button>
                 <button class="btn-block" style="background:var(--danger);" onclick="executeClearHistory()">Ya, Hapus</button>
             </div>
@@ -224,12 +217,12 @@
     <div id="helpModal" class="modal">
         <div class="modal-content" style="text-align: left;">
             <h3 style="text-align: center; margin:0 0 15px 0;">Cara Cek IP PC Server</h3>
-            <p style="font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom:10px;">Jika Deteksi Otomatis gagal, cek langsung di PC Server Anda:</p>
+            <p style="font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom:10px;">Cek langsung di PC Server Anda:</p>
             <ol style="font-size: 13px; color: var(--text-main); padding-left: 20px; line-height: 1.6; margin:0;">
-                <li style="margin-bottom: 8px;">Di PC, tekan tombol <strong>Windows + R</strong>.</li>
+                <li style="margin-bottom: 8px;">Tekan tombol <strong>Windows + R</strong>.</li>
                 <li style="margin-bottom: 8px;">Ketik <strong>cmd</strong> lalu Enter.</li>
                 <li style="margin-bottom: 8px;">Ketik <strong>ipconfig</strong> dan Enter.</li>
-                <li>Cari baris <strong>IPv4 Address</strong> (cth: 192.168.x.x) lalu ketik di aplikasi ini.</li>
+                <li>Cari <strong>IPv4 Address</strong> (cth: 192.168.x.x).</li>
             </ol>
             <button class="btn-block" style="background:white; color:#333; border:1px solid #ddd; margin-top: 20px;" onclick="closeHelpModal()">Tutup</button>
         </div>
@@ -253,14 +246,7 @@
         function closeHelpModal() { document.getElementById('helpModal').style.display='none'; }
         
         function showConfigModal() { 
-            appliedConfig = { 
-                colorMode: document.getElementById('colorMode').value, 
-                paperSize: document.getElementById('paperSize').value, // Disimpan ke memory sementara
-                orientation: document.getElementById('orientation').value, 
-                pagesPerSheet: document.getElementById('pagesPerSheet').value, 
-                copies: document.getElementById('copies').value, // Disimpan ke memory sementara
-                pages: document.getElementById('pages').value 
-            };
+            appliedConfig = { colorMode: document.getElementById('colorMode').value, paperSize: document.getElementById('paperSize').value, orientation: document.getElementById('orientation').value, pagesPerSheet: document.getElementById('pagesPerSheet').value, copies: document.getElementById('copies').value, pages: document.getElementById('pages').value };
             document.getElementById('configModal').style.display='flex'; 
         }
         function cancelConfigModal() { Object.keys(appliedConfig).forEach(k => document.getElementById(k).value = appliedConfig[k]); document.getElementById('configModal').style.display='none'; }
@@ -293,18 +279,13 @@
             const orientation = document.getElementById('orientation').value;
             const pps = parseInt(document.getElementById('pagesPerSheet').value) || 1;
             const canvas = document.getElementById('mainPreviewCanvas'), img = document.getElementById('imgPreview');
-            
             canvas.style.filter = img.style.filter = document.getElementById('colorMode').value === 'monochrome' ? 'grayscale(100%)' : 'none';
-
             if(currentImgSrc) { canvas.style.display='none'; img.style.display='block'; img.src = currentImgSrc; return; }
-            
             img.style.display='none'; canvas.style.display='block';
             const pageArr = Array.from({length: currentPdfDoc.numPages}, (_, i) => i + 1);
             totalPreviewSheets = Math.ceil(pageArr.length / pps);
-            
             document.getElementById('previewPagination').style.display = totalPreviewSheets > 1 ? 'flex' : 'none';
             document.getElementById('previewSheetText').innerText = `${currentPreviewSheet + 1} / ${totalPreviewSheets}`;
-
             let cols = pps > 1 ? (orientation === 'landscape' ? 2 : 1) : 1;
             let rows = Math.ceil(pps / cols);
             const base = 1000;
@@ -312,7 +293,6 @@
             canvas.height = orientation === 'landscape' ? base : base * 1.4;
             const ctx = canvas.getContext('2d');
             ctx.fillStyle = 'white'; ctx.fillRect(0,0, canvas.width, canvas.height);
-
             const start = currentPreviewSheet * pps;
             for(let i=0; i < Math.min(pps, pageArr.length - start); i++) {
                 const page = await currentPdfDoc.getPage(pageArr[start + i]);
@@ -343,79 +323,68 @@
         async function startSmartAutoScan() {
             closeScanModal();
             const btn = document.getElementById('scanBtn'); btn.innerHTML = "⏳"; btn.disabled = true;
-            showToast("Memindai 4 jaringan populer otomatis...", "info");
-            
+            showToast("Memindai jaringan...", "info");
             const subnets = ['192.168.1', '192.168.0', '192.168.100', '192.168.8'];
             let found = false;
-
             for (let subnet of subnets) {
                 if (found) break; 
                 const promises = [];
                 for(let i=1; i<=254; i++) {
                     const ip = `${subnet}.${i}`;
-                    promises.push(
-                        fetch(`http://${ip}:3000/ping`, { signal: AbortSignal.timeout(1500) })
-                        .then(r => r.json())
-                        .then(d => {
-                            if(d.status === 'PrintServerActive') {
-                                const sel = document.getElementById('ipSelect'); sel.style.display='block';
-                                sel.add(new Option(`${d.hostname} (${ip})`, ip));
-                                if(!found) { 
-                                    document.getElementById('ipAddress').value = ip; 
-                                    updateIpAndFetchPrinters(); 
-                                    showToast(`Ditemukan Server di ${ip}`, "success");
-                                }
-                                found = true;
-                            }
-                        }).catch(() => {})
-                    );
+                    promises.push(fetch(`http://${ip}:3000/ping`, { signal: AbortSignal.timeout(1500) }).then(r => r.json()).then(d => {
+                        if(d.status === 'PrintServerActive') {
+                            const sel = document.getElementById('ipSelect'); sel.style.display='block';
+                            sel.add(new Option(`${d.hostname} (${ip})`, ip));
+                            if(!found) { document.getElementById('ipAddress').value = ip; updateIpAndFetchPrinters(); showToast(`Ditemukan Server di ${ip}`, "success"); }
+                            found = true;
+                        }
+                    }).catch(() => {}));
                 }
                 await Promise.allSettled(promises);
             }
-            
             btn.innerHTML = "🔍"; btn.disabled = false;
-            if(!found) showToast("Auto-Detect gagal. Server tidak ada di jaringan standar.", "error");
+            if(!found) showToast("Auto-Detect gagal.", "error");
         }
 
         async function startNetworkScan() {
             const base = document.getElementById('scanIpInput').value; 
             closeScanModal();
             const btn = document.getElementById('scanBtn'); btn.innerHTML = "⏳"; btn.disabled = true;
-            showToast(`Memindai blok IP ${base}.x...`, "info");
-
             let found = false;
             const promises = [];
             for(let i=1; i<=254; i++) {
                 const ip = `${base}.${i}`;
-                promises.push(
-                    fetch(`http://${ip}:3000/ping`, { signal: AbortSignal.timeout(1500) }).then(r => r.json()).then(d => {
-                        if(d.status === 'PrintServerActive') {
-                            const sel = document.getElementById('ipSelect'); sel.style.display='block';
-                            sel.add(new Option(`${d.hostname} (${ip})`, ip));
-                            if(!found) { 
-                                document.getElementById('ipAddress').value = ip; 
-                                updateIpAndFetchPrinters(); 
-                                showToast(`Ditemukan Server di ${ip}`, "success");
-                            }
-                            found = true;
-                        }
-                    }).catch(() => {})
-                );
+                promises.push(fetch(`http://${ip}:3000/ping`, { signal: AbortSignal.timeout(1500) }).then(r => r.json()).then(d => {
+                    if(d.status === 'PrintServerActive') {
+                        const sel = document.getElementById('ipSelect'); sel.style.display='block';
+                        sel.add(new Option(`${d.hostname} (${ip})`, ip));
+                        if(!found) { document.getElementById('ipAddress').value = ip; updateIpAndFetchPrinters(); showToast(`Ditemukan Server di ${ip}`, "success"); }
+                        found = true;
+                    }
+                }).catch(() => {}));
             }
             await Promise.allSettled(promises);
             btn.innerHTML = "🔍"; btn.disabled = false;
-            if(!found) showToast(`Tidak ada server di blok ${base}.x`, "error");
         }
 
         async function updateIpAndFetchPrinters() {
-            const ip = document.getElementById('ipAddress').value;
+            const ip = document.getElementById('ipAddress').value.trim();
+            if (!ip) return;
+            const sel = document.getElementById('printerSelect');
+            sel.innerHTML = '<option value="">⏳ Memuat...</option>';
+            sel.disabled = true;
             connectSocket(ip);
             try {
-                const r = await fetch(`http://${ip}:3000/printers`);
+                const r = await fetch(`http://${ip}:3000/printers?_t=${Date.now()}`, { cache: 'no-store' });
                 const data = await r.json();
-                const sel = document.getElementById('printerSelect'); sel.innerHTML = '<option value="">Default Printer</option>';
+                sel.innerHTML = '<option value="">🖨️ Default Printer</option>';
                 data.forEach(p => sel.add(new Option(p.name, p.name)));
-            } catch(e) {}
+                sel.value = ""; sel.disabled = false;
+                showToast(`Server ${ip} dimuat!`, "success");
+            } catch(e) {
+                sel.innerHTML = '<option value="">⚠️ Gagal</option>';
+                sel.disabled = false;
+            }
         }
 
         async function confirmAndPrint() {
@@ -426,17 +395,16 @@
             fd.append('pin', pin);
             fd.append('printerName', document.getElementById('printerSelect').value);
             fd.append('colorMode', document.getElementById('colorMode').value);
-            fd.append('paperSize', document.getElementById('paperSize').value); // DIKEMBALIKAN KE FORMDATA
+            fd.append('paperSize', document.getElementById('paperSize').value); 
             fd.append('orientation', document.getElementById('orientation').value);
             fd.append('pagesPerSheet', document.getElementById('pagesPerSheet').value);
-            fd.append('copies', document.getElementById('copies').value); // DIKEMBALIKAN KE FORMDATA
+            fd.append('copies', document.getElementById('copies').value); 
             fd.append('pages', document.getElementById('pages').value);
-
             try {
                 const r = await fetch(`http://${ip}:3000/print`, { method: 'POST', body: fd });
                 if(r.ok) { saveHistory(document.getElementById('fileInput').files[0]?.name || "Link URL"); showToast("Berhasil", "success"); }
                 else showToast(await r.text(), "error");
-            } catch(e) { showToast("Gagal koneksi", "error"); }
+            } catch(e) { showToast("Gagal", "error"); }
         }
 
         function saveHistory(name) {
