@@ -96,7 +96,7 @@
                 <div class="input-group">
                     <label>🖥️ IP Address Server:</label>
                     <div class="input-with-btn">
-                        <input type="text" id="ipAddress" placeholder="192.168.1.xxx" onblur="updateIpAndFetchPrinters()" onkeyup="if(event.key === 'Enter') updateIpAndFetchPrinters()">
+                        <input type="text" id="ipAddress" placeholder="192.168.1.xxx">
                         <button class="btn-icon" id="scanBtn" onclick="showScanModal()" title="Pindai Jaringan">🔍</button>
                     </div>
                     <select id="ipSelect" class="input-standard" style="display:none; margin-top: 8px;" onchange="updateIpAndFetchPrinters()"></select>
@@ -106,7 +106,6 @@
                     <label>🖨️ Pilih Mesin Printer:</label>
                     <div class="input-with-btn">
                         <select id="printerSelect"><option value="">Default Printer...</option></select>
-                        <button class="btn-icon" onclick="updateIpAndFetchPrinters()" title="Muat Ulang Printer" style="background: var(--success);">🔄</button>
                         <button class="btn-icon" onclick="showConfigModal()" title="Pengaturan Cetak">⚙️</button>
                     </div>
                 </div>
