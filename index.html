@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#2563eb">
     <link rel="manifest" href="manifest.json">
-    <title>Print Pro V4.5</title>
+    <title>Print Pro V4.5 - Light</title>
     
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
@@ -23,7 +23,6 @@
 
         body { font-family: 'Inter', sans-serif; padding: 20px 15px; background-color: var(--bg-page); color: var(--text-main); margin: 0; -webkit-font-smoothing: antialiased;}
         
-        /* TATA LETAK RESPONSIVE (MOBILE & DESKTOP) */
         .app-wrapper { display: flex; flex-direction: column; gap: 20px; max-width: 480px; margin: 0 auto; }
         .left-col { display: contents; } 
         .main-card { order: 1; }
@@ -37,17 +36,7 @@
             .main-card, .history-card { order: unset; }
             .preview-col { position: sticky; top: 40px; order: unset; height: calc(100vh - 80px); }
             .preview-col .card { height: 100%; display: flex; flex-direction: column; padding: 0; overflow: hidden; }
-            
-            /* FIX FLEKSIBILITAS DESKTOP */
-            .preview-body { 
-                flex: 1; 
-                padding: 30px; 
-                overflow: hidden; /* Mencegah scrollbar bocor */
-                display: flex; 
-                justify-content: center; 
-                align-items: center; 
-                min-height: 0; /* Mencegah Flexbox membesar melebihi layar */
-            } 
+            .preview-body { flex: 1; padding: 30px; overflow: hidden; display: flex; justify-content: center; align-items: center; min-height: 0; } 
         }
 
         .card { background: var(--bg-card); padding: 28px 24px; border-radius: var(--radius-lg); box-shadow: var(--shadow-float); width: 100%; box-sizing: border-box; border: 1px solid var(--border-soft); }
@@ -59,56 +48,36 @@
         .row { display: flex; gap: 12px; }
         .row .input-group { flex: 1; }
 
-        input, select { width: 100%; padding: 12px; border: 1px solid var(--border-soft); background: #f9fafb; border-radius: var(--radius-md); font-size: 14px; transition: all 0.2s; box-sizing: border-box;}
-        input:focus, select:focus { outline: none; border-color: var(--primary); background: #fff; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+        /* PERBAIKAN SEJAJAR KOTAK & TOMBOL */
+        .input-with-btn { display: flex; gap: 10px; align-items: stretch; height: 46px; }
+        .input-with-btn input, .input-with-btn select { flex: 1; margin: 0; box-sizing: border-box; height: 100%; border: 1px solid var(--border-soft); border-radius: var(--radius-md); padding: 0 15px; background: #f9fafb; font-size: 14px;}
+        .input-with-btn input:focus, .input-with-btn select:focus { outline: none; border-color: var(--primary); background: #fff; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+        
+        .btn-icon { width: 48px; margin: 0; display: flex; align-items: center; justify-content: center; font-size: 20px; background: var(--primary); color: white; border: none; border-radius: var(--radius-md); flex-shrink: 0; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2); height: 100%; cursor: pointer;}
+        .btn-icon:hover { background: var(--primary-hover); }
 
-        button { background: var(--primary); color: white; border: none; padding: 16px; font-size: 15px; border-radius: var(--radius-md); cursor: pointer; width: 100%; font-weight: 600; transition: all 0.2s; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 8px;}
-        button:hover { background: var(--primary-hover); transform: translateY(-1.5px); }
-        button:disabled { background: #9ca3af; cursor: not-allowed; transform: none; }
+        .input-standard { width: 100%; padding: 12px 15px; border: 1px solid var(--border-soft); background: #f9fafb; border-radius: var(--radius-md); font-size: 14px; transition: all 0.2s; box-sizing: border-box;}
+        .input-standard:focus { outline: none; border-color: var(--primary); background: #fff; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
 
-        #installPwaBtn { display:none; margin-bottom:15px; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2); }
-
-        .input-with-btn { display: flex; gap: 10px; align-items: stretch; }
-        .input-with-btn input, .input-with-btn select { flex: 1; margin-bottom: 0; }
-        .btn-icon { width: 48px; padding: 0; margin: 0; display: flex; align-items: center; justify-content: center; font-size: 20px; background: var(--primary); color: white; border: none; border-radius: var(--radius-md); flex-shrink: 0; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);}
-        .btn-icon:hover { background: var(--primary-hover); transform: translateY(-1.5px); }
+        button.btn-block { background: var(--primary); color: white; border: none; padding: 16px; font-size: 15px; border-radius: var(--radius-md); cursor: pointer; width: 100%; font-weight: 600; transition: all 0.2s; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 8px;}
+        button.btn-block:hover { background: var(--primary-hover); transform: translateY(-1.5px); }
 
         .divider { display: flex; align-items: center; text-align: center; margin: 16px 0; color: #94a3b8; font-size: 10px; font-weight: 700; letter-spacing: 1px; }
         .divider::before, .divider::after { content: ''; flex: 1; border-bottom: 1px solid #e2e8f0; }
         .divider span { padding: 0 10px; }
 
         .modal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(17, 24, 39, 0.7); align-items: center; justify-content: center; backdrop-filter: blur(5px); }
-        .modal-content { background: white; padding: 30px; border-radius: var(--radius-lg); width: 90%; max-width: 400px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); animation: modalIn 0.3s ease-out; }
-        @keyframes modalIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .modal-content { background: white; padding: 30px; border-radius: var(--radius-lg); width: 90%; max-width: 400px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
 
         .toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 10000; display: flex; flex-direction: column; gap: 10px; width: 90%; max-width: 380px; pointer-events: none;}
-        .toast { padding: 16px 20px; border-radius: var(--radius-md); background: var(--text-main); color: white; font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 12px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); animation: toastIn 0.25s ease-out forwards; opacity: 0; pointer-events: auto;}
+        .toast { padding: 16px 20px; border-radius: var(--radius-md); background: var(--text-main); color: white; font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 12px; animation: toastIn 0.25s ease-out forwards;}
         @keyframes toastIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        @keyframes toastOut { from { transform: translateY(0); opacity: 1; } to { transform: translateY(-20px); opacity: 0; } }
 
-        #realtimeStatus { display:none; margin-top:20px; padding:16px; border-radius:var(--radius-md); background:#f8fafc; border: 1px solid var(--border-soft); }
-        .progress-container { height:6px; background:#e2e8f0; margin-top:12px; border-radius:10px; overflow:hidden;}
-        #progressBar { width:0%; height:100%; background: var(--success); transition: width 0.4s; }
-        .history-item { background: white; border-left: 4px solid var(--primary); padding: 14px; margin-bottom: 10px; border-radius: 8px; font-size: 13px; border: 1px solid var(--border-soft); }
-        
-        /* FIX PREVIEW CANVAS UNTUK SMART SCALING */
-        .preview-header { font-size: 11px; font-weight: 700; color: white; background: var(--text-main); padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; text-transform: uppercase; letter-spacing: 0.5px;}
+        .preview-header { font-size: 11px; font-weight: 700; color: white; background: var(--text-main); padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; text-transform: uppercase;}
         .preview-body { padding: 20px; background: #e2e8f0; display: flex; justify-content: center; align-items: center; }
+        .preview-canvas { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; background: white; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.2); }
         
-        .preview-canvas { 
-            max-width: 100%; 
-            max-height: 100%; /* Ini kunci agar gambar tidak melebihi kotak */
-            width: auto; 
-            height: auto; 
-            object-fit: contain; /* Menjaga aspek rasio kertas tetap proporsional */
-            border-radius: 4px; 
-            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.2); 
-            background: white; 
-            transition: filter 0.3s ease; 
-        }
-        
-        .btn-nav { background: rgba(255,255,255,0.2); border: none; color: white; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; margin: 0; width: auto; font-weight: bold; transition: 0.2s;}
-        .btn-nav:hover { background: rgba(255,255,255,0.4); transform: none; }
+        .btn-nav { background: rgba(255,255,255,0.2); border: none; color: white; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; }
         .btn-nav:disabled { opacity: 0.3; cursor: not-allowed; }
     </style>
 </head>
@@ -118,67 +87,65 @@
         <div class="left-col">
             <div class="card main-card">
                 <h2>🏢 Print Server Pro v4.5</h2>
-                <button id="installPwaBtn">📲 Install Aplikasi ke Layar</button>
 
                 <div class="section-title">
-                    <span>📍 Jaringan & Perangkat</span>
+                    <span>📍 Jaringan</span>
                     <span style="font-size:10px; font-weight:700; color:var(--primary); cursor:pointer;" onclick="showHelpModal()">BANTU CARI IP?</span>
                 </div>
                 
                 <div class="input-group">
                     <label>🖥️ IP Address Server:</label>
                     <div class="input-with-btn">
-                        <input type="text" id="ipAddress" placeholder="192.168.xxx.xxx">
+                        <input type="text" id="ipAddress" placeholder="192.168.1.xxx">
                         <button class="btn-icon" id="scanBtn" onclick="showScanModal()" title="Pindai Jaringan">🔍</button>
                     </div>
-                    <select id="ipSelect" style="display:none; margin-top: 8px;" onchange="updateIpAndFetchPrinters()"></select>
+                    <select id="ipSelect" class="input-standard" style="display:none; margin-top: 8px;" onchange="updateIpAndFetchPrinters()"></select>
                 </div>
 
                 <div class="input-group">
                     <label>🖨️ Pilih Mesin Printer:</label>
                     <div class="input-with-btn">
                         <select id="printerSelect"><option value="">Default Printer...</option></select>
-                        <button class="btn-icon" onclick="showConfigModal()" title="Pengaturan Dokumen">⚙️</button>
+                        <button class="btn-icon" onclick="showConfigModal()" title="Pengaturan Cetak">⚙️</button>
                     </div>
                 </div>
 
-                <div class="section-title"><span>📁 Pilih File</span></div>
+                <div class="section-title"><span>📁 Pilih File (PDF/Gambar)</span></div>
                 <div class="input-group">
-                    <input type="file" id="fileInput" accept=".pdf, .docx, .doc, .xlsx, .xls, .png, .jpg, .jpeg" style="width:100%; padding:8px; border:1px dashed #cbd5e1; border-radius:var(--radius-md); font-size:13px; cursor:pointer;" />
+                    <input type="file" id="fileInput" class="input-standard" accept=".pdf, .png, .jpg, .jpeg" style="padding:10px; border:1px dashed #cbd5e1; cursor:pointer;" />
                 </div>
                 
                 <div class="divider"><span>ATAU</span></div>
                 <div class="input-group">
-                    <input type="text" id="fileUrl" placeholder="https://file.pdf, https://foto.jpg, ...">
+                    <input type="text" id="fileUrl" class="input-standard" placeholder="https://domain.com/file.pdf">
                 </div>
                 
-                <div class="row" style="margin-top: 24px; gap: 10px;">
-                    <button id="simulateBtn" onclick="simulatePrint()" style="background: var(--text-main); color: white; flex: 1; font-size: 13px; padding: 14px 10px;">📥 SIMULASI</button>
-                    <button id="printBtn" onclick="showPinModal()" style="flex: 2; padding: 14px;">🚀 GASSS CETAK !!!</button>
-                </div>
+                <button id="printBtn" class="btn-block" onclick="showPinModal()" style="margin-top: 24px;">🚀 GASSS CETAK !!!</button>
                 
-                <div id="realtimeStatus">
+                <div id="realtimeStatus" style="display:none; margin-top:20px;">
                     <div id="statusMessage" style="font-size:12px; font-weight:600;">Menunggu...</div>
-                    <div class="progress-container"><div id="progressBar"></div></div>
+                    <div style="height:6px; background:#e2e8f0; margin-top:12px; border-radius:10px; overflow:hidden;">
+                        <div id="progressBar" style="width:0%; height:100%; background: var(--success); transition: width 0.4s;"></div>
+                    </div>
                 </div>
             </div>
 
             <div class="card history-card" style="padding: 20px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                    <span style="font-size:12px; font-weight:700; color:var(--text-muted);">🕒 RIWAYAT CETAK</span>
-                    <span style="font-size:11px; font-weight:600; color:var(--danger); cursor:pointer;" onclick="showDeleteHistoryModal()">HAPUS RIWAYAT?</span>
+                    <span style="font-size:12px; font-weight:700; color:var(--text-muted);">🕒 RIWAYAT</span>
+                    <span style="font-size:11px; font-weight:600; color:var(--danger); cursor:pointer;" onclick="showDeleteHistoryModal()">HAPUS?</span>
                 </div>
                 <ul id="historyList" style="list-style:none; padding:0; margin:0;"></ul>
             </div>
         </div>
 
         <div class="preview-col" id="previewCol">
-            <div class="card" style="padding: 0; overflow: hidden; border: 1px solid var(--border-soft);">
+            <div class="card" style="padding: 0; overflow: hidden;">
                 <div class="preview-header">
-                    <span>👀 LIVE PREVIEW</span>
+                    <span>👀 PREVIEW</span>
                     <span id="previewPagination" style="display:none; align-items:center; gap:8px;">
                         <button class="btn-nav" id="btnPrevPage" onclick="changePreviewSheet(-1)">◀</button>
-                        <span id="previewSheetText" style="color:white; font-size:11px;">1 / 1</span>
+                        <span id="previewSheetText" style="font-size:11px;">1 / 1</span>
                         <button class="btn-nav" id="btnNextPage" onclick="changePreviewSheet(1)">▶</button>
                     </span>
                     <span id="previewBadge" style="color: #cbd5e1;">Warna</span>
@@ -189,59 +156,56 @@
                 </div>
             </div>
         </div>
-
     </div>
 
     <div id="scanModal" class="modal">
         <div class="modal-content" style="text-align:center;">
-            <h3 style="margin:0 0 10px 0;">🔍 Pindai Jaringan</h3>
-            <p style="font-size:13px; color:var(--text-muted); margin-bottom:20px;">Masukkan 3 blok IP WiFi utama Anda.</p>
-            <input type="text" id="scanIpInput" value="192.168.1" style="font-size:20px; font-weight:600; letter-spacing:2px; text-align:center; padding:15px; margin-bottom:20px;">
+            <h3 style="margin:0 0 10px 0;">🔍 Deteksi Jaringan</h3>
+            <p style="font-size:13px; color:var(--text-muted); margin-bottom:20px; line-height: 1.5;">Pilih <strong>Auto Detect</strong> untuk mencari server secara buta di jaringan WIFI umum, atau masukkan 3 blok IP WiFi Anda secara manual.</p>
+            
+            <button class="btn-block" style="background: var(--success); margin-bottom: 20px;" onclick="startSmartAutoScan()">⚡ AUTO DETECT SERVER</button>
+            
+            <div class="divider"><span>ATAU MANUAL</span></div>
+            <div class="input-group" style="margin-bottom: 20px;">
+                <input type="text" id="scanIpInput" class="input-standard" value="192.168.1" style="text-align:center; font-weight:bold; letter-spacing:1px;">
+            </div>
+            
             <div class="row">
-                <button style="background:white; color:var(--text-main); border:1px solid var(--border-soft); box-shadow:none;" onclick="closeScanModal()">Batal</button>
-                <button onclick="startNetworkScan()">Pindai Sekarang</button>
+                <button class="btn-block" style="background:white; color:#333; border:1px solid #ddd;" onclick="closeScanModal()">Batal</button>
+                <button class="btn-block" onclick="startNetworkScan()">Pindai Manual</button>
             </div>
         </div>
     </div>
 
     <div id="configModal" class="modal">
         <div class="modal-content">
-            <h3 style="margin:0 0 20px 0; text-align:center;">⚙️ Pengaturan Dokumen</h3>
+            <h3 style="text-align:center; margin:0 0 20px 0;">⚙️ Pengaturan</h3>
             <div class="row">
-                <div class="input-group"><label>🎨 Warna:</label>
-                    <select id="colorMode"><option value="color">Berwarna</option><option value="monochrome">Hitam Putih</option></select>
-                </div>
-                <div class="input-group"><label>📏 Kertas:</label>
-                    <select id="paperSize"><option value="A4">A4</option><option value="F4">F4</option></select>
-                </div>
+                <div class="input-group"><label>Warna:</label><select id="colorMode" class="input-standard"><option value="color">Warna</option><option value="monochrome">Hitam Putih</option></select></div>
+                <div class="input-group"><label>Kertas:</label><select id="paperSize" class="input-standard"><option value="A4">A4</option><option value="F4">F4</option></select></div>
             </div>
             <div class="row">
-                <div class="input-group"><label>🔄 Orientasi:</label>
-                    <select id="orientation"><option value="portrait">Potrait</option><option value="landscape">Landscape</option></select>
-                </div>
-                <div class="input-group"><label>🗂️ Hal / Lembar:</label>
-                    <input type="number" id="pagesPerSheet" value="1" min="1" max="16" placeholder="1, 2, 4, 6...">
-                </div>
+                <div class="input-group"><label>Orientasi:</label><select id="orientation" class="input-standard"><option value="portrait">Portrait</option><option value="landscape">Landscape</option></select></div>
+                <div class="input-group"><label>Hal/Lembar:</label><input type="number" id="pagesPerSheet" class="input-standard" value="1" min="1" max="16"></div>
             </div>
             <div class="row">
-                <div class="input-group"><label>📄 Jumlah Copy:</label><input type="number" id="copies" value="1" min="1"></div>
-                <div class="input-group"><label>📑 Rincian Halaman:</label><input type="text" id="pages" placeholder="1,3,5-7,..."></div>
+                <div class="input-group"><label>Jumlah Copy:</label><input type="number" id="copies" class="input-standard" value="1" min="1"></div>
+                <div class="input-group"><label>Rincian Halaman:</label><input type="text" id="pages" class="input-standard" placeholder="Cth: 1,3,5-7"></div>
             </div>
             <div class="row" style="margin-top:20px;">
-                <button style="background:white; color:var(--text-main); border:1px solid var(--border-soft); box-shadow:none;" onclick="cancelConfigModal()">Batal</button>
-                <button onclick="applyConfigModal()">Simpan</button>
+                <button class="btn-block" style="background:white; color:#333; border:1px solid #ddd;" onclick="cancelConfigModal()">Batal</button>
+                <button class="btn-block" onclick="applyConfigModal()">Simpan</button>
             </div>
         </div>
     </div>
 
     <div id="pinModal" class="modal">
         <div class="modal-content" style="text-align:center;">
-            <h3>🔑 PIN Keamanan</h3>
-            <p style="font-size:13px; color:var(--text-muted);">Masukkan PIN untuk mulai mencetak</p>
-            <input type="password" id="modalPinInput" maxlength="6" inputmode="numeric" style="font-size:32px; letter-spacing:10px; text-align:center; padding: 15px;">
-            <div class="row" style="margin-top:20px;">
-                <button style="background:white; color:var(--text-main); border:1px solid var(--border-soft); box-shadow:none;" onclick="closePinModal()">Batal</button>
-                <button onclick="confirmAndPrint()">Konfirmasi</button>
+            <h3 style="margin:0 0 10px 0;">🔑 PIN Keamanan</h3>
+            <input type="password" id="modalPinInput" class="input-standard" maxlength="6" inputmode="numeric" style="font-size:32px; letter-spacing:10px; text-align:center; padding:15px; margin-bottom: 20px;">
+            <div class="row">
+                <button class="btn-block" style="background:white; color:#333; border:1px solid #ddd;" onclick="closePinModal()">Batal</button>
+                <button class="btn-block" onclick="confirmAndPrint()">Cetak</button>
             </div>
         </div>
     </div>
@@ -249,394 +213,244 @@
     <div id="deleteHistoryModal" class="modal">
         <div class="modal-content" style="text-align:center;">
             <h3 style="margin:0 0 10px 0;">🗑️ Hapus Riwayat</h3>
-            <p style="font-size:13px; color:var(--text-muted); margin-bottom:24px;">Apakah Anda yakin ingin menghapus semua daftar riwayat cetak? Tindakan ini permanen.</p>
+            <p style="font-size:13px; color:var(--text-muted); margin-bottom: 20px;">Yakin ingin menghapus semua daftar riwayat cetak?</p>
             <div class="row">
-                <button style="background:white; color:var(--text-main); border:1px solid var(--border-soft); box-shadow:none;" onclick="closeDeleteHistoryModal()">Batal</button>
-                <button style="background:var(--danger);" onclick="executeClearHistory()">Ya, Hapus</button>
+                <button class="btn-block" style="background:white; color:#333; border:1px solid #ddd;" onclick="closeDeleteHistoryModal()">Batal</button>
+                <button class="btn-block" style="background:var(--danger);" onclick="executeClearHistory()">Ya, Hapus</button>
             </div>
         </div>
     </div>
 
     <div id="helpModal" class="modal">
         <div class="modal-content" style="text-align: left;">
-            <h3 style="text-align: center; margin-bottom: 15px;">Cara Cek IP Manual</h3>
-            <ol style="font-size: 13px; color: var(--text-main); padding-left: 20px; line-height: 1.6;">
-                <li style="margin-bottom: 8px;">Tekan tombol <strong>Windows + R</strong> di PC Server.</li>
+            <h3 style="text-align: center; margin:0 0 15px 0;">Cara Cek IP PC Server</h3>
+            <p style="font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom:10px;">Jika Deteksi Otomatis gagal, cek langsung di PC Server Anda:</p>
+            <ol style="font-size: 13px; color: var(--text-main); padding-left: 20px; line-height: 1.6; margin:0;">
+                <li style="margin-bottom: 8px;">Di PC, tekan tombol <strong>Windows + R</strong>.</li>
                 <li style="margin-bottom: 8px;">Ketik <strong>cmd</strong> lalu Enter.</li>
                 <li style="margin-bottom: 8px;">Ketik <strong>ipconfig</strong> dan Enter.</li>
-                <li>Cari <strong>IPv4 Address</strong> (192.168.xxx.xxx) lalu masukkan ke aplikasi.</li>
+                <li>Cari baris <strong>IPv4 Address</strong> (cth: 192.168.x.x) lalu ketik di aplikasi ini.</li>
             </ol>
-            <button style="background:white; color:var(--text-main); border:1px solid var(--border-soft); box-shadow:none; margin-top: 15px;" onclick="document.getElementById('helpModal').style.display='none'">Tutup</button>
+            <button class="btn-block" style="background:white; color:#333; border:1px solid #ddd; margin-top: 20px;" onclick="closeHelpModal()">Tutup</button>
         </div>
     </div>
 
     <script>
-        if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW fail')); }); }
-        let deferredPrompt;
-        window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; document.getElementById('installPwaBtn').style.display = 'block'; });
-        document.getElementById('installPwaBtn').addEventListener('click', async () => { if (deferredPrompt !== null) { deferredPrompt.prompt(); const { outcome } = await deferredPrompt.userChoice; if (outcome === 'accepted') document.getElementById('installPwaBtn').style.display = 'none'; deferredPrompt = null; } });
-
-        let appliedConfig = {};
-
-        function showConfigModal() { 
-            appliedConfig = {
-                colorMode: document.getElementById('colorMode').value,
-                paperSize: document.getElementById('paperSize').value,
-                orientation: document.getElementById('orientation').value,
-                pagesPerSheet: document.getElementById('pagesPerSheet').value,
-                copies: document.getElementById('copies').value,
-                pages: document.getElementById('pages').value
-            };
-            document.getElementById('configModal').style.display = 'flex'; 
-        }
-
-        function cancelConfigModal() {
-            document.getElementById('colorMode').value = appliedConfig.colorMode;
-            document.getElementById('paperSize').value = appliedConfig.paperSize;
-            document.getElementById('orientation').value = appliedConfig.orientation;
-            document.getElementById('pagesPerSheet').value = appliedConfig.pagesPerSheet;
-            document.getElementById('copies').value = appliedConfig.copies;
-            document.getElementById('pages').value = appliedConfig.pages;
-            document.getElementById('configModal').style.display = 'none';
-        }
-
-        function applyConfigModal() { 
-            document.getElementById('configModal').style.display = 'none'; 
-            currentPreviewSheet = 0; 
-            updateDynamicPreview(); 
-            showToast("Pengaturan diterapkan", "success");
-        }
-
-        function showScanModal() { document.getElementById('scanModal').style.display = 'flex'; document.getElementById('scanIpInput').focus(); }
-        function closeScanModal() { document.getElementById('scanModal').style.display = 'none'; }
-        
-        function showPinModal() { 
-            if(!document.getElementById('fileInput').files[0] && !document.getElementById('fileUrl').value) return showToast("Pilih file dulu!", "error");
-            document.getElementById('pinModal').style.display = 'flex'; document.getElementById('modalPinInput').focus();
-        }
-        function closePinModal() { document.getElementById('pinModal').style.display = 'none'; document.getElementById('modalPinInput').value = ''; }
-        function showHelpModal() { document.getElementById('helpModal').style.display = 'flex'; }
-
-        function showDeleteHistoryModal() { document.getElementById('deleteHistoryModal').style.display = 'flex'; }
-        function closeDeleteHistoryModal() { document.getElementById('deleteHistoryModal').style.display = 'none'; }
-        function executeClearHistory() {
-            localStorage.removeItem('h_v45'); 
-            loadHistory(); 
-            closeDeleteHistoryModal();
-            showToast("Riwayat dibersihkan", "success");
-        }
+        let currentPdfDoc = null, currentImgSrc = null, currentPreviewSheet = 0, totalPreviewSheets = 1, appliedConfig = {};
 
         function showToast(message, type = 'info') {
-            let container = document.getElementById('toastContainer');
-            if(!container) { container = document.createElement('div'); container.id = 'toastContainer'; container.className = 'toast-container'; document.body.appendChild(container); }
-            const toast = document.createElement('div'); toast.className = `toast`;
-            const icons = { success: '✅', error: '🚨', info: 'ℹ️' };
-            toast.innerHTML = `<span style="font-size:18px;">${icons[type]}</span> <span style="line-height:1.4;">${message}</span>`;
+            let container = document.getElementById('toastContainer') || document.createElement('div');
+            container.id = 'toastContainer'; container.className = 'toast-container'; document.body.appendChild(container);
+            const toast = document.createElement('div'); toast.className = 'toast';
+            toast.innerHTML = `<span>${type === 'success' ? '✅' : '🚨'}</span> ${message}`;
             container.appendChild(toast);
-            setTimeout(() => { toast.style.animation = 'toastOut 0.3s ease-in forwards'; setTimeout(() => toast.remove(), 300); }, 6000);
+            setTimeout(() => toast.remove(), 4000);
         }
 
-        // ==========================================
-        // MESIN LIVE DYNAMIC GRID & SMART SCALING
-        // ==========================================
-        let currentPdfDoc = null;
-        let currentImgSrc = null;
-        let currentPreviewSheet = 0; 
-        let totalPreviewSheets = 1;
-
-        function changePreviewSheet(direction) {
-            currentPreviewSheet += direction;
-            if (currentPreviewSheet < 0) currentPreviewSheet = 0;
-            if (currentPreviewSheet >= totalPreviewSheets) currentPreviewSheet = totalPreviewSheets - 1;
-            updateDynamicPreview();
+        function showScanModal() { document.getElementById('scanModal').style.display='flex'; }
+        function closeScanModal() { document.getElementById('scanModal').style.display='none'; }
+        function showHelpModal() { document.getElementById('helpModal').style.display='flex'; }
+        function closeHelpModal() { document.getElementById('helpModal').style.display='none'; }
+        
+        function showConfigModal() { 
+            appliedConfig = { 
+                colorMode: document.getElementById('colorMode').value, 
+                paperSize: document.getElementById('paperSize').value, // Disimpan ke memory sementara
+                orientation: document.getElementById('orientation').value, 
+                pagesPerSheet: document.getElementById('pagesPerSheet').value, 
+                copies: document.getElementById('copies').value, // Disimpan ke memory sementara
+                pages: document.getElementById('pages').value 
+            };
+            document.getElementById('configModal').style.display='flex'; 
         }
-
-        function parsePageRange(input, maxPages) {
-            if (!input) return Array.from({length: maxPages}, (_, i) => i + 1); 
-            let pages = new Set();
-            let parts = input.split(',');
-            for (let part of parts) {
-                if (part.includes('-')) {
-                    let [start, end] = part.split('-').map(n => parseInt(n.trim()));
-                    if (!isNaN(start) && !isNaN(end)) {
-                        start = Math.max(1, start);
-                        end = Math.min(maxPages, end);
-                        for (let i = start; i <= end; i++) pages.add(i);
-                    }
-                } else {
-                    let num = parseInt(part.trim());
-                    if (!isNaN(num) && num >= 1 && num <= maxPages) pages.add(num);
-                }
-            }
-            let arr = Array.from(pages).sort((a,b) => a-b);
-            return arr.length > 0 ? arr : [1]; 
-        }
+        function cancelConfigModal() { Object.keys(appliedConfig).forEach(k => document.getElementById(k).value = appliedConfig[k]); document.getElementById('configModal').style.display='none'; }
+        function applyConfigModal() { document.getElementById('configModal').style.display='none'; currentPreviewSheet = 0; updateDynamicPreview(); showToast("Tersimpan", "success"); }
+        
+        function showPinModal() { if(!document.getElementById('fileInput').files[0] && !document.getElementById('fileUrl').value) return showToast("Pilih file!", "error"); document.getElementById('pinModal').style.display='flex'; document.getElementById('modalPinInput').focus(); }
+        function closePinModal() { document.getElementById('pinModal').style.display='none'; document.getElementById('modalPinInput').value = ''; }
+        
+        function showDeleteHistoryModal() { document.getElementById('deleteHistoryModal').style.display='flex'; }
+        function closeDeleteHistoryModal() { document.getElementById('deleteHistoryModal').style.display='none'; }
+        function executeClearHistory() { localStorage.removeItem('h_v45'); loadHistory(); closeDeleteHistoryModal(); showToast("Dibersihkan", "success"); }
 
         document.getElementById('fileInput').addEventListener('change', async function(e) {
             const file = e.target.files[0];
-            const container = document.getElementById('previewCol');
-            
-            if(!file) { container.style.display='none'; currentPdfDoc = null; currentImgSrc = null; return; }
-            container.style.display='block';
-            currentPreviewSheet = 0; 
-
+            if(!file) { document.getElementById('previewCol').style.display='none'; return; }
+            document.getElementById('previewCol').style.display='block';
+            currentPreviewSheet = 0;
+            const reader = new FileReader();
             if(file.type === 'application/pdf') {
-                const reader = new FileReader();
-                reader.onload = async function() {
-                    currentPdfDoc = await pdfjsLib.getDocument(new Uint8Array(this.result)).promise;
-                    currentImgSrc = null;
-                    updateDynamicPreview(); 
-                };
+                reader.onload = async function() { currentPdfDoc = await pdfjsLib.getDocument(new Uint8Array(this.result)).promise; currentImgSrc = null; updateDynamicPreview(); };
                 reader.readAsArrayBuffer(file);
-            } else if(file.type.startsWith('image/')) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    currentImgSrc = e.target.result; currentPdfDoc = null;
-                    updateDynamicPreview(); 
-                };
+            } else {
+                reader.onload = function(e) { currentImgSrc = e.target.result; currentPdfDoc = null; updateDynamicPreview(); };
                 reader.readAsDataURL(file);
             }
         });
 
         async function updateDynamicPreview() {
-            if (!currentPdfDoc && !currentImgSrc) return;
-
-            const colorMode = document.getElementById('colorMode').value;
+            if(!currentPdfDoc && !currentImgSrc) return;
             const orientation = document.getElementById('orientation').value;
-            const pagesPerSheet = parseInt(document.getElementById('pagesPerSheet').value) || 1;
-            const pagesInput = document.getElementById('pages').value.trim();
+            const pps = parseInt(document.getElementById('pagesPerSheet').value) || 1;
+            const canvas = document.getElementById('mainPreviewCanvas'), img = document.getElementById('imgPreview');
+            
+            canvas.style.filter = img.style.filter = document.getElementById('colorMode').value === 'monochrome' ? 'grayscale(100%)' : 'none';
 
-            const mainCanvas = document.getElementById('mainPreviewCanvas');
-            const img = document.getElementById('imgPreview');
-            const badge = document.getElementById('previewBadge');
-            const paginationUI = document.getElementById('previewPagination');
+            if(currentImgSrc) { canvas.style.display='none'; img.style.display='block'; img.src = currentImgSrc; return; }
+            
+            img.style.display='none'; canvas.style.display='block';
+            const pageArr = Array.from({length: currentPdfDoc.numPages}, (_, i) => i + 1);
+            totalPreviewSheets = Math.ceil(pageArr.length / pps);
+            
+            document.getElementById('previewPagination').style.display = totalPreviewSheets > 1 ? 'flex' : 'none';
+            document.getElementById('previewSheetText').innerText = `${currentPreviewSheet + 1} / ${totalPreviewSheets}`;
 
-            const cssFilter = colorMode === 'monochrome' ? 'grayscale(100%) contrast(120%)' : 'none';
-            mainCanvas.style.filter = cssFilter;
-            img.style.filter = cssFilter;
-            badge.innerText = `${colorMode === 'monochrome' ? 'B/W' : 'Warna'}`;
+            let cols = pps > 1 ? (orientation === 'landscape' ? 2 : 1) : 1;
+            let rows = Math.ceil(pps / cols);
+            const base = 1000;
+            canvas.width = orientation === 'landscape' ? base * 1.4 : base;
+            canvas.height = orientation === 'landscape' ? base : base * 1.4;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = 'white'; ctx.fillRect(0,0, canvas.width, canvas.height);
 
-            if (currentImgSrc) {
-                mainCanvas.style.display = 'none'; img.style.display = 'block'; img.src = currentImgSrc; 
-                paginationUI.style.display = 'none';
-                return;
-            }
-
-            if (currentPdfDoc) {
-                img.style.display = 'none'; mainCanvas.style.display = 'block';
-
-                const pageArray = parsePageRange(pagesInput, currentPdfDoc.numPages);
-                totalPreviewSheets = Math.ceil(pageArray.length / pagesPerSheet);
-                
-                if (totalPreviewSheets > 1) {
-                    paginationUI.style.display = 'flex';
-                    document.getElementById('previewSheetText').innerText = `Lbr ${currentPreviewSheet + 1} / ${totalPreviewSheets}`;
-                    document.getElementById('btnPrevPage').disabled = currentPreviewSheet === 0;
-                    document.getElementById('btnNextPage').disabled = currentPreviewSheet === totalPreviewSheets - 1;
-                } else {
-                    paginationUI.style.display = 'none';
-                }
-
-                let cols = 1, rows = 1;
-                if (pagesPerSheet === 1) { cols = 1; rows = 1; }
-                else if (pagesPerSheet === 2) { 
-                    if (orientation === 'landscape') { cols = 2; rows = 1; } else { cols = 1; rows = 2; }
-                }
-                else if (pagesPerSheet <= 4) { cols = 2; rows = 2; }
-                else if (pagesPerSheet <= 6) { 
-                    if (orientation === 'landscape') { cols = 3; rows = 2; } else { cols = 2; rows = 3; }
-                }
-                else if (pagesPerSheet <= 9) { cols = 3; rows = 3; }
-                else if (pagesPerSheet <= 16) { cols = 4; rows = 4; }
-                else { cols = Math.ceil(Math.sqrt(pagesPerSheet)); rows = Math.ceil(pagesPerSheet / cols); }
-
-                const baseWidth = 1000;
-                let cWidth = baseWidth, cHeight = baseWidth * 1.414;
-                if (orientation === 'landscape') { cWidth = baseWidth * 1.414; cHeight = baseWidth; }
-                
-                mainCanvas.width = cWidth; mainCanvas.height = cHeight;
-                const ctx = mainCanvas.getContext('2d');
-                ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, cWidth, cHeight); 
-
-                const cellW = cWidth / cols;
-                const cellH = cHeight / rows;
-
-                const startIndex = currentPreviewSheet * pagesPerSheet;
-                const pagesToRender = pageArray.slice(startIndex, startIndex + pagesPerSheet);
-
-                for (let i = 0; i < pagesToRender.length; i++) {
-                    let pageNum = pagesToRender[i];
-                    const page = await currentPdfDoc.getPage(pageNum);
-                    
-                    const rawVp = page.getViewport({ scale: 1 });
-                    let rotationAngle = 0;
-                    
-                    if (cellW > cellH && rawVp.width < rawVp.height) { rotationAngle = 90; } 
-                    else if (cellW < cellH && rawVp.width > rawVp.height) { rotationAngle = 270; }
-
-                    const vp = page.getViewport({ scale: 1, rotation: rotationAngle });
-                    const scale = Math.min((cellW - 20) / vp.width, (cellH - 20) / vp.height); 
-                    const scaledVp = page.getViewport({ scale, rotation: rotationAngle });
-
-                    const offCanvas = document.createElement('canvas');
-                    offCanvas.width = scaledVp.width; offCanvas.height = scaledVp.height;
-                    await page.render({ canvasContext: offCanvas.getContext('2d'), viewport: scaledVp }).promise;
-
-                    const col = i % cols;
-                    const row = Math.floor(i / cols);
-                    const x = (col * cellW) + (cellW - scaledVp.width) / 2;
-                    const y = (row * cellH) + (cellH - scaledVp.height) / 2;
-
-                    ctx.shadowColor = 'rgba(0,0,0,0.15)'; ctx.shadowBlur = 10;
-                    ctx.fillStyle = 'white'; ctx.fillRect(x, y, scaledVp.width, scaledVp.height);
-                    ctx.shadowColor = 'transparent';
-                    ctx.drawImage(offCanvas, x, y);
-                }
+            const start = currentPreviewSheet * pps;
+            for(let i=0; i < Math.min(pps, pageArr.length - start); i++) {
+                const page = await currentPdfDoc.getPage(pageArr[start + i]);
+                const vp = page.getViewport({scale: 1});
+                const cellW = canvas.width / cols, cellH = canvas.height / rows;
+                const scale = Math.min((cellW-40)/vp.width, (cellH-40)/vp.height);
+                const scaledVp = page.getViewport({scale});
+                const off = document.createElement('canvas'); off.width = scaledVp.width; off.height = scaledVp.height;
+                await page.render({canvasContext: off.getContext('2d'), viewport: scaledVp}).promise;
+                ctx.drawImage(off, (i%cols)*cellW + (cellW-off.width)/2, Math.floor(i/cols)*cellH + (cellH-off.height)/2);
             }
         }
+
+        function changePreviewSheet(dir) { currentPreviewSheet = Math.max(0, Math.min(totalPreviewSheets-1, currentPreviewSheet + dir)); updateDynamicPreview(); }
 
         let socket;
         function connectSocket(ip) {
             if(socket) socket.disconnect();
             socket = io(`http://${ip}:3000`);
             socket.on('print-status', data => {
-                const bar = document.getElementById('progressBar');
-                document.getElementById('realtimeStatus').style.display = 'block';
+                document.getElementById('realtimeStatus').style.display='block';
                 document.getElementById('statusMessage').innerText = data.message;
-                const steps = { 'processing': 20, 'downloading': 40, 'converting': 60, 'printing': 80, 'success': 100, 'error': 100 };
-                bar.style.width = (steps[data.type] || 0) + '%';
-                if(data.type === 'success') showToast("Selesai!", "success");
-                if(data.type === 'error') showToast(data.message, "error");
+                const steps = { 'processing': 25, 'printing': 75, 'success': 100, 'error': 100 };
+                document.getElementById('progressBar').style.width = (steps[data.type] || 0) + '%';
             });
         }
 
-        async function startNetworkScan() {
-            const baseIp = document.getElementById('scanIpInput').value.trim();
-            if(!baseIp) return showToast("Blok IP tidak boleh kosong!", "error");
+        async function startSmartAutoScan() {
             closeScanModal();
-            const scanBtn = document.getElementById('scanBtn'); scanBtn.disabled = true; scanBtn.innerHTML = "⏳";
+            const btn = document.getElementById('scanBtn'); btn.innerHTML = "⏳"; btn.disabled = true;
+            showToast("Memindai 4 jaringan populer otomatis...", "info");
             
-            let found = [];
-            for(let attempt = 1; attempt <= 3 && found.length === 0; attempt++) {
+            const subnets = ['192.168.1', '192.168.0', '192.168.100', '192.168.8'];
+            let found = false;
+
+            for (let subnet of subnets) {
+                if (found) break; 
                 const promises = [];
-                for(let i=1; i<255; i++) {
-                    const target = `${baseIp}.${i}`;
-                    promises.push(fetch(`http://${target}:3000/ping`, { signal: AbortSignal.timeout(1500) })
-                        .then(r => r.json()).then(d => { if(d.status === 'PrintServerActive') found.push({ip: target, name: d.hostname}); })
-                        .catch(() => {}));
+                for(let i=1; i<=254; i++) {
+                    const ip = `${subnet}.${i}`;
+                    promises.push(
+                        fetch(`http://${ip}:3000/ping`, { signal: AbortSignal.timeout(1500) })
+                        .then(r => r.json())
+                        .then(d => {
+                            if(d.status === 'PrintServerActive') {
+                                const sel = document.getElementById('ipSelect'); sel.style.display='block';
+                                sel.add(new Option(`${d.hostname} (${ip})`, ip));
+                                if(!found) { 
+                                    document.getElementById('ipAddress').value = ip; 
+                                    updateIpAndFetchPrinters(); 
+                                    showToast(`Ditemukan Server di ${ip}`, "success");
+                                }
+                                found = true;
+                            }
+                        }).catch(() => {})
+                    );
                 }
                 await Promise.allSettled(promises);
             }
-            scanBtn.disabled = false; scanBtn.innerHTML = "🔍";
-            if(found.length > 0) {
-                const sel = document.getElementById('ipSelect'); sel.style.display = "block"; sel.innerHTML = "";
-                found.forEach(p => sel.add(new Option(`${p.name} (${p.ip})`, p.ip)));
-                updateIpAndFetchPrinters(); showToast(`Ditemukan ${found.length} Server PC`, "success");
-            } else showToast("PC tidak ditemukan", "error");
+            
+            btn.innerHTML = "🔍"; btn.disabled = false;
+            if(!found) showToast("Auto-Detect gagal. Server tidak ada di jaringan standar.", "error");
         }
 
-        function updateIpAndFetchPrinters() {
-            const ip = document.getElementById('ipSelect').value;
-            document.getElementById('ipAddress').value = ip;
-            fetchPrinters(ip); connectSocket(ip);
+        async function startNetworkScan() {
+            const base = document.getElementById('scanIpInput').value; 
+            closeScanModal();
+            const btn = document.getElementById('scanBtn'); btn.innerHTML = "⏳"; btn.disabled = true;
+            showToast(`Memindai blok IP ${base}.x...`, "info");
+
+            let found = false;
+            const promises = [];
+            for(let i=1; i<=254; i++) {
+                const ip = `${base}.${i}`;
+                promises.push(
+                    fetch(`http://${ip}:3000/ping`, { signal: AbortSignal.timeout(1500) }).then(r => r.json()).then(d => {
+                        if(d.status === 'PrintServerActive') {
+                            const sel = document.getElementById('ipSelect'); sel.style.display='block';
+                            sel.add(new Option(`${d.hostname} (${ip})`, ip));
+                            if(!found) { 
+                                document.getElementById('ipAddress').value = ip; 
+                                updateIpAndFetchPrinters(); 
+                                showToast(`Ditemukan Server di ${ip}`, "success");
+                            }
+                            found = true;
+                        }
+                    }).catch(() => {})
+                );
+            }
+            await Promise.allSettled(promises);
+            btn.innerHTML = "🔍"; btn.disabled = false;
+            if(!found) showToast(`Tidak ada server di blok ${base}.x`, "error");
         }
 
-        async function fetchPrinters(ip) {
+        async function updateIpAndFetchPrinters() {
+            const ip = document.getElementById('ipAddress').value;
+            connectSocket(ip);
             try {
                 const r = await fetch(`http://${ip}:3000/printers`);
                 const data = await r.json();
-                const sel = document.getElementById('printerSelect');
-                sel.innerHTML = '<option value="">Default Printer</option>';
+                const sel = document.getElementById('printerSelect'); sel.innerHTML = '<option value="">Default Printer</option>';
                 data.forEach(p => sel.add(new Option(p.name, p.name)));
-            } catch (e) { showToast("Gagal muat printer", "error"); }
-        }
-
-        async function simulatePrint() {
-            if(!document.getElementById('fileInput').files[0] && !document.getElementById('fileUrl').value) return showToast("Pilih file dulu!", "error");
-            
-            const ip = document.getElementById('ipAddress').value;
-            if(!ip) return showToast("Isi IP Server PC dulu!", "error");
-
-            const btn = document.getElementById('simulateBtn');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = "⏳ Proses...";
-            btn.disabled = true;
-
-            const formData = new FormData();
-            formData.append('document', document.getElementById('fileInput').files[0]);
-            formData.append('fileUrl', document.getElementById('fileUrl').value);
-            formData.append('pages', document.getElementById('pages').value);
-            formData.append('colorMode', document.getElementById('colorMode').value);
-            formData.append('paperSize', document.getElementById('paperSize').value);
-            formData.append('orientation', document.getElementById('orientation').value);
-            formData.append('pagesPerSheet', document.getElementById('pagesPerSheet').value);
-
-            try {
-                const r = await fetch(`http://${ip}:3000/simulate`, { method: 'POST', body: formData });
-                if(r.ok) {
-                    const blob = await r.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.style.display = 'none';
-                    a.href = url;
-                    a.download = 'Simulasi_Hasil_Cetak.pdf';
-                    document.body.appendChild(a);
-                    a.click();
-                    window.URL.revokeObjectURL(url);
-                    showToast("Simulasi berhasil didownload", "success");
-                } else {
-                    showToast(await r.text(), "error");
-                }
-            } catch (e) {
-                showToast("Gagal memproses simulasi", "error");
-            } finally {
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-            }
+            } catch(e) {}
         }
 
         async function confirmAndPrint() {
-            const pin = document.getElementById('modalPinInput').value;
-            if(!pin) return showToast("Isi PIN!", "error");
-            closePinModal();
+            const pin = document.getElementById('modalPinInput').value; closePinModal();
             const ip = document.getElementById('ipAddress').value;
-            const formData = new FormData();
-            formData.append('document', document.getElementById('fileInput').files[0]);
-            formData.append('fileUrl', document.getElementById('fileUrl').value);
-            formData.append('pin', pin);
-            formData.append('copies', document.getElementById('copies').value);
-            formData.append('pages', document.getElementById('pages').value);
-            formData.append('printerName', document.getElementById('printerSelect').value);
-            formData.append('colorMode', document.getElementById('colorMode').value);
-            formData.append('paperSize', document.getElementById('paperSize').value);
-            formData.append('orientation', document.getElementById('orientation').value);
-            formData.append('pagesPerSheet', document.getElementById('pagesPerSheet').value);
+            const fd = new FormData();
+            fd.append('document', document.getElementById('fileInput').files[0]);
+            fd.append('pin', pin);
+            fd.append('printerName', document.getElementById('printerSelect').value);
+            fd.append('colorMode', document.getElementById('colorMode').value);
+            fd.append('paperSize', document.getElementById('paperSize').value); // DIKEMBALIKAN KE FORMDATA
+            fd.append('orientation', document.getElementById('orientation').value);
+            fd.append('pagesPerSheet', document.getElementById('pagesPerSheet').value);
+            fd.append('copies', document.getElementById('copies').value); // DIKEMBALIKAN KE FORMDATA
+            fd.append('pages', document.getElementById('pages').value);
 
             try {
-                const r = await fetch(`http://${ip}:3000/print`, { method: 'POST', body: formData });
-                if(r.ok) {
-                    saveHistory(document.getElementById('fileInput').files[0]?.name || "Dokumen dari Link URL");
-                    document.getElementById('fileInput').value = ""; document.getElementById('fileUrl').value = "";
-                    document.getElementById('previewCol').style.display = 'none';
-                    currentPdfDoc = null; currentImgSrc = null;
-                } else showToast(await r.text(), "error");
-            } catch (e) { showToast("Koneksi gagal", "error"); }
+                const r = await fetch(`http://${ip}:3000/print`, { method: 'POST', body: fd });
+                if(r.ok) { saveHistory(document.getElementById('fileInput').files[0]?.name || "Link URL"); showToast("Berhasil", "success"); }
+                else showToast(await r.text(), "error");
+            } catch(e) { showToast("Gagal koneksi", "error"); }
         }
 
         function saveHistory(name) {
             let h = JSON.parse(localStorage.getItem('h_v45')) || [];
-            h.unshift({ name, time: new Date().toLocaleString() });
+            h.unshift({ name, time: new Date().toLocaleTimeString() });
             localStorage.setItem('h_v45', JSON.stringify(h.slice(0, 5))); loadHistory();
         }
 
         function loadHistory() {
             const list = document.getElementById('historyList');
             const h = JSON.parse(localStorage.getItem('h_v45')) || [];
-            if(h.length === 0) { list.innerHTML = '<li style="text-align:center; font-size:13px; color:var(--text-muted); padding: 15px;">Belum ada aktivitas.</li>'; return; }
-            list.innerHTML = h.map(i => `<li class="history-item"><strong style="color:var(--text-main);">${i.name}</strong><br><small style="color:var(--text-muted);">${i.time}</small></li>`).join('');
+            list.innerHTML = h.length ? h.map(i => `<li style="padding:10px; border-bottom:1px solid #eee; font-size:12px;"><strong>${i.name}</strong><br>${i.time}</li>`).join('') : '<li style="text-align:center; padding:10px;">Kosong</li>';
         }
-        
-        document.addEventListener('DOMContentLoaded', loadHistory);
+        window.onload = loadHistory;
     </script>
 </body>
 </html>
