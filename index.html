@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#2563eb">
     <link rel="manifest" href="manifest.json">
-    <title>Print Pro V4.5 - Final Layout</title>
+    <title>Print Pro V4.5 - Final</title>
     
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
@@ -84,6 +84,8 @@
         <div class="left-col">
             <div class="card main-card">
                 <h2>🏢 Print Server Pro v4.5</h2>
+
+                <button id="installPwaBtn" class="btn-block" style="display:none; background: #1f2937; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);">📲 Install Aplikasi ke Layar HP</button>
 
                 <div class="section-title">
                     <span>📍 Jaringan</span>
@@ -229,6 +231,30 @@
     </div>
 
     <script>
+        // --- FITUR PWA (DIKEMBALIKAN) ---
+        if ('serviceWorker' in navigator) { 
+            window.addEventListener('load', () => { 
+                navigator.serviceWorker.register('./worker.js').catch(err => console.log('SW fail')); 
+            }); 
+        }
+        
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => { 
+            e.preventDefault(); 
+            deferredPrompt = e; 
+            document.getElementById('installPwaBtn').style.display = 'block'; 
+        });
+        
+        document.getElementById('installPwaBtn').addEventListener('click', async () => { 
+            if (deferredPrompt !== null) { 
+                deferredPrompt.prompt(); 
+                const { outcome } = await deferredPrompt.userChoice; 
+                if (outcome === 'accepted') document.getElementById('installPwaBtn').style.display = 'none'; 
+                deferredPrompt = null; 
+            } 
+        });
+        // --------------------------------
+
         let currentPdfDoc = null, currentImgSrc = null, currentPreviewSheet = 0, totalPreviewSheets = 1, appliedConfig = {};
 
         function showToast(message, type = 'info') {
