@@ -26,7 +26,7 @@
         .app-wrapper { display: flex; flex-direction: column; gap: 20px; max-width: 480px; margin: 0 auto; }
         .left-col { display: contents; } 
         .main-card { order: 1; }
-        .preview-col { order: 2; display: none; width: 100%; }
+        .preview-col { order: 2; width: 100%; display: flex; flex-direction: column; gap: 20px;}
         .history-card { order: 3; }
 
         @media (min-width: 992px) {
@@ -71,7 +71,7 @@
         @keyframes toastIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
         .preview-header { font-size: 11px; font-weight: 700; color: white; background: var(--text-main); padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; text-transform: uppercase;}
-        .preview-body { padding: 20px; background: #e2e8f0; display: flex; justify-content: center; align-items: center; }
+        .preview-body { padding: 20px; background: #e2e8f0; display: flex; justify-content: center; align-items: center; position: relative;}
         .preview-canvas { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; background: white; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.2); }
         
         .btn-nav { background: rgba(255,255,255,0.2); border: none; color: white; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; }
@@ -116,7 +116,7 @@
                 
                 <div class="divider"><span>ATAU</span></div>
                 <div class="input-group">
-                    <input type="text" id="fileUrl" class="input-standard" placeholder="https://file.pdf atau https://foto.jpg">
+                    <input type="text" id="fileUrl" class="input-standard" placeholder="https://domain.com/file.pdf">
                 </div>
                 
                 <div id="realtimeStatus" style="display:none; margin-top:20px;">
@@ -137,7 +137,7 @@
         </div>
 
         <div class="preview-col" id="previewCol">
-            <div class="card" style="padding: 0; overflow: hidden;">
+            <div class="card" style="padding: 0; overflow: hidden; display: flex; flex-direction: column;">
                 <div class="preview-header">
                     <span>👀 PREVIEW</span>
                     <span id="previewPagination" style="display:none; align-items:center; gap:8px;">
@@ -147,7 +147,9 @@
                     </span>
                     <span id="previewBadge" style="color: #cbd5e1;">Warna</span>
                 </div>
-                <div class="preview-body">
+                <div class="preview-body" id="previewBodyContainer">
+                    <div id="emptyPreviewState" style="text-align: center; color: var(--text-muted); font-size: 13px; font-weight: 500;">Belum ada dokumen untuk ditampilkan.</div>
+                    
                     <canvas id="mainPreviewCanvas" class="preview-canvas" style="display: none;"></canvas>
                     <img id="imgPreview" class="preview-canvas" style="display: none;" />
                 </div>
@@ -177,7 +179,7 @@
             <h3 style="text-align:center; margin:0 0 20px 0;">⚙️ Pengaturan</h3>
             <div style="display:flex; gap:12px;">
                 <div class="input-group" style="flex:1;"><label>Warna:</label><select id="colorMode" class="input-standard"><option value="color">Warna</option><option value="monochrome">Hitam Putih</option></select></div>
-                <div class="input-group" style="flex:1;"><label>Ukuran Kertas:</label><select id="paperSize" class="input-standard"><option value="A4">A4</option><option value="F4">F4</option></select></div>
+                <div class="input-group" style="flex:1;"><label>Kertas:</label><select id="paperSize" class="input-standard"><option value="A4">A4</option><option value="F4">F4</option></select></div>
             </div>
             <div style="display:flex; gap:12px;">
                 <div class="input-group" style="flex:1;"><label>Orientasi:</label><select id="orientation" class="input-standard"><option value="portrait">Portrait</option><option value="landscape">Landscape</option></select></div>
@@ -185,7 +187,7 @@
             </div>
             <div style="display:flex; gap:12px;">
                 <div class="input-group" style="flex:1;"><label>Jumlah Copy:</label><input type="number" id="copies" class="input-standard" value="1" min="1"></div>
-                <div class="input-group" style="flex:1;"><label>Rincian Halaman:</label><input type="text" id="pages" class="input-standard" placeholder="1,3,5-7,..."></div>
+                <div class="input-group" style="flex:1;"><label>Rincian Halaman:</label><input type="text" id="pages" class="input-standard" placeholder="Cth: 1,3,5-7"></div>
             </div>
             <div style="display:flex; gap:10px; margin-top:20px;">
                 <button class="btn-block" style="background:white; color:#333; border:1px solid #ddd;" onclick="cancelConfigModal()">Batal</button>
@@ -231,10 +233,13 @@
     </div>
 
     <script>
-        // --- FITUR PWA (DIKEMBALIKAN) ---
+        // --- FITUR PWA SMART REGISTRATION ---
         if ('serviceWorker' in navigator) { 
             window.addEventListener('load', () => { 
-                navigator.serviceWorker.register('./worker.js').catch(err => console.log('SW fail')); 
+                // Mencoba mendeteksi sw.js atau worker.js untuk mencegah bentrok
+                navigator.serviceWorker.register('./sw.js').catch(() => {
+                    navigator.serviceWorker.register('./worker.js').catch(err => console.log('SW fail'));
+                });
             }); 
         }
         
@@ -242,7 +247,8 @@
         window.addEventListener('beforeinstallprompt', (e) => { 
             e.preventDefault(); 
             deferredPrompt = e; 
-            document.getElementById('installPwaBtn').style.display = 'block'; 
+            // Menggunakan display flex agar layout tombol tidak rusak
+            document.getElementById('installPwaBtn').style.display = 'flex'; 
         });
         
         document.getElementById('installPwaBtn').addEventListener('click', async () => { 
@@ -253,7 +259,7 @@
                 deferredPrompt = null; 
             } 
         });
-        // --------------------------------
+        // ------------------------------------
 
         let currentPdfDoc = null, currentImgSrc = null, currentPreviewSheet = 0, totalPreviewSheets = 1, appliedConfig = {};
 
@@ -278,7 +284,11 @@
         function cancelConfigModal() { Object.keys(appliedConfig).forEach(k => document.getElementById(k).value = appliedConfig[k]); document.getElementById('configModal').style.display='none'; }
         function applyConfigModal() { document.getElementById('configModal').style.display='none'; currentPreviewSheet = 0; updateDynamicPreview(); showToast("Tersimpan", "success"); }
         
-        function showPinModal() { if(!document.getElementById('fileInput').files[0] && !document.getElementById('fileUrl').value) return showToast("Pilih file!", "error"); document.getElementById('pinModal').style.display='flex'; document.getElementById('modalPinInput').focus(); }
+        function showPinModal() { 
+            if(!document.getElementById('fileInput').files[0] && !document.getElementById('fileUrl').value) return showToast("Pilih file atau isi URL!", "error"); 
+            document.getElementById('pinModal').style.display='flex'; 
+            setTimeout(() => document.getElementById('modalPinInput').focus(), 100);
+        }
         function closePinModal() { document.getElementById('pinModal').style.display='none'; document.getElementById('modalPinInput').value = ''; }
         
         function showDeleteHistoryModal() { document.getElementById('deleteHistoryModal').style.display='flex'; }
@@ -287,8 +297,11 @@
 
         document.getElementById('fileInput').addEventListener('change', async function(e) {
             const file = e.target.files[0];
-            if(!file) { document.getElementById('previewCol').style.display='none'; return; }
-            document.getElementById('previewCol').style.display='block';
+            if(!file) { 
+                currentPdfDoc = null; currentImgSrc = null; 
+                updateDynamicPreview(); 
+                return; 
+            }
             currentPreviewSheet = 0;
             const reader = new FileReader();
             if(file.type === 'application/pdf') {
@@ -301,17 +314,32 @@
         });
 
         async function updateDynamicPreview() {
-            if(!currentPdfDoc && !currentImgSrc) return;
+            const canvas = document.getElementById('mainPreviewCanvas'), img = document.getElementById('imgPreview'), emptyState = document.getElementById('emptyPreviewState');
+            
+            // --- Logika Empty State ---
+            if(!currentPdfDoc && !currentImgSrc) {
+                canvas.style.display = 'none';
+                img.style.display = 'none';
+                emptyState.style.display = 'block';
+                document.getElementById('previewPagination').style.display = 'none';
+                return;
+            }
+            emptyState.style.display = 'none';
+            // --------------------------
+
             const orientation = document.getElementById('orientation').value;
             const pps = parseInt(document.getElementById('pagesPerSheet').value) || 1;
-            const canvas = document.getElementById('mainPreviewCanvas'), img = document.getElementById('imgPreview');
             canvas.style.filter = img.style.filter = document.getElementById('colorMode').value === 'monochrome' ? 'grayscale(100%)' : 'none';
+            
             if(currentImgSrc) { canvas.style.display='none'; img.style.display='block'; img.src = currentImgSrc; return; }
+            
             img.style.display='none'; canvas.style.display='block';
             const pageArr = Array.from({length: currentPdfDoc.numPages}, (_, i) => i + 1);
             totalPreviewSheets = Math.ceil(pageArr.length / pps);
+            
             document.getElementById('previewPagination').style.display = totalPreviewSheets > 1 ? 'flex' : 'none';
             document.getElementById('previewSheetText').innerText = `${currentPreviewSheet + 1} / ${totalPreviewSheets}`;
+            
             let cols = pps > 1 ? (orientation === 'landscape' ? 2 : 1) : 1;
             let rows = Math.ceil(pps / cols);
             const base = 1000;
@@ -319,6 +347,7 @@
             canvas.height = orientation === 'landscape' ? base : base * 1.4;
             const ctx = canvas.getContext('2d');
             ctx.fillStyle = 'white'; ctx.fillRect(0,0, canvas.width, canvas.height);
+            
             const start = currentPreviewSheet * pps;
             for(let i=0; i < Math.min(pps, pageArr.length - start); i++) {
                 const page = await currentPdfDoc.getPage(pageArr[start + i]);
