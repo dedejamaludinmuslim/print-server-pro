@@ -363,44 +363,96 @@
         // --- ALGORITMA SNIPER (AbortController) ---
         let scanAbortController = null;
 
+        // --- ALGORITMA RADAR PENYAPU (Mendukung Banyak Server) ---
+        
         async function startSmartAutoScan() {
             closeScanModal();
             const btn = document.getElementById('scanBtn'); btn.innerHTML = "⏳"; btn.disabled = true;
-            showToast("Mencari server... mohon tunggu", "info");
+            showToast("Memindai seluruh jaringan...", "info");
             
             const subnets = ['192.168.1', '192.168.0', '192.168.100', '192.168.8'];
-            let found = false;
+            let foundServers = []; // Keranjang penampung server
 
             for (let subnet of subnets) {
-                if (found) break; 
+                if (foundServers.length > 0) break; // Jika sudah ketemu di subnet ini, jangan cari di subnet lain
                 
-                scanAbortController = new AbortController();
                 const promises = [];
-                
                 for(let i=1; i<=254; i++) {
                     const ip = `${subnet}.${i}`;
                     promises.push(
-                        fetch(`http://${ip}:3000/ping`, { signal: scanAbortController.signal })
+                        // Gunakan fitur timeout bawaan browser agar tidak butuh AbortController manual
+                        fetch(`http://${ip}:3000/ping`, { signal: AbortSignal.timeout(1500) })
                         .then(r => r.json())
                         .then(d => {
-                            if(d.status === 'PrintServerActive' && !found) {
-                                found = true;
-                                scanAbortController.abort(); // Tembak mati pencarian lain!
-                                const sel = document.getElementById('ipSelect'); 
-                                sel.style.display='block'; sel.innerHTML = '';
-                                sel.add(new Option(`${d.hostname} (${ip})`, ip));
-                                document.getElementById('ipAddress').value = ip; 
-                                updateIpAndFetchPrinters(); 
-                                showToast(`Server ditemukan di ${ip}`, "success");
+                            if(d.status === 'PrintServerActive') {
+                                // Masukkan ke keranjang secara diam-diam (tanpa notif)
+                                foundServers.push({ ip: ip, name: d.hostname });
                             }
-                        }).catch(() => {}) // Abaikan error dari abort
+                        }).catch(() => {}) 
                     );
                 }
+                // Tunggu sampai semua 254 IP selesai diketok pintunya
                 await Promise.allSettled(promises);
             }
+            
             btn.innerHTML = "🔍"; btn.disabled = false;
-            if(!found) showToast("Server tidak ditemukan di jaringan ini.", "error");
+            processFoundServers(foundServers);
         }
+
+        async function startNetworkScan() {
+            const base = document.getElementById('scanIpInput').value.trim(); 
+            closeScanModal();
+            const btn = document.getElementById('scanBtn'); btn.innerHTML = "⏳"; btn.disabled = true;
+            showToast(`Memindai IP ${base}.x ...`, "info");
+
+            let foundServers = [];
+            const promises = [];
+            
+            for(let i=1; i<=254; i++) {
+                const ip = `${base}.${i}`;
+                promises.push(
+                    fetch(`http://${ip}:3000/ping`, { signal: AbortSignal.timeout(1500) })
+                    .then(r => r.json())
+                    .then(d => {
+                        if(d.status === 'PrintServerActive') {
+                            foundServers.push({ ip: ip, name: d.hostname });
+                        }
+                    }).catch(() => {})
+                );
+            }
+            await Promise.allSettled(promises);
+            
+            btn.innerHTML = "🔍"; btn.disabled = false;
+            processFoundServers(foundServers);
+        }
+
+        // Fungsi khusus untuk menangani hasil tangkapan radar
+        function processFoundServers(servers) {
+            if(servers.length > 0) {
+                const sel = document.getElementById('ipSelect'); 
+                sel.style.display = 'block'; 
+                sel.innerHTML = ''; // Bersihkan daftar lama
+                
+                // Tambahkan opsi default jika server lebih dari satu
+                if(servers.length > 1) {
+                    sel.add(new Option(`Pilih dari ${servers.length} Server...`, ""));
+                }
+                
+                // Masukkan semua server ke dropdown
+                servers.forEach(srv => sel.add(new Option(`${srv.name} (${srv.ip})`, srv.ip)));
+                
+                // Otomatis pilih server pertama dan tarik data printernya
+                document.getElementById('ipAddress').value = servers[0].ip; 
+                if(servers.length === 1) sel.value = servers[0].ip; // Set dropdown value jika cuma 1
+                
+                updateIpAndFetchPrinters(); 
+                
+                showToast(`Selesai! Ditemukan ${servers.length} Server Print.`, "success");
+            } else {
+                showToast("Server Print tidak ditemukan.", "error");
+            }
+        }
+        // ----------------------------------------------------------
 
         async function startNetworkScan() {
             const base = document.getElementById('scanIpInput').value; 
