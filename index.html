@@ -4,8 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#2563eb">
-    <link rel="manifest" href="manifest.json">
-    <title>Print Server</title>
+    <title>Print Pro V4.5</title>
     
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
@@ -83,9 +82,7 @@
     <div class="app-wrapper">
         <div class="left-col">
             <div class="card main-card">
-                <h2>🏢 Print Server</h2>
-
-                <button id="installPwaBtn" class="btn-block" style="display:none; background: #1f2937; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);">📲 Install Aplikasi ke Layar HP</button>
+                <h2>🏢 Print Server Pro v4.5</h2>
 
                 <div class="section-title">
                     <span>📍 Jaringan</span>
@@ -173,15 +170,16 @@
             <h3 style="text-align:center; margin:0 0 20px 0;">⚙️ Pengaturan</h3>
             <div style="display:flex; gap:12px;">
                 <div class="input-group" style="flex:1;"><label>Warna:</label><select id="colorMode" class="input-standard"><option value="color">Warna</option><option value="monochrome">Hitam Putih</option></select></div>
-                <div class="input-group" style="flex:1;"><label>Ukuran Kertas:</label><select id="paperSize" class="input-standard"><option value="A4">A4</option><option value="F4">F4</option></select></div>
+                <div class="input-group" style="flex:1;"><label>Kertas:</label><select id="paperSize" class="input-standard"><option value="A4">A4</option><option value="F4">F4</option></select></div>
             </div>
             <div style="display:flex; gap:12px;">
                 <div class="input-group" style="flex:1;"><label>Orientasi:</label><select id="orientation" class="input-standard"><option value="portrait">Portrait</option><option value="landscape">Landscape</option></select></div>
                 <div class="input-group" style="flex:1;"><label>Hal/Lembar:</label><input type="number" id="pagesPerSheet" class="input-standard" value="1" min="1" max="16"></div>
             </div>
             <div style="display:flex; gap:12px;">
-                <div class="input-group" style="flex:1;"><label>Rincian Halaman:</label><input type="text" id="pages" class="input-standard" placeholder="1,3,5-7,...."></div>
-                <div class="input-group" style="flex:1;"><label>Jumlah Copy:</label><input type="number" id="copies" class="input-standard" value="1" min="1"></div>            </div>
+                <div class="input-group" style="flex:1;"><label>Jumlah Copy:</label><input type="number" id="copies" class="input-standard" value="1" min="1"></div>
+                <div class="input-group" style="flex:1;"><label>Rincian Halaman:</label><input type="text" id="pages" class="input-standard" placeholder="Cth: 1,3,5-7"></div>
+            </div>
             <div style="display:flex; gap:10px; margin-top:20px;">
                 <button class="btn-block" style="background:white; color:#333; border:1px solid #ddd;" onclick="cancelConfigModal()">Batal</button>
                 <button class="btn-block" onclick="applyConfigModal()">Simpan</button>
@@ -226,30 +224,8 @@
     </div>
 
     <script>
-        if ('serviceWorker' in navigator) { 
-            window.addEventListener('load', () => { 
-                navigator.serviceWorker.register('./sw.js').catch(() => {
-                    navigator.serviceWorker.register('./worker.js').catch(err => console.log('SW fail'));
-                });
-            }); 
-        }
-        let deferredPrompt;
-        window.addEventListener('beforeinstallprompt', (e) => { 
-            e.preventDefault(); deferredPrompt = e; 
-            document.getElementById('installPwaBtn').style.display = 'flex'; 
-        });
-        document.getElementById('installPwaBtn').addEventListener('click', async () => { 
-            if (deferredPrompt !== null) { 
-                deferredPrompt.prompt(); 
-                const { outcome } = await deferredPrompt.userChoice; 
-                if (outcome === 'accepted') document.getElementById('installPwaBtn').style.display = 'none'; 
-                deferredPrompt = null; 
-            } 
-        });
-
         let currentPdfDoc = null, currentImgSrc = null, currentPreviewSheet = 0, totalPreviewSheets = 1, appliedConfig = {};
 
-        // --- SOLUSI ANTI-TIMPA TOAST ---
         function showToast(message, type = 'info') {
             let container = document.getElementById('toastContainer');
             if (!container) {
@@ -257,7 +233,6 @@
                 container.id = 'toastContainer'; container.className = 'toast-container'; 
                 document.body.appendChild(container);
             }
-            // Bersihkan toast lama agar tidak numpuk
             container.innerHTML = '';
             const toast = document.createElement('div'); toast.className = 'toast';
             let icon = type === 'success' ? '✅' : (type === 'error' ? '🚨' : 'ℹ️');
@@ -360,38 +335,30 @@
             });
         }
 
-        // --- ALGORITMA SNIPER (AbortController) ---
-        let scanAbortController = null;
-
-        // --- ALGORITMA RADAR PENYAPU (Mendukung Banyak Server) ---
-        
         async function startSmartAutoScan() {
             closeScanModal();
             const btn = document.getElementById('scanBtn'); btn.innerHTML = "⏳"; btn.disabled = true;
             showToast("Memindai seluruh jaringan...", "info");
             
             const subnets = ['192.168.1', '192.168.0', '192.168.100', '192.168.8'];
-            let foundServers = []; // Keranjang penampung server
+            let foundServers = []; 
 
             for (let subnet of subnets) {
-                if (foundServers.length > 0) break; // Jika sudah ketemu di subnet ini, jangan cari di subnet lain
+                if (foundServers.length > 0) break; 
                 
                 const promises = [];
                 for(let i=1; i<=254; i++) {
                     const ip = `${subnet}.${i}`;
                     promises.push(
-                        // Gunakan fitur timeout bawaan browser agar tidak butuh AbortController manual
                         fetch(`http://${ip}:3000/ping`, { signal: AbortSignal.timeout(1500) })
                         .then(r => r.json())
                         .then(d => {
                             if(d.status === 'PrintServerActive') {
-                                // Masukkan ke keranjang secara diam-diam (tanpa notif)
                                 foundServers.push({ ip: ip, name: d.hostname });
                             }
                         }).catch(() => {}) 
                     );
                 }
-                // Tunggu sampai semua 254 IP selesai diketok pintunya
                 await Promise.allSettled(promises);
             }
             
@@ -426,24 +393,20 @@
             processFoundServers(foundServers);
         }
 
-        // Fungsi khusus untuk menangani hasil tangkapan radar
         function processFoundServers(servers) {
             if(servers.length > 0) {
                 const sel = document.getElementById('ipSelect'); 
                 sel.style.display = 'block'; 
-                sel.innerHTML = ''; // Bersihkan daftar lama
+                sel.innerHTML = ''; 
                 
-                // Tambahkan opsi default jika server lebih dari satu
                 if(servers.length > 1) {
                     sel.add(new Option(`Pilih dari ${servers.length} Server...`, ""));
                 }
                 
-                // Masukkan semua server ke dropdown
                 servers.forEach(srv => sel.add(new Option(`${srv.name} (${srv.ip})`, srv.ip)));
                 
-                // Otomatis pilih server pertama dan tarik data printernya
                 document.getElementById('ipAddress').value = servers[0].ip; 
-                if(servers.length === 1) sel.value = servers[0].ip; // Set dropdown value jika cuma 1
+                if(servers.length === 1) sel.value = servers[0].ip; 
                 
                 updateIpAndFetchPrinters(); 
                 
@@ -452,42 +415,6 @@
                 showToast("Server Print tidak ditemukan.", "error");
             }
         }
-        // ----------------------------------------------------------
-
-        async function startNetworkScan() {
-            const base = document.getElementById('scanIpInput').value; 
-            closeScanModal();
-            const btn = document.getElementById('scanBtn'); btn.innerHTML = "⏳"; btn.disabled = true;
-            showToast("Memindai IP Manual...", "info");
-
-            let found = false;
-            scanAbortController = new AbortController();
-            const promises = [];
-            
-            for(let i=1; i<=254; i++) {
-                const ip = `${base}.${i}`;
-                promises.push(
-                    fetch(`http://${ip}:3000/ping`, { signal: scanAbortController.signal })
-                    .then(r => r.json())
-                    .then(d => {
-                        if(d.status === 'PrintServerActive' && !found) {
-                            found = true;
-                            scanAbortController.abort(); // Tembak mati pencarian lain!
-                            const sel = document.getElementById('ipSelect'); 
-                            sel.style.display='block'; sel.innerHTML = '';
-                            sel.add(new Option(`${d.hostname} (${ip})`, ip));
-                            document.getElementById('ipAddress').value = ip; 
-                            updateIpAndFetchPrinters(); 
-                            showToast(`Server ditemukan di ${ip}`, "success");
-                        }
-                    }).catch(() => {})
-                );
-            }
-            await Promise.allSettled(promises);
-            btn.innerHTML = "🔍"; btn.disabled = false;
-            if(!found) showToast("Server tidak ditemukan di blok IP ini.", "error");
-        }
-        // ------------------------------------------
 
         async function updateIpAndFetchPrinters() {
             const ip = document.getElementById('ipAddress').value.trim();
