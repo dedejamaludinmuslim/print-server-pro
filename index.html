@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#2563eb">
-    <title>Print Pro V4.5</title>
+    <title>Printer Server</title>
     
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
@@ -82,7 +82,7 @@
     <div class="app-wrapper">
         <div class="left-col">
             <div class="card main-card">
-                <h2>🏢 Print Server Pro v4.5</h2>
+                <h2>🏢 Printer Server</h2>
 
                 <div class="section-title">
                     <span>📍 Jaringan</span>
@@ -131,7 +131,7 @@
         <div class="preview-col" id="previewCol">
             <div class="card" style="padding: 0; overflow: hidden; display: flex; flex-direction: column;">
                 <div class="preview-header">
-                    <span>👀 PREVIEW</span>
+                    <span>PREVIEW</span>
                     <span id="previewPagination" style="display:none; align-items:center; gap:8px;">
                         <button class="btn-nav" id="btnPrevPage" onclick="changePreviewSheet(-1)">◀</button>
                         <span id="previewSheetText" style="font-size:11px;">1 / 1</span>
@@ -178,7 +178,7 @@
             </div>
             <div style="display:flex; gap:12px;">
                 <div class="input-group" style="flex:1;"><label>Jumlah Copy:</label><input type="number" id="copies" class="input-standard" value="1" min="1"></div>
-                <div class="input-group" style="flex:1;"><label>Rincian Halaman:</label><input type="text" id="pages" class="input-standard" placeholder="Cth: 1,3,5-7"></div>
+                <div class="input-group" style="flex:1;"><label>Rincian Halaman:</label><input type="text" id="pages" class="input-standard" placeholder="1,3,5-7,...."></div>
             </div>
             <div style="display:flex; gap:10px; margin-top:20px;">
                 <button class="btn-block" style="background:white; color:#333; border:1px solid #ddd;" onclick="cancelConfigModal()">Batal</button>
