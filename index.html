@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#2563eb">
     <link rel="manifest" href="manifest.json">
-    <title>Print Pro V4.5</title>
+    <title>Print Server</title>
     
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
@@ -83,7 +83,7 @@
     <div class="app-wrapper">
         <div class="left-col">
             <div class="card main-card">
-                <h2>🏢 Print Server Pro v4.5</h2>
+                <h2>🏢 Print Server</h2>
 
                 <button id="installPwaBtn" class="btn-block" style="display:none; background: #1f2937; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);">📲 Install Aplikasi ke Layar HP</button>
 
@@ -173,16 +173,15 @@
             <h3 style="text-align:center; margin:0 0 20px 0;">⚙️ Pengaturan</h3>
             <div style="display:flex; gap:12px;">
                 <div class="input-group" style="flex:1;"><label>Warna:</label><select id="colorMode" class="input-standard"><option value="color">Warna</option><option value="monochrome">Hitam Putih</option></select></div>
-                <div class="input-group" style="flex:1;"><label>Kertas:</label><select id="paperSize" class="input-standard"><option value="A4">A4</option><option value="F4">F4</option></select></div>
+                <div class="input-group" style="flex:1;"><label>Ukuran Kertas:</label><select id="paperSize" class="input-standard"><option value="A4">A4</option><option value="F4">F4</option></select></div>
             </div>
             <div style="display:flex; gap:12px;">
                 <div class="input-group" style="flex:1;"><label>Orientasi:</label><select id="orientation" class="input-standard"><option value="portrait">Portrait</option><option value="landscape">Landscape</option></select></div>
                 <div class="input-group" style="flex:1;"><label>Hal/Lembar:</label><input type="number" id="pagesPerSheet" class="input-standard" value="1" min="1" max="16"></div>
             </div>
             <div style="display:flex; gap:12px;">
-                <div class="input-group" style="flex:1;"><label>Jumlah Copy:</label><input type="number" id="copies" class="input-standard" value="1" min="1"></div>
-                <div class="input-group" style="flex:1;"><label>Rincian Halaman:</label><input type="text" id="pages" class="input-standard" placeholder="Cth: 1,3,5-7"></div>
-            </div>
+                <div class="input-group" style="flex:1;"><label>Rincian Halaman:</label><input type="text" id="pages" class="input-standard" placeholder="1,3,5-7,...."></div>
+                <div class="input-group" style="flex:1;"><label>Jumlah Copy:</label><input type="number" id="copies" class="input-standard" value="1" min="1"></div>            </div>
             <div style="display:flex; gap:10px; margin-top:20px;">
                 <button class="btn-block" style="background:white; color:#333; border:1px solid #ddd;" onclick="cancelConfigModal()">Batal</button>
                 <button class="btn-block" onclick="applyConfigModal()">Simpan</button>
