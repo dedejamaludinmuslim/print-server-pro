@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#2563eb">
     <link rel="manifest" href="manifest.json">
-    <title>Print Pro V4.5 - Final</title>
+    <title>Print Pro V4.5</title>
     
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
@@ -114,11 +114,6 @@
                     <input type="file" id="fileInput" class="input-standard" accept=".pdf, .png, .jpg, .jpeg" style="padding:10px; border:1px dashed #cbd5e1; cursor:pointer;" />
                 </div>
                 
-                <div class="divider"><span>ATAU</span></div>
-                <div class="input-group">
-                    <input type="text" id="fileUrl" class="input-standard" placeholder="https://domain.com/file.pdf">
-                </div>
-                
                 <div id="realtimeStatus" style="display:none; margin-top:20px;">
                     <div id="statusMessage" style="font-size:12px; font-weight:600;">Menunggu...</div>
                     <div style="height:6px; background:#e2e8f0; margin-top:12px; border-radius:10px; overflow:hidden;">
@@ -149,7 +144,6 @@
                 </div>
                 <div class="preview-body" id="previewBodyContainer">
                     <div id="emptyPreviewState" style="text-align: center; color: var(--text-muted); font-size: 13px; font-weight: 500;">Belum ada dokumen untuk ditampilkan.</div>
-                    
                     <canvas id="mainPreviewCanvas" class="preview-canvas" style="display: none;"></canvas>
                     <img id="imgPreview" class="preview-canvas" style="display: none;" />
                 </div>
@@ -226,31 +220,25 @@
                 <li style="margin-bottom: 8px;">Tekan tombol <strong>Windows + R</strong>.</li>
                 <li style="margin-bottom: 8px;">Ketik <strong>cmd</strong> lalu Enter.</li>
                 <li style="margin-bottom: 8px;">Ketik <strong>ipconfig</strong> dan Enter.</li>
-                <li>Cari <strong>IPv4 Address</strong> (cth: 192.168.x.x).</li>
+                <li>Cari baris <strong>IPv4 Address</strong>.</li>
             </ol>
             <button class="btn-block" style="background:white; color:#333; border:1px solid #ddd; margin-top: 20px;" onclick="closeHelpModal()">Tutup</button>
         </div>
     </div>
 
     <script>
-        // --- FITUR PWA SMART REGISTRATION ---
         if ('serviceWorker' in navigator) { 
             window.addEventListener('load', () => { 
-                // Mencoba mendeteksi sw.js atau worker.js untuk mencegah bentrok
                 navigator.serviceWorker.register('./sw.js').catch(() => {
                     navigator.serviceWorker.register('./worker.js').catch(err => console.log('SW fail'));
                 });
             }); 
         }
-        
         let deferredPrompt;
         window.addEventListener('beforeinstallprompt', (e) => { 
-            e.preventDefault(); 
-            deferredPrompt = e; 
-            // Menggunakan display flex agar layout tombol tidak rusak
+            e.preventDefault(); deferredPrompt = e; 
             document.getElementById('installPwaBtn').style.display = 'flex'; 
         });
-        
         document.getElementById('installPwaBtn').addEventListener('click', async () => { 
             if (deferredPrompt !== null) { 
                 deferredPrompt.prompt(); 
@@ -259,15 +247,22 @@
                 deferredPrompt = null; 
             } 
         });
-        // ------------------------------------
 
         let currentPdfDoc = null, currentImgSrc = null, currentPreviewSheet = 0, totalPreviewSheets = 1, appliedConfig = {};
 
+        // --- SOLUSI ANTI-TIMPA TOAST ---
         function showToast(message, type = 'info') {
-            let container = document.getElementById('toastContainer') || document.createElement('div');
-            container.id = 'toastContainer'; container.className = 'toast-container'; document.body.appendChild(container);
+            let container = document.getElementById('toastContainer');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'toastContainer'; container.className = 'toast-container'; 
+                document.body.appendChild(container);
+            }
+            // Bersihkan toast lama agar tidak numpuk
+            container.innerHTML = '';
             const toast = document.createElement('div'); toast.className = 'toast';
-            toast.innerHTML = `<span>${type === 'success' ? '✅' : '🚨'}</span> ${message}`;
+            let icon = type === 'success' ? '✅' : (type === 'error' ? '🚨' : 'ℹ️');
+            toast.innerHTML = `<span>${icon}</span> ${message}`;
             container.appendChild(toast);
             setTimeout(() => toast.remove(), 4000);
         }
@@ -285,7 +280,7 @@
         function applyConfigModal() { document.getElementById('configModal').style.display='none'; currentPreviewSheet = 0; updateDynamicPreview(); showToast("Tersimpan", "success"); }
         
         function showPinModal() { 
-            if(!document.getElementById('fileInput').files[0] && !document.getElementById('fileUrl').value) return showToast("Pilih file atau isi URL!", "error"); 
+            if(!document.getElementById('fileInput').files[0]) return showToast("Pilih file dokumen terlebih dahulu!", "error"); 
             document.getElementById('pinModal').style.display='flex'; 
             setTimeout(() => document.getElementById('modalPinInput').focus(), 100);
         }
@@ -299,8 +294,7 @@
             const file = e.target.files[0];
             if(!file) { 
                 currentPdfDoc = null; currentImgSrc = null; 
-                updateDynamicPreview(); 
-                return; 
+                updateDynamicPreview(); return; 
             }
             currentPreviewSheet = 0;
             const reader = new FileReader();
@@ -315,28 +309,20 @@
 
         async function updateDynamicPreview() {
             const canvas = document.getElementById('mainPreviewCanvas'), img = document.getElementById('imgPreview'), emptyState = document.getElementById('emptyPreviewState');
-            
-            // --- Logika Empty State ---
             if(!currentPdfDoc && !currentImgSrc) {
-                canvas.style.display = 'none';
-                img.style.display = 'none';
-                emptyState.style.display = 'block';
-                document.getElementById('previewPagination').style.display = 'none';
-                return;
+                canvas.style.display = 'none'; img.style.display = 'none'; emptyState.style.display = 'block';
+                document.getElementById('previewPagination').style.display = 'none'; return;
             }
             emptyState.style.display = 'none';
-            // --------------------------
-
             const orientation = document.getElementById('orientation').value;
             const pps = parseInt(document.getElementById('pagesPerSheet').value) || 1;
             canvas.style.filter = img.style.filter = document.getElementById('colorMode').value === 'monochrome' ? 'grayscale(100%)' : 'none';
             
             if(currentImgSrc) { canvas.style.display='none'; img.style.display='block'; img.src = currentImgSrc; return; }
-            
             img.style.display='none'; canvas.style.display='block';
+            
             const pageArr = Array.from({length: currentPdfDoc.numPages}, (_, i) => i + 1);
             totalPreviewSheets = Math.ceil(pageArr.length / pps);
-            
             document.getElementById('previewPagination').style.display = totalPreviewSheets > 1 ? 'flex' : 'none';
             document.getElementById('previewSheetText').innerText = `${currentPreviewSheet + 1} / ${totalPreviewSheets}`;
             
@@ -375,52 +361,82 @@
             });
         }
 
+        // --- ALGORITMA SNIPER (AbortController) ---
+        let scanAbortController = null;
+
         async function startSmartAutoScan() {
             closeScanModal();
             const btn = document.getElementById('scanBtn'); btn.innerHTML = "⏳"; btn.disabled = true;
-            showToast("Memindai jaringan...", "info");
+            showToast("Mencari server... mohon tunggu", "info");
+            
             const subnets = ['192.168.1', '192.168.0', '192.168.100', '192.168.8'];
             let found = false;
+
             for (let subnet of subnets) {
                 if (found) break; 
+                
+                scanAbortController = new AbortController();
                 const promises = [];
+                
                 for(let i=1; i<=254; i++) {
                     const ip = `${subnet}.${i}`;
-                    promises.push(fetch(`http://${ip}:3000/ping`, { signal: AbortSignal.timeout(1500) }).then(r => r.json()).then(d => {
-                        if(d.status === 'PrintServerActive') {
-                            const sel = document.getElementById('ipSelect'); sel.style.display='block';
-                            sel.add(new Option(`${d.hostname} (${ip})`, ip));
-                            if(!found) { document.getElementById('ipAddress').value = ip; updateIpAndFetchPrinters(); showToast(`Ditemukan Server di ${ip}`, "success"); }
-                            found = true;
-                        }
-                    }).catch(() => {}));
+                    promises.push(
+                        fetch(`http://${ip}:3000/ping`, { signal: scanAbortController.signal })
+                        .then(r => r.json())
+                        .then(d => {
+                            if(d.status === 'PrintServerActive' && !found) {
+                                found = true;
+                                scanAbortController.abort(); // Tembak mati pencarian lain!
+                                const sel = document.getElementById('ipSelect'); 
+                                sel.style.display='block'; sel.innerHTML = '';
+                                sel.add(new Option(`${d.hostname} (${ip})`, ip));
+                                document.getElementById('ipAddress').value = ip; 
+                                updateIpAndFetchPrinters(); 
+                                showToast(`Server ditemukan di ${ip}`, "success");
+                            }
+                        }).catch(() => {}) // Abaikan error dari abort
+                    );
                 }
                 await Promise.allSettled(promises);
             }
             btn.innerHTML = "🔍"; btn.disabled = false;
-            if(!found) showToast("Auto-Detect gagal.", "error");
+            if(!found) showToast("Server tidak ditemukan di jaringan ini.", "error");
         }
 
         async function startNetworkScan() {
             const base = document.getElementById('scanIpInput').value; 
             closeScanModal();
             const btn = document.getElementById('scanBtn'); btn.innerHTML = "⏳"; btn.disabled = true;
+            showToast("Memindai IP Manual...", "info");
+
             let found = false;
+            scanAbortController = new AbortController();
             const promises = [];
+            
             for(let i=1; i<=254; i++) {
                 const ip = `${base}.${i}`;
-                promises.push(fetch(`http://${ip}:3000/ping`, { signal: AbortSignal.timeout(1500) }).then(r => r.json()).then(d => {
-                    if(d.status === 'PrintServerActive') {
-                        const sel = document.getElementById('ipSelect'); sel.style.display='block';
-                        sel.add(new Option(`${d.hostname} (${ip})`, ip));
-                        if(!found) { document.getElementById('ipAddress').value = ip; updateIpAndFetchPrinters(); showToast(`Ditemukan Server di ${ip}`, "success"); }
-                        found = true;
-                    }
-                }).catch(() => {}));
+                promises.push(
+                    fetch(`http://${ip}:3000/ping`, { signal: scanAbortController.signal })
+                    .then(r => r.json())
+                    .then(d => {
+                        if(d.status === 'PrintServerActive' && !found) {
+                            found = true;
+                            scanAbortController.abort(); // Tembak mati pencarian lain!
+                            const sel = document.getElementById('ipSelect'); 
+                            sel.style.display='block'; sel.innerHTML = '';
+                            sel.add(new Option(`${d.hostname} (${ip})`, ip));
+                            document.getElementById('ipAddress').value = ip; 
+                            updateIpAndFetchPrinters(); 
+                            showToast(`Server ditemukan di ${ip}`, "success");
+                        }
+                    }).catch(() => {})
+                );
             }
             await Promise.allSettled(promises);
             btn.innerHTML = "🔍"; btn.disabled = false;
+            if(!found) showToast("Server tidak ditemukan di blok IP ini.", "error");
         }
+        // ------------------------------------------
 
         async function updateIpAndFetchPrinters() {
             const ip = document.getElementById('ipAddress').value.trim();
@@ -435,9 +451,9 @@
                 sel.innerHTML = '<option value="">🖨️ Default Printer</option>';
                 data.forEach(p => sel.add(new Option(p.name, p.name)));
                 sel.value = ""; sel.disabled = false;
-                showToast(`Server ${ip} dimuat!`, "success");
+                showToast(`Printer Server ${ip} siap!`, "success");
             } catch(e) {
-                sel.innerHTML = '<option value="">⚠️ Gagal</option>';
+                sel.innerHTML = '<option value="">⚠️ Gagal terhubung</option>';
                 sel.disabled = false;
             }
         }
@@ -447,13 +463,10 @@
             const ip = document.getElementById('ipAddress').value;
             
             const fileObj = document.getElementById('fileInput').files[0];
-            const urlVal = document.getElementById('fileUrl').value.trim();
-            
+            if (!fileObj) return;
+
             const fd = new FormData();
-            // Masukkan salah satu, file fisik atau link URL
-            if (fileObj) fd.append('document', fileObj);
-            if (urlVal) fd.append('fileUrl', urlVal);
-            
+            fd.append('document', fileObj);
             fd.append('pin', pin);
             fd.append('printerName', document.getElementById('printerSelect').value);
             fd.append('colorMode', document.getElementById('colorMode').value);
@@ -462,14 +475,16 @@
             fd.append('pagesPerSheet', document.getElementById('pagesPerSheet').value);
             fd.append('copies', document.getElementById('copies').value); 
             fd.append('pages', document.getElementById('pages').value);
-
+            
             try {
                 const r = await fetch(`http://${ip}:3000/print`, { method: 'POST', body: fd });
                 if(r.ok) { 
-                    saveHistory(fileObj?.name || "Dokumen dari Link URL"); 
+                    saveHistory(fileObj.name); 
                     showToast("Berhasil dicetak", "success");
-                    // Bersihkan kolom URL setelah sukses
-                    document.getElementById('fileUrl').value = '';
+                    document.getElementById('fileInput').value = '';
+                    document.getElementById('previewCol').style.display = 'none';
+                    currentPdfDoc = null; currentImgSrc = null;
+                    updateDynamicPreview();
                 }
                 else showToast(await r.text(), "error");
             } catch(e) { showToast("Gagal koneksi ke Server", "error"); }
@@ -477,7 +492,7 @@
 
         function saveHistory(name) {
             let h = JSON.parse(localStorage.getItem('h_v45')) || [];
-            h.unshift({ name, time: new Date().toLocaleTimeString() });
+            h.unshift({ name, time: new Date().toLocaleString() });
             localStorage.setItem('h_v45', JSON.stringify(h.slice(0, 5))); loadHistory();
         }
 

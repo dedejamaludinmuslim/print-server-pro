@@ -18,10 +18,51 @@ const APP_PIN = "4545"; // Ganti PIN Anda
 
 app.use(cors());
 app.use(express.static(__dirname));
-const upload = multer({ dest: 'uploads/' });
+
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
+const upload = multer({ dest: uploadDir });
 
 function updateStatus(message, type = 'info') {
     io.emit('print-status', { message, type });
+}
+
+// --- FUNGSI AUTO-WRAP GAMBAR KE KERTAS PDF A4 ---
+async function convertImageToPdf(imagePath, mimeType, originalName) {
+    const imgBytes = fs.readFileSync(imagePath);
+    const pdfDoc = await PDFDocument.create();
+    let image;
+
+    const isPng = (mimeType && mimeType.includes('png')) || (originalName && originalName.toLowerCase().endsWith('.png'));
+
+    try {
+        if (isPng) image = await pdfDoc.embedPng(imgBytes);
+        else image = await pdfDoc.embedJpg(imgBytes);
+    } catch(e) {
+        try { image = await pdfDoc.embedJpg(imgBytes); }
+        catch(e2) { image = await pdfDoc.embedPng(imgBytes); }
+    }
+
+    const a4W = 595.28, a4H = 841.89;
+    const page = pdfDoc.addPage([a4W, a4H]);
+
+    const scale = Math.min((a4W - 40) / image.width, (a4H - 40) / image.height);
+    const scaledW = image.width * scale;
+    const scaledH = image.height * scale;
+    
+    page.drawImage(image, { 
+        x: (a4W - scaledW) / 2, 
+        y: (a4H - scaledH) / 2, 
+        width: scaledW, 
+        height: scaledH 
+    });
+
+    const pdfBytes = await pdfDoc.save();
+    const newPdfPath = imagePath + '_converted.pdf';
+    fs.writeFileSync(newPdfPath, pdfBytes);
+    
+    try { fs.unlinkSync(imagePath); } catch(e){}
+    return newPdfPath;
 }
 
 app.get('/ping', (req, res) => res.json({ status: 'PrintServerActive', hostname: os.hostname() }));
@@ -33,7 +74,6 @@ async function processPdf(filePath, pagesInput, orientation, pps) {
     const bytes = fs.readFileSync(filePath);
     let pdfDoc = await PDFDocument.load(bytes);
     
-    // Filter Halaman
     if (pagesInput) {
         const total = pdfDoc.getPageCount();
         let keep = [];
@@ -54,13 +94,12 @@ async function processPdf(filePath, pagesInput, orientation, pps) {
         }
     }
 
-    // Grid N-Up & Rotasi
     if (orientation === 'landscape' || pps > 1) {
         const pages = pdfDoc.getPages();
         const final = await PDFDocument.create();
         let cols = pps > 1 ? (orientation === 'landscape' ? 2 : 1) : 1;
         let rows = Math.ceil(pps / cols);
-        let sW = 595, sH = 842; if(orientation === 'landscape') [sW, sH] = [842, 595];
+        let sW = 595.28, sH = 841.89; if(orientation === 'landscape') [sW, sH] = [841.89, 595.28];
         
         let curPage;
         for(let i=0; i<pages.length; i++) {
@@ -77,41 +116,48 @@ async function processPdf(filePath, pagesInput, orientation, pps) {
         }
         pdfDoc = final;
     }
-
     fs.writeFileSync(filePath, await pdfDoc.save());
 }
 
 app.post('/print', upload.single('document'), async (req, res) => {
-    let fPath = req.file ? req.file.path : '';
     if(req.body.pin !== APP_PIN) return res.status(401).send("PIN Salah!");
 
+    let fPath = req.file ? req.file.path : '';
+    let mimeType = req.file ? req.file.mimetype : '';
+    let originalName = req.file ? req.file.originalname : '';
+
     try {
-        updateStatus("Memproses...", "processing");
+        if (!fPath || !fs.existsSync(fPath)) throw new Error("File dokumen tidak ditemukan.");
+
+        updateStatus("Memproses dokumen...", "processing");
+
+        if (mimeType.includes('image') || originalName.match(/\.(jpg|jpeg|png)$/i)) {
+            updateStatus("Menyesuaikan Gambar ke Kertas...", "processing");
+            fPath = await convertImageToPdf(fPath, mimeType, originalName);
+        }
+
         await processPdf(fPath, req.body.pages, req.body.orientation, parseInt(req.body.pagesPerSheet));
         
-        // --- PERBAIKAN FITUR JUMLAH COPY DAN UKURAN KERTAS ---
-        const copies = parseInt(req.body.copies) || 1;
-        let paperSize = req.body.paperSize || 'A4';
-        if (paperSize === 'F4') paperSize = '210x330mm'; 
-
         const opts = { 
             printer: req.body.printerName, 
             monochrome: req.body.colorMode === 'monochrome',
-            copies: copies,         // <-- Instruksi untuk mencetak rangkap
-            paperSize: paperSize    // <-- Instruksi untuk ganti kertas (jika didukung printer)
+            copies: parseInt(req.body.copies) || 1,
+            paperSize: req.body.paperSize === 'F4' ? '210x330mm' : 'A4'
         };
 
-        updateStatus("Mencetak...", "printing");
+        updateStatus("Mencetak ke mesin fisik...", "printing");
         await ptp.print(fPath, opts);
         
-        updateStatus("Sukses", "success");
+        updateStatus("Cetak Sukses!", "success");
         res.send("OK");
     } catch (e) {
-        updateStatus("Gagal", "error");
+        updateStatus(`Gagal: ${e.message}`, "error");
         res.status(500).send(e.message);
     } finally {
-        if(fPath && fs.existsSync(fPath)) fs.unlinkSync(fPath);
+        if(fPath && fs.existsSync(fPath)) {
+            try { fs.unlinkSync(fPath); } catch(err){}
+        }
     }
 });
 
-server.listen(port, '0.0.0.0', () => console.log(`Print Server V4.5 Revised - Ready`));
+server.listen(port, '0.0.0.0', () => console.log(`Print Server V4.5 Pro - Ready`));
