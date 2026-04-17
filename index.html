@@ -445,8 +445,15 @@
         async function confirmAndPrint() {
             const pin = document.getElementById('modalPinInput').value; closePinModal();
             const ip = document.getElementById('ipAddress').value;
+            
+            const fileObj = document.getElementById('fileInput').files[0];
+            const urlVal = document.getElementById('fileUrl').value.trim();
+            
             const fd = new FormData();
-            fd.append('document', document.getElementById('fileInput').files[0]);
+            // Masukkan salah satu, file fisik atau link URL
+            if (fileObj) fd.append('document', fileObj);
+            if (urlVal) fd.append('fileUrl', urlVal);
+            
             fd.append('pin', pin);
             fd.append('printerName', document.getElementById('printerSelect').value);
             fd.append('colorMode', document.getElementById('colorMode').value);
@@ -455,11 +462,17 @@
             fd.append('pagesPerSheet', document.getElementById('pagesPerSheet').value);
             fd.append('copies', document.getElementById('copies').value); 
             fd.append('pages', document.getElementById('pages').value);
+
             try {
                 const r = await fetch(`http://${ip}:3000/print`, { method: 'POST', body: fd });
-                if(r.ok) { saveHistory(document.getElementById('fileInput').files[0]?.name || "Link URL"); showToast("Berhasil", "success"); }
+                if(r.ok) { 
+                    saveHistory(fileObj?.name || "Dokumen dari Link URL"); 
+                    showToast("Berhasil dicetak", "success");
+                    // Bersihkan kolom URL setelah sukses
+                    document.getElementById('fileUrl').value = '';
+                }
                 else showToast(await r.text(), "error");
-            } catch(e) { showToast("Gagal", "error"); }
+            } catch(e) { showToast("Gagal koneksi ke Server", "error"); }
         }
 
         function saveHistory(name) {
