@@ -79,6 +79,7 @@ async function processPdf(filePath, pagesInput, orientation, pps) {
     const bytes = fs.readFileSync(filePath);
     let pdfDoc = await PDFDocument.load(bytes);
     
+    // Filter Halaman (Cetak Halaman Tertentu)
     if (pagesInput) {
         const total = pdfDoc.getPageCount();
         let keep = [];
@@ -99,6 +100,7 @@ async function processPdf(filePath, pagesInput, orientation, pps) {
         }
     }
 
+    // Grid N-Up & Rotasi Cerdas
     if (orientation === 'landscape' || pps > 1) {
         const pages = pdfDoc.getPages();
         const final = await PDFDocument.create();
@@ -106,18 +108,31 @@ async function processPdf(filePath, pagesInput, orientation, pps) {
         let rows = Math.ceil(pps / cols);
         let sW = 595.28, sH = 841.89; if(orientation === 'landscape') [sW, sH] = [841.89, 595.28];
         
+        let cellW = sW / cols;
+        let cellH = sH / rows;
+
         let curPage;
         for(let i=0; i<pages.length; i++) {
             if(i % pps === 0) curPage = final.addPage([sW, sH]);
             const emb = await final.embedPage(pages[i]);
-            let rot = (sW > sH && emb.width < emb.height) || (sW < sH && emb.width > emb.height);
-            let dW = rot ? emb.height : emb.width, dH = rot ? emb.width : emb.height;
-            const scale = Math.min((sW/cols-10)/dW, (sH/rows-10)/dH);
             
-            const x = (i%pps%cols)*(sW/cols) + (sW/cols - dW*scale)/2;
-            const y = sH - (Math.floor(i%pps/cols)+1)*(sH/rows) + (sH/rows - dH*scale)/2;
+            // PERBAIKAN: Hitung rotasi berdasarkan proporsi Kotak Sel, bukan keseluruhan kertas
+            let rot = (cellW > cellH && emb.width < emb.height) || (cellW < cellH && emb.width > emb.height);
+            let dW = rot ? emb.height : emb.width;
+            let dH = rot ? emb.width : emb.height;
+            
+            const scale = Math.min((cellW-10)/dW, (cellH-10)/dH);
+            
+            const x = (i%pps%cols)*cellW + (cellW - dW*scale)/2;
+            const y = sH - (Math.floor(i%pps/cols)+1)*cellH + (cellH - dH*scale)/2;
 
-            curPage.drawPage(emb, { x: x + (rot?dH*scale:0), y, width: emb.width*scale, height: emb.height*scale, rotate: rot ? degrees(90) : degrees(0) });
+            curPage.drawPage(emb, { 
+                x: x + (rot ? dH*scale : 0), 
+                y, 
+                width: emb.width*scale, 
+                height: emb.height*scale, 
+                rotate: rot ? degrees(90) : degrees(0) 
+            });
         }
         pdfDoc = final;
     }

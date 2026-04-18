@@ -332,13 +332,33 @@
             const start = currentPreviewSheet * pps;
             for(let i=0; i < Math.min(pps, pageArr.length - start); i++) {
                 const page = await currentPdfDoc.getPage(pageArr[start + i]);
-                const vp = page.getViewport({scale: 1});
-                const cellW = canvas.width / cols, cellH = canvas.height / rows;
-                const scale = Math.min((cellW-40)/vp.width, (cellH-40)/vp.height);
-                const scaledVp = page.getViewport({scale});
-                const off = document.createElement('canvas'); off.width = scaledVp.width; off.height = scaledVp.height;
-                await page.render({canvasContext: off.getContext('2d'), viewport: scaledVp}).promise;
-                ctx.drawImage(off, (i%cols)*cellW + (cellW-off.width)/2, Math.floor(i/cols)*cellH + (cellH-off.height)/2);
+                
+                const cellW = canvas.width / cols;
+                const cellH = canvas.height / rows;
+                
+                // Ambil ukuran asli halaman PDF
+                const baseVp = page.getViewport({scale: 1});
+                
+                // PERBAIKAN: Sinkronisasi algoritma rotasi layar dengan PC Server
+                let isRotated = (cellW > cellH && baseVp.width < baseVp.height) || 
+                                (cellW < cellH && baseVp.width > baseVp.height);
+                
+                let dW = isRotated ? baseVp.height : baseVp.width;
+                let dH = isRotated ? baseVp.width : baseVp.height;
+                
+                const scale = Math.min((cellW-40)/dW, (cellH-40)/dH);
+                
+                // Minta pdf.js me-render halaman dengan rotasi yang sesuai
+                const renderVp = page.getViewport({scale: scale, rotation: isRotated ? 90 : 0});
+                const off = document.createElement('canvas'); 
+                off.width = renderVp.width; 
+                off.height = renderVp.height;
+                await page.render({canvasContext: off.getContext('2d'), viewport: renderVp}).promise;
+                
+                const xPos = (i%cols)*cellW + (cellW - renderVp.width)/2;
+                const yPos = Math.floor(i/cols)*cellH + (cellH - renderVp.height)/2;
+                
+                ctx.drawImage(off, xPos, yPos);
             }
         }
 
