@@ -104,9 +104,23 @@ async function processPdf(filePath, pagesInput, orientation, pps) {
     if (orientation === 'landscape' || pps > 1) {
         const pages = pdfDoc.getPages();
         const final = await PDFDocument.create();
-        let cols = pps > 1 ? (orientation === 'landscape' ? 2 : 1) : 1;
-        let rows = Math.ceil(pps / cols);
         let sW = 595.28, sH = 841.89; if(orientation === 'landscape') [sW, sH] = [841.89, 595.28];
+        
+        // --- RUMUS GRID YANG BENAR (GANTI BAGIAN INI) ---
+        let cols = 1, rows = 1;
+        if (pps === 2) {
+            cols = orientation === 'landscape' ? 2 : 1;
+            rows = orientation === 'landscape' ? 1 : 2;
+        } else if (pps === 4) {
+            cols = 2; rows = 2; // 4-Up pasti 2x2
+        } else if (pps === 6) {
+            cols = orientation === 'landscape' ? 3 : 2;
+            rows = orientation === 'landscape' ? 2 : 3;
+        } else if (pps > 1) {
+            cols = Math.ceil(Math.sqrt(pps));
+            rows = Math.ceil(pps / cols);
+        }
+        // ------------------------------------------------
         
         let cellW = sW / cols;
         let cellH = sH / rows;

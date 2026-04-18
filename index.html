@@ -295,8 +295,26 @@
             const pps = parseInt(document.getElementById('pagesPerSheet').value) || 1;
             canvas.style.filter = document.getElementById('colorMode').value === 'monochrome' ? 'grayscale(100%)' : 'none';
             
-            let cols = pps > 1 ? (orientation === 'landscape' ? 2 : 1) : 1;
-            let rows = Math.ceil(pps / cols);
+            const orientation = document.getElementById('orientation').value;
+            const pps = parseInt(document.getElementById('pagesPerSheet').value) || 1;
+            canvas.style.filter = document.getElementById('colorMode').value === 'monochrome' ? 'grayscale(100%)' : 'none';
+            
+            // --- RUMUS GRID YANG BENAR (GANTI BAGIAN INI) ---
+            let cols = 1, rows = 1;
+            if (pps === 2) {
+                cols = orientation === 'landscape' ? 2 : 1;
+                rows = orientation === 'landscape' ? 1 : 2;
+            } else if (pps === 4) {
+                cols = 2; rows = 2; // 4-Up pasti 2x2
+            } else if (pps === 6) {
+                cols = orientation === 'landscape' ? 3 : 2;
+                rows = orientation === 'landscape' ? 2 : 3;
+            } else if (pps > 1) {
+                cols = Math.ceil(Math.sqrt(pps));
+                rows = Math.ceil(pps / cols);
+            }
+            // ------------------------------------------------
+            
             const base = 1000;
             canvas.width = orientation === 'landscape' ? base * 1.4 : base;
             canvas.height = orientation === 'landscape' ? base : base * 1.4;
