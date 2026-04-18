@@ -295,10 +295,6 @@
             const pps = parseInt(document.getElementById('pagesPerSheet').value) || 1;
             canvas.style.filter = document.getElementById('colorMode').value === 'monochrome' ? 'grayscale(100%)' : 'none';
             
-            const orientation = document.getElementById('orientation').value;
-            const pps = parseInt(document.getElementById('pagesPerSheet').value) || 1;
-            canvas.style.filter = document.getElementById('colorMode').value === 'monochrome' ? 'grayscale(100%)' : 'none';
-            
             // --- RUMUS GRID YANG BENAR (GANTI BAGIAN INI) ---
             let cols = 1, rows = 1;
             if (pps === 2) {
