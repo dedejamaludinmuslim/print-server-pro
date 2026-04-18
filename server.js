@@ -28,7 +28,7 @@ function updateStatus(message, type = 'info') {
 }
 
 // --- FUNGSI AUTO-WRAP GAMBAR KE KERTAS PDF A4 ---
-async function convertImageToPdf(imagePath, mimeType, originalName) {
+async function convertImageToPdf(imagePath, mimeType, originalName, orientation) {
     const imgBytes = fs.readFileSync(imagePath);
     const pdfDoc = await PDFDocument.create();
     let image;
@@ -43,7 +43,12 @@ async function convertImageToPdf(imagePath, mimeType, originalName) {
         catch(e2) { image = await pdfDoc.embedPng(imgBytes); }
     }
 
-    const a4W = 595.28, a4H = 841.89;
+    // DINAMIS: Sesuaikan kertas dasar dengan pilihan user (Portrait/Landscape)
+    let a4W = 595.28, a4H = 841.89;
+    if (orientation === 'landscape') {
+        a4W = 841.89;
+        a4H = 595.28;
+    }
     const page = pdfDoc.addPage([a4W, a4H]);
 
     const scale = Math.min((a4W - 40) / image.width, (a4H - 40) / image.height);
@@ -133,7 +138,7 @@ app.post('/print', upload.single('document'), async (req, res) => {
 
         if (mimeType.includes('image') || originalName.match(/\.(jpg|jpeg|png)$/i)) {
             updateStatus("Menyesuaikan Gambar ke Kertas...", "processing");
-            fPath = await convertImageToPdf(fPath, mimeType, originalName);
+            fPath = await convertImageToPdf(fPath, mimeType, originalName, req.body.orientation);
         }
 
         await processPdf(fPath, req.body.pages, req.body.orientation, parseInt(req.body.pagesPerSheet));

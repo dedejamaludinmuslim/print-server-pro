@@ -282,23 +282,18 @@
         });
 
         async function updateDynamicPreview() {
-            const canvas = document.getElementById('mainPreviewCanvas'), img = document.getElementById('imgPreview'), emptyState = document.getElementById('emptyPreviewState');
+            const canvas = document.getElementById('mainPreviewCanvas'), emptyState = document.getElementById('emptyPreviewState');
+            
             if(!currentPdfDoc && !currentImgSrc) {
-                canvas.style.display = 'none'; img.style.display = 'none'; emptyState.style.display = 'block';
+                canvas.style.display = 'none'; emptyState.style.display = 'block';
                 document.getElementById('previewPagination').style.display = 'none'; return;
             }
             emptyState.style.display = 'none';
+            canvas.style.display = 'block';
+            
             const orientation = document.getElementById('orientation').value;
             const pps = parseInt(document.getElementById('pagesPerSheet').value) || 1;
-            canvas.style.filter = img.style.filter = document.getElementById('colorMode').value === 'monochrome' ? 'grayscale(100%)' : 'none';
-            
-            if(currentImgSrc) { canvas.style.display='none'; img.style.display='block'; img.src = currentImgSrc; return; }
-            img.style.display='none'; canvas.style.display='block';
-            
-            const pageArr = Array.from({length: currentPdfDoc.numPages}, (_, i) => i + 1);
-            totalPreviewSheets = Math.ceil(pageArr.length / pps);
-            document.getElementById('previewPagination').style.display = totalPreviewSheets > 1 ? 'flex' : 'none';
-            document.getElementById('previewSheetText').innerText = `${currentPreviewSheet + 1} / ${totalPreviewSheets}`;
+            canvas.style.filter = document.getElementById('colorMode').value === 'monochrome' ? 'grayscale(100%)' : 'none';
             
             let cols = pps > 1 ? (orientation === 'landscape' ? 2 : 1) : 1;
             let rows = Math.ceil(pps / cols);
@@ -307,6 +302,32 @@
             canvas.height = orientation === 'landscape' ? base : base * 1.4;
             const ctx = canvas.getContext('2d');
             ctx.fillStyle = 'white'; ctx.fillRect(0,0, canvas.width, canvas.height);
+
+            // --- JIKA FILE ADALAH GAMBAR (Kini mendukung Grid N-Up & Rotasi) ---
+            if(currentImgSrc) {
+                document.getElementById('previewPagination').style.display = 'none';
+                
+                const imgObj = new Image();
+                imgObj.src = currentImgSrc;
+                await new Promise(r => imgObj.onload = r); // Tunggu gambar dimuat ke memori
+
+                for(let i=0; i < pps; i++) {
+                    const cellW = canvas.width / cols, cellH = canvas.height / rows;
+                    const scale = Math.min((cellW-40)/imgObj.width, (cellH-40)/imgObj.height);
+                    const drawW = imgObj.width * scale;
+                    const drawH = imgObj.height * scale;
+                    const x = (i%cols)*cellW + (cellW-drawW)/2;
+                    const y = Math.floor(i/cols)*cellH + (cellH-drawH)/2;
+                    ctx.drawImage(imgObj, x, y, drawW, drawH);
+                }
+                return;
+            }
+
+            // --- JIKA FILE ADALAH PDF ---
+            const pageArr = Array.from({length: currentPdfDoc.numPages}, (_, i) => i + 1);
+            totalPreviewSheets = Math.ceil(pageArr.length / pps);
+            document.getElementById('previewPagination').style.display = totalPreviewSheets > 1 ? 'flex' : 'none';
+            document.getElementById('previewSheetText').innerText = `${currentPreviewSheet + 1} / ${totalPreviewSheets}`;
             
             const start = currentPreviewSheet * pps;
             for(let i=0; i < Math.min(pps, pageArr.length - start); i++) {
