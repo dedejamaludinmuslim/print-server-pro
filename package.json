@@ -1,7 +1,7 @@
 {
   "name": "print-server-v45",
   "version": "4.5.3",
-  "description": "Hosted-friendly local print server with multi-subnet auto-detect",
+  "description": "Print Server with hosted-safe CORS for local testing and hosted frontend",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
