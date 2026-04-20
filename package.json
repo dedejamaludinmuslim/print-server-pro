@@ -1,11 +1,10 @@
 {
-  "name": "print-server-v452-heartbeat",
-  "version": "4.5.2",
-  "description": "Print Server with hosted heartbeat registry",
+  "name": "print-server-v45",
+  "version": "4.5.3",
+  "description": "Hosted-friendly local print server with multi-subnet auto-detect",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "start:registry": "node registry-server.js"
+    "start": "node server.js"
   },
   "dependencies": {
     "convertapi": "^1.15.0",

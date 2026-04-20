@@ -11,14 +11,13 @@ const http = require('http');
 
 const app = express();
 const server = http.createServer(app);
-const PORT = parseInt(process.env.PORT || '3000', 10);
+const port = parseInt(process.env.PORT || '3000', 10);
 const APP_PIN = process.env.APP_PIN || '4545';
-const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || '*').split(',').map(s => s.trim()).filter(Boolean);
-const REGISTRY_URL = (process.env.REGISTRY_URL || '').trim();
-const HEARTBEAT_INTERVAL_MS = Math.max(15000, parseInt(process.env.HEARTBEAT_INTERVAL_MS || '30000', 10));
-const PUBLIC_BASE_URL = (process.env.PUBLIC_BASE_URL || '').trim();
-const SERVER_LABEL = (process.env.SERVER_LABEL || os.hostname()).trim();
-const SERVER_TOKEN = (process.env.SERVER_TOKEN || '').trim();
+const DEFAULT_ALLOWED_ORIGINS = ['https://printer-upmp.vercel.app'];
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || DEFAULT_ALLOWED_ORIGINS.join(','))
+  .split(',')
+  .map(s => s.trim())
+  .filter(Boolean);
 
 function isOriginAllowed(origin) {
   if (!origin) return true;
@@ -26,87 +25,65 @@ function isOriginAllowed(origin) {
   return ALLOWED_ORIGINS.includes(origin);
 }
 
-app.use(cors({
-  origin(origin, callback) {
-    if (isOriginAllowed(origin)) return callback(null, true);
-    return callback(new Error('Not allowed by CORS'));
-  },
-  methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'X-Server-Token'],
-}));
-app.options('*', cors());
-app.use(express.json());
-app.use(express.static(__dirname));
+const corsOptionsDelegate = function (req, callback) {
+  const origin = req.header('Origin');
+  const corsOptions = {
+    origin: isOriginAllowed(origin) ? origin || true : false,
+    credentials: false,
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    optionsSuccessStatus: 204
+  };
+  callback(null, corsOptions);
+};
+
+app.use(cors(corsOptionsDelegate));
+app.options(/.*/, cors(corsOptionsDelegate));
+app.use((req, res, next) => {
+  const origin = req.header('Origin');
+  if (isOriginAllowed(origin)) {
+    res.header('Access-Control-Allow-Origin', origin || '*');
+    res.header('Vary', 'Origin');
+    res.header('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+    res.header('Access-Control-Allow-Private-Network', 'true');
+  }
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
+  next();
+});
 
 const io = new Server(server, {
   cors: {
-    origin(origin, callback) {
+    origin: (origin, callback) => {
       if (isOriginAllowed(origin)) return callback(null, true);
-      return callback(new Error('Not allowed by CORS'));
-    }
+      callback(new Error('Origin not allowed by Socket.IO CORS'));
+    },
+    methods: ['GET', 'POST']
   }
 });
 
+app.use(express.static(__dirname));
+
 const uploadDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 const upload = multer({ dest: uploadDir });
+
+function getLocalIps() {
+  const nets = os.networkInterfaces();
+  const out = [];
+  for (const entries of Object.values(nets)) {
+    for (const net of entries || []) {
+      if (net.family === 'IPv4' && !net.internal) out.push(net.address);
+    }
+  }
+  return [...new Set(out)];
+}
 
 function updateStatus(message, type = 'info') {
   io.emit('print-status', { message, type });
 }
 
-function getLocalIps() {
-  const interfaces = os.networkInterfaces();
-  const results = [];
-  for (const entries of Object.values(interfaces)) {
-    for (const item of entries || []) {
-      if (item.family === 'IPv4' && !item.internal) {
-        results.push(item.address);
-      }
-    }
-  }
-  return [...new Set(results)];
-}
-
-function getPreferredIp() {
-  return getLocalIps()[0] || '127.0.0.1';
-}
-
-function getAdvertisedBaseUrl(req) {
-  if (PUBLIC_BASE_URL) return PUBLIC_BASE_URL;
-  const proto = req?.protocol || 'http';
-  return `${proto}://${getPreferredIp()}:${PORT}`;
-}
-
-async function sendHeartbeat() {
-  if (!REGISTRY_URL) return;
-  try {
-    const target = new URL('/api/heartbeat', REGISTRY_URL).toString();
-    const payload = {
-      label: SERVER_LABEL,
-      hostname: os.hostname(),
-      ip: getPreferredIp(),
-      ips: getLocalIps(),
-      port: PORT,
-      pingUrl: `${getAdvertisedBaseUrl()}/ping`,
-      printersUrl: `${getAdvertisedBaseUrl()}/printers`,
-      lastSeenAt: new Date().toISOString(),
-      token: SERVER_TOKEN || undefined,
-    };
-    const response = await fetch(target, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    if (!response.ok) {
-      console.warn('Heartbeat gagal:', response.status, await response.text());
-    }
-  } catch (error) {
-    console.warn('Heartbeat error:', error.message);
-  }
-}
-
-async function convertImageToPdf(imagePath, mimeType, originalName, orientation) {
+async function convertImageToPdf(imagePath, mimeType, originalName, orientation, paperSize) {
   const imgBytes = fs.readFileSync(imagePath);
   const pdfDoc = await PDFDocument.create();
   let image;
@@ -116,25 +93,22 @@ async function convertImageToPdf(imagePath, mimeType, originalName, orientation)
   try {
     if (isPng) image = await pdfDoc.embedPng(imgBytes);
     else image = await pdfDoc.embedJpg(imgBytes);
-  } catch(e) {
+  } catch (e) {
     try { image = await pdfDoc.embedJpg(imgBytes); }
-    catch(e2) { image = await pdfDoc.embedPng(imgBytes); }
+    catch (e2) { image = await pdfDoc.embedPng(imgBytes); }
   }
 
-  let a4W = 595.28, a4H = 841.89;
-  if (orientation === 'landscape') {
-    a4W = 841.89;
-    a4H = 595.28;
-  }
-  const page = pdfDoc.addPage([a4W, a4H]);
+  let pageW = 595.28, pageH = (paperSize === 'F4' ? 935.43 : 841.89);
+  if (orientation === 'landscape') [pageW, pageH] = [pageH, pageW];
+  const page = pdfDoc.addPage([pageW, pageH]);
 
-  const scale = Math.min((a4W - 40) / image.width, (a4H - 40) / image.height);
+  const scale = Math.min((pageW - 40) / image.width, (pageH - 40) / image.height);
   const scaledW = image.width * scale;
   const scaledH = image.height * scale;
 
   page.drawImage(image, {
-    x: (a4W - scaledW) / 2,
-    y: (a4H - scaledH) / 2,
+    x: (pageW - scaledW) / 2,
+    y: (pageH - scaledH) / 2,
     width: scaledW,
     height: scaledH
   });
@@ -142,58 +116,58 @@ async function convertImageToPdf(imagePath, mimeType, originalName, orientation)
   const pdfBytes = await pdfDoc.save();
   const newPdfPath = imagePath + '_converted.pdf';
   fs.writeFileSync(newPdfPath, pdfBytes);
-
-  try { fs.unlinkSync(imagePath); } catch(e){}
+  try { fs.unlinkSync(imagePath); } catch (e) {}
   return newPdfPath;
 }
 
 app.get('/ping', (req, res) => {
+  const ips = getLocalIps();
   res.json({
     status: 'PrintServerActive',
     hostname: os.hostname(),
-    label: SERVER_LABEL,
-    ipHint: getPreferredIp(),
-    ips: getLocalIps(),
-    port: PORT,
-    registryEnabled: !!REGISTRY_URL,
-    advertisedBaseUrl: getAdvertisedBaseUrl(req),
+    ipHint: ips[0] || null,
+    localIps: ips,
+    port,
+    allowedOrigins: ALLOWED_ORIGINS
   });
 });
 
 app.get('/connection-info', (req, res) => {
   res.json({
-    ok: true,
-    label: SERVER_LABEL,
     hostname: os.hostname(),
-    ipHint: getPreferredIp(),
-    ips: getLocalIps(),
-    port: PORT,
-    pingUrl: `${getAdvertisedBaseUrl(req)}/ping`,
-    printersUrl: `${getAdvertisedBaseUrl(req)}/printers`,
-    registryUrl: REGISTRY_URL || null,
+    localIps: getLocalIps(),
+    port,
+    allowedOrigins: ALLOWED_ORIGINS
   });
 });
 
 app.get('/printers', async (req, res) => {
-  try { res.json(await ptp.getPrinters()); } catch (e) { res.status(500).send('Gagal'); }
+  try { res.json(await ptp.getPrinters()); }
+  catch (e) { res.status(500).send('Gagal'); }
 });
 
-async function processPdf(filePath, pagesInput, orientation, pps) {
+async function processPdf(filePath, pagesInput, orientation, pps, paperSize) {
   const bytes = fs.readFileSync(filePath);
   let pdfDoc = await PDFDocument.load(bytes);
 
   if (pagesInput) {
     const total = pdfDoc.getPageCount();
-    let keep = [];
+    const keepSet = new Set();
     pagesInput.split(',').forEach(p => {
-      if (p.includes('-')) {
-        let [s, e] = p.split('-').map(n => parseInt(n.trim()));
-        for (let i = s; i <= e; i++) if (i <= total) keep.push(i - 1);
+      const raw = p.trim();
+      if (!raw) return;
+      if (raw.includes('-')) {
+        let [s, e] = raw.split('-').map(n => parseInt(n.trim(), 10));
+        if (Number.isFinite(s) && Number.isFinite(e)) {
+          if (s > e) [s, e] = [e, s];
+          for (let i = s; i <= e; i++) if (i >= 1 && i <= total) keepSet.add(i - 1);
+        }
       } else {
-        let n = parseInt(p.trim());
-        if (n <= total) keep.push(n - 1);
+        const n = parseInt(raw, 10);
+        if (Number.isFinite(n) && n >= 1 && n <= total) keepSet.add(n - 1);
       }
     });
+    const keep = [...keepSet].sort((a, b) => a - b);
     if (keep.length) {
       const newDoc = await PDFDocument.create();
       const copied = await newDoc.copyPages(pdfDoc, keep);
@@ -202,11 +176,11 @@ async function processPdf(filePath, pagesInput, orientation, pps) {
     }
   }
 
-  if (orientation === 'landscape' || pps > 1) {
+  if (orientation === 'landscape' || pps > 1 || paperSize === 'F4') {
     const pages = pdfDoc.getPages();
     const final = await PDFDocument.create();
-    let sW = 595.28, sH = 841.89;
-    if (orientation === 'landscape') [sW, sH] = [841.89, 595.28];
+    let sW = 595.28, sH = (paperSize === 'F4' ? 935.43 : 841.89);
+    if (orientation === 'landscape') [sW, sH] = [sH, sW];
 
     let cols = 1, rows = 1;
     if (pps === 2) {
@@ -222,20 +196,19 @@ async function processPdf(filePath, pagesInput, orientation, pps) {
       rows = Math.ceil(pps / cols);
     }
 
-    let cellW = sW / cols;
-    let cellH = sH / rows;
-
+    const cellW = sW / cols;
+    const cellH = sH / rows;
     let curPage;
+
     for (let i = 0; i < pages.length; i++) {
       if (i % pps === 0) curPage = final.addPage([sW, sH]);
       const emb = await final.embedPage(pages[i]);
-      let rot = (cellW > cellH && emb.width < emb.height) || (cellW < cellH && emb.width > emb.height);
-      let dW = rot ? emb.height : emb.width;
-      let dH = rot ? emb.width : emb.height;
+      const rot = (cellW > cellH && emb.width < emb.height) || (cellW < cellH && emb.width > emb.height);
+      const dW = rot ? emb.height : emb.width;
+      const dH = rot ? emb.width : emb.height;
       const scale = Math.min((cellW - 10) / dW, (cellH - 10) / dH);
       const x = (i % pps % cols) * cellW + (cellW - dW * scale) / 2;
       const y = sH - (Math.floor(i % pps / cols) + 1) * cellH + (cellH - dH * scale) / 2;
-
       curPage.drawPage(emb, {
         x: x + (rot ? dH * scale : 0),
         y,
@@ -246,6 +219,7 @@ async function processPdf(filePath, pagesInput, orientation, pps) {
     }
     pdfDoc = final;
   }
+
   fs.writeFileSync(filePath, await pdfDoc.save());
 }
 
@@ -253,31 +227,34 @@ app.post('/print', upload.single('document'), async (req, res) => {
   if (req.body.pin !== APP_PIN) return res.status(401).send('PIN Salah!');
 
   let fPath = req.file ? req.file.path : '';
-  let mimeType = req.file ? req.file.mimetype : '';
-  let originalName = req.file ? req.file.originalname : '';
+  const mimeType = req.file ? req.file.mimetype : '';
+  const originalName = req.file ? req.file.originalname : '';
 
   try {
     if (!fPath || !fs.existsSync(fPath)) throw new Error('File dokumen tidak ditemukan.');
 
+    const orientation = req.body.orientation === 'landscape' ? 'landscape' : 'portrait';
+    const paperSize = req.body.paperSize === 'F4' ? 'F4' : 'A4';
+    const pagesPerSheet = Math.max(1, parseInt(req.body.pagesPerSheet, 10) || 1);
+
     updateStatus('Memproses dokumen...', 'processing');
 
-    if (mimeType.includes('image') || originalName.match(/\.(jpg|jpeg|png)$/i)) {
+    if (mimeType.includes('image') || /\.(jpg|jpeg|png)$/i.test(originalName)) {
       updateStatus('Menyesuaikan Gambar ke Kertas...', 'processing');
-      fPath = await convertImageToPdf(fPath, mimeType, originalName, req.body.orientation);
+      fPath = await convertImageToPdf(fPath, mimeType, originalName, orientation, paperSize);
     }
 
-    await processPdf(fPath, req.body.pages, req.body.orientation, parseInt(req.body.pagesPerSheet));
+    await processPdf(fPath, req.body.pages, orientation, pagesPerSheet, paperSize);
 
     const opts = {
       printer: req.body.printerName,
       monochrome: req.body.colorMode === 'monochrome',
-      copies: parseInt(req.body.copies) || 1,
-      paperSize: req.body.paperSize === 'F4' ? '210x330mm' : 'A4'
+      copies: parseInt(req.body.copies, 10) || 1,
+      paperSize: paperSize === 'F4' ? '210x330mm' : 'A4'
     };
 
     updateStatus('Mencetak ke mesin fisik...', 'printing');
     await ptp.print(fPath, opts);
-
     updateStatus('Cetak Sukses!', 'success');
     res.send('OK');
   } catch (e) {
@@ -290,13 +267,8 @@ app.post('/print', upload.single('document'), async (req, res) => {
   }
 });
 
-server.listen(PORT, '0.0.0.0', async () => {
-  console.log(`Print Server V4.5.2 Heartbeat - Ready on ${PORT}`);
-  if (REGISTRY_URL) {
-    await sendHeartbeat();
-    setInterval(sendHeartbeat, HEARTBEAT_INTERVAL_MS);
-    console.log(`Heartbeat aktif ke: ${REGISTRY_URL}`);
-  } else {
-    console.log('Heartbeat nonaktif. Set REGISTRY_URL untuk registry pusat.');
-  }
+server.listen(port, '0.0.0.0', () => {
+  console.log(`Print Server V4.5.3 - Ready on port ${port}`);
+  console.log(`Allowed origins: ${ALLOWED_ORIGINS.join(', ')}`);
+  console.log(`Local IPs: ${getLocalIps().join(', ')}`);
 });
