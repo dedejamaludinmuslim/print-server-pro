@@ -1,10 +1,11 @@
 {
-  "name": "print-server-v45",
-  "version": "4.5.0",
-  "description": "Enterprise Print Server with Smart Layout",
+  "name": "print-server-v452-heartbeat",
+  "version": "4.5.2",
+  "description": "Print Server with hosted heartbeat registry",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "start:registry": "node registry-server.js"
   },
   "dependencies": {
     "convertapi": "^1.15.0",
