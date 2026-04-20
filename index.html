@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#2563eb">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Print Pro">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
     <title>Printer Server</title>
     
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
@@ -83,6 +88,7 @@
         <div class="left-col">
             <div class="card main-card">
                 <h2>🏢 Printer Server</h2>
+                <button id="installAppBtn" class="btn-block" style="display:none; margin-top:-8px; margin-bottom:16px; background:#0f172a;">📲 Install Aplikasi</button>
 
                 <div class="section-title">
                     <span>📍 Jaringan</span>
@@ -534,6 +540,56 @@
             const h = JSON.parse(localStorage.getItem('h_v45')) || [];
             list.innerHTML = h.length ? h.map(i => `<li style="padding:10px; border-bottom:1px solid #eee; font-size:12px;"><strong>${i.name}</strong><br>${i.time}</li>`).join('') : '<li style="text-align:center; padding:10px;">Kosong</li>';
         }
+
+
+        let deferredInstallPrompt = null;
+
+        function isStandaloneMode() {
+            return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+        }
+
+        function updateInstallButtonVisibility() {
+            const btn = document.getElementById('installAppBtn');
+            if (!btn) return;
+            btn.style.display = (!isStandaloneMode() && deferredInstallPrompt) ? 'flex' : 'none';
+        }
+
+        async function registerServiceWorker() {
+            if (!('serviceWorker' in navigator)) return;
+            try {
+                await navigator.serviceWorker.register('./sw.js');
+            } catch (err) {
+                console.warn('SW registration failed:', err);
+            }
+        }
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredInstallPrompt = e;
+            updateInstallButtonVisibility();
+        });
+
+        window.addEventListener('appinstalled', () => {
+            deferredInstallPrompt = null;
+            updateInstallButtonVisibility();
+            showToast('Aplikasi berhasil diinstall', 'success');
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const installBtn = document.getElementById('installAppBtn');
+            if (installBtn) {
+                installBtn.addEventListener('click', async () => {
+                    if (!deferredInstallPrompt) return;
+                    deferredInstallPrompt.prompt();
+                    try { await deferredInstallPrompt.userChoice; } catch (_) {}
+                    deferredInstallPrompt = null;
+                    updateInstallButtonVisibility();
+                });
+            }
+            registerServiceWorker();
+            updateInstallButtonVisibility();
+        });
+
         window.onload = loadHistory;
     </script>
 </body>
