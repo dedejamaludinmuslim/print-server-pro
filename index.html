@@ -4,35 +4,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#2563eb">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="Print Pro">
-    <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="icons/icon-192.png">
     <title>Printer Server</title>
-    
+    <link rel="manifest" href="manifest.json">
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';</script>
-    
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
         :root {
             --primary: #2563eb; --primary-hover: #1d4ed8; --success: #10b981; --danger: #ef4444;
-            --text-main: #1f2937; --text-muted: #6b7280; --bg-page: #f3f4f6; --bg-card: #ffffff;
-            --border-soft: #e5e7eb; --radius-lg: 16px; --radius-md: 10px;
+            --warning: #f59e0b; --text-main: #1f2937; --text-muted: #6b7280; --bg-page: #f3f4f6;
+            --bg-card: #ffffff; --border-soft: #e5e7eb; --radius-lg: 16px; --radius-md: 10px;
             --shadow-float: 0 20px 25px -5px rgba(0, 0, 0, 0.05);
         }
-
         body { font-family: 'Inter', sans-serif; padding: 20px 15px; background-color: var(--bg-page); color: var(--text-main); margin: 0; -webkit-font-smoothing: antialiased;}
-        
         .app-wrapper { display: flex; flex-direction: column; gap: 20px; max-width: 480px; margin: 0 auto; }
-        .left-col { display: contents; } 
+        .left-col { display: contents; }
         .main-card { order: 1; }
         .preview-col { order: 2; width: 100%; display: flex; flex-direction: column; gap: 20px;}
         .history-card { order: 3; }
-
         @media (min-width: 992px) {
             body { padding: 40px 20px; }
             .app-wrapper { display: grid; grid-template-columns: 420px 1fr; gap: 30px; max-width: 1200px; align-items: start; }
@@ -40,70 +30,60 @@
             .main-card, .history-card { order: unset; }
             .preview-col { position: sticky; top: 40px; order: unset; height: calc(100vh - 80px); }
             .preview-col .card { height: 100%; display: flex; flex-direction: column; padding: 0; overflow: hidden; }
-            .preview-body { flex: 1; padding: 30px; overflow: hidden; display: flex; justify-content: center; align-items: center; min-height: 0; } 
+            .preview-body { flex: 1; padding: 30px; overflow: hidden; display: flex; justify-content: center; align-items: center; min-height: 0; }
         }
-
         .card { background: var(--bg-card); padding: 28px 24px; border-radius: var(--radius-lg); box-shadow: var(--shadow-float); width: 100%; box-sizing: border-box; border: 1px solid var(--border-soft); }
         h2 { margin: 0 0 24px 0; text-align: center; font-size: 24px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 10px; }
-
         .section-title { font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin: 24px 0 12px 0; border-bottom: 2px solid var(--bg-page); padding-bottom: 8px; display: flex; justify-content: space-between; align-items: center;}
         .input-group { text-align: left; margin-bottom: 16px; }
         .input-group label { font-size: 13px; font-weight: 600; color: var(--text-main); display: block; margin-bottom: 8px;}
-        
         .input-with-btn { display: flex; gap: 10px; align-items: stretch; height: 46px; }
         .input-with-btn input, .input-with-btn select { flex: 1; margin: 0; box-sizing: border-box; height: 100%; border: 1px solid var(--border-soft); border-radius: var(--radius-md); padding: 0 15px; background: #f9fafb; font-size: 14px;}
-        .input-with-btn input:focus, .input-with-btn select:focus { outline: none; border-color: var(--primary); background: #fff; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
-        
+        .input-with-btn input:focus, .input-with-btn select:focus, .input-standard:focus { outline: none; border-color: var(--primary); background: #fff; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
         .btn-icon { width: 48px; margin: 0; display: flex; align-items: center; justify-content: center; font-size: 20px; background: var(--primary); color: white; border: none; border-radius: var(--radius-md); flex-shrink: 0; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2); height: 100%; cursor: pointer;}
         .btn-icon:hover { background: var(--primary-hover); }
-
         .input-standard { width: 100%; padding: 12px 15px; border: 1px solid var(--border-soft); background: #f9fafb; border-radius: var(--radius-md); font-size: 14px; transition: all 0.2s; box-sizing: border-box;}
-        .input-standard:focus { outline: none; border-color: var(--primary); background: #fff; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
-
         button.btn-block { background: var(--primary); color: white; border: none; padding: 16px; font-size: 15px; border-radius: var(--radius-md); cursor: pointer; width: 100%; font-weight: 600; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px;}
         button.btn-block:hover { background: var(--primary-hover); transform: translateY(-1.5px); }
-
-        .divider { display: flex; align-items: center; text-align: center; margin: 16px 0; color: #94a3b8; font-size: 10px; font-weight: 700; letter-spacing: 1px; }
-        .divider::before, .divider::after { content: ''; flex: 1; border-bottom: 1px solid #e2e8f0; }
-        .divider span { padding: 0 10px; }
-
+        button.btn-block.secondary { background: white; color: #333; border: 1px solid #ddd; }
+        button.btn-block.success { background: var(--success); }
         .modal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(17, 24, 39, 0.7); align-items: center; justify-content: center; backdrop-filter: blur(5px); }
         .modal-content { background: white; padding: 30px; border-radius: var(--radius-lg); width: 90%; max-width: 400px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
-
         .toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 10000; display: flex; flex-direction: column; gap: 10px; width: 90%; max-width: 380px; pointer-events: none;}
         .toast { padding: 16px 20px; border-radius: var(--radius-md); background: var(--text-main); color: white; font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 12px; animation: toastIn 0.25s ease-out forwards;}
         @keyframes toastIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-
         .preview-header { font-size: 11px; font-weight: 700; color: white; background: var(--text-main); padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; text-transform: uppercase;}
         .preview-body { padding: 20px; background: #e2e8f0; display: flex; justify-content: center; align-items: center; position: relative;}
         .preview-canvas { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; background: white; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.2); }
-        
         .btn-nav { background: rgba(255,255,255,0.2); border: none; color: white; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; }
         .btn-nav:disabled { opacity: 0.3; cursor: not-allowed; }
+        .subnet-hint { font-size: 12px; color: var(--text-muted); line-height: 1.5; margin-top: 8px; }
+        .install-row { display:flex; justify-content:center; margin-top:12px; }
+        #installBtn { display:none; max-width:220px; }
     </style>
 </head>
 <body>
-
     <div class="app-wrapper">
         <div class="left-col">
             <div class="card main-card">
                 <h2>🏢 Printer Server</h2>
-                <button id="installAppBtn" class="btn-block" style="display:none; margin-top:-8px; margin-bottom:16px; background:#0f172a;">📲 Install Aplikasi</button>
-
+                <div class="install-row"><button id="installBtn" class="btn-block secondary">📲 Install Aplikasi</button></div>
                 <div class="section-title">
                     <span>📍 Jaringan</span>
                     <span style="font-size:10px; font-weight:700; color:var(--primary); cursor:pointer;" onclick="showHelpModal()">BANTU CARI IP?</span>
                 </div>
-                
                 <div class="input-group">
                     <label>🖥️ IP Address Server:</label>
                     <div class="input-with-btn">
                         <input type="text" id="ipAddress" placeholder="192.168.1.xxx" onblur="updateIpAndFetchPrinters()" onkeyup="if(event.key === 'Enter') updateIpAndFetchPrinters()">
-                        <button class="btn-icon" id="scanBtn" onclick="showScanModal()" title="Pindai Jaringan">🔍</button>
+                        <button class="btn-icon" id="scanBtn" onclick="showScanModal()" title="Pindai Subnet">🔎</button>
+                    </div>
+                    <div id="connectionStatusWrap" style="margin-top:10px; display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-muted);">
+                        <span id="connectionDot" style="width:10px; height:10px; border-radius:999px; background:#94a3b8; display:inline-block;"></span>
+                        <span id="connectionStatusText">Belum terhubung</span>
                     </div>
                     <select id="ipSelect" class="input-standard" style="display:none; margin-top: 8px;" onchange="document.getElementById('ipAddress').value = this.value; updateIpAndFetchPrinters();"></select>
                 </div>
-
                 <div class="input-group">
                     <label>🖨️ Pilih Mesin Printer:</label>
                     <div class="input-with-btn">
@@ -111,12 +91,10 @@
                         <button class="btn-icon" onclick="showConfigModal()" title="Pengaturan Cetak">⚙️</button>
                     </div>
                 </div>
-
                 <div class="section-title"><span>📁 Pilih File (PDF/Gambar)</span></div>
                 <div class="input-group">
                     <input type="file" id="fileInput" class="input-standard" accept=".pdf, .png, .jpg, .jpeg" style="padding:10px; border:1px dashed #cbd5e1; cursor:pointer;" />
                 </div>
-                
                 <div id="realtimeStatus" style="display:none; margin-top:20px;">
                     <div id="statusMessage" style="font-size:12px; font-weight:600;">Menunggu...</div>
                     <div style="height:6px; background:#e2e8f0; margin-top:12px; border-radius:10px; overflow:hidden;">
@@ -124,7 +102,6 @@
                     </div>
                 </div>
             </div>
-
             <div class="card history-card" style="padding: 20px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
                     <span style="font-size:12px; font-weight:700; color:var(--text-muted);">🕒 RIWAYAT</span>
@@ -133,7 +110,6 @@
                 <ul id="historyList" style="list-style:none; padding:0; margin:0;"></ul>
             </div>
         </div>
-
         <div class="preview-col" id="previewCol">
             <div class="card" style="padding: 0; overflow: hidden; display: flex; flex-direction: column;">
                 <div class="preview-header">
@@ -148,7 +124,6 @@
                 <div class="preview-body" id="previewBodyContainer">
                     <div id="emptyPreviewState" style="text-align: center; color: var(--text-muted); font-size: 13px; font-weight: 500;">Belum ada dokumen untuk ditampilkan.</div>
                     <canvas id="mainPreviewCanvas" class="preview-canvas" style="display: none;"></canvas>
-                    <img id="imgPreview" class="preview-canvas" style="display: none;" />
                 </div>
                 <div style="padding: 20px; border-top: 1px solid var(--border-soft); background: white;">
                     <button id="printBtn" class="btn-block" onclick="showPinModal()">🚀 GASSS CETAK !!!</button>
@@ -159,14 +134,13 @@
 
     <div id="scanModal" class="modal">
         <div class="modal-content" style="text-align:center;">
-            <h3 style="margin:0 0 10px 0;">🔍 Deteksi Jaringan</h3>
-            <p style="font-size:13px; color:var(--text-muted); margin-bottom:20px; line-height: 1.5;">Pilih <strong>Auto Detect</strong> atau masukkan 3 blok IP WiFi secara manual.</p>
-            <button class="btn-block" style="background: var(--success); margin-bottom: 20px;" onclick="startSmartAutoScan()">⚡ AUTO DETECT SERVER</button>
-            <div class="divider"><span>ATAU MANUAL</span></div>
-            <div class="input-group" style="margin-bottom: 20px;"><input type="text" id="scanIpInput" class="input-standard" value="192.168.1" style="text-align:center; font-weight:bold;"></div>
-            <div style="display:flex; gap:10px;">
-                <button class="btn-block" style="background:white; color:#333; border:1px solid #ddd;" onclick="closeScanModal()">Batal</button>
-                <button class="btn-block" onclick="startNetworkScan()">Pindai Manual</button>
+            <h3 style="margin:0 0 10px 0;">🔎 Pindai Subnet Manual</h3>
+            <p style="font-size:13px; color:var(--text-muted); margin-bottom:12px; line-height:1.5;">Masukkan 3 blok IP Wi‑Fi, misalnya <strong>192.168.1</strong>, lalu aplikasi akan mencoba <strong>.1 s/d .254</strong>.</p>
+            <div class="input-group" style="margin-bottom:12px;"><input type="text" id="scanIpInput" class="input-standard" value="192.168.1" style="text-align:center; font-weight:bold;"></div>
+            <div class="subnet-hint">Gunakan subnet lain yang masih tertaut/reachable bila perlu, misalnya <strong>192.168.4</strong>.</div>
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button class="btn-block secondary" onclick="closeScanModal()">Batal</button>
+                <button class="btn-block success" onclick="startNetworkScan()">Pindai Subnet</button>
             </div>
         </div>
     </div>
@@ -184,10 +158,10 @@
             </div>
             <div style="display:flex; gap:12px;">
                 <div class="input-group" style="flex:1;"><label>Jumlah Copy:</label><input type="number" id="copies" class="input-standard" value="1" min="1"></div>
-                <div class="input-group" style="flex:1;"><label>Rincian Halaman:</label><input type="text" id="pages" class="input-standard" placeholder="1,3,5-7,...."></div>
+                <div class="input-group" style="flex:1;"><label>Rincian Halaman:</label><input type="text" id="pages" class="input-standard" placeholder="1,3,5-7"></div>
             </div>
             <div style="display:flex; gap:10px; margin-top:20px;">
-                <button class="btn-block" style="background:white; color:#333; border:1px solid #ddd;" onclick="cancelConfigModal()">Batal</button>
+                <button class="btn-block secondary" onclick="cancelConfigModal()">Batal</button>
                 <button class="btn-block" onclick="applyConfigModal()">Simpan</button>
             </div>
         </div>
@@ -198,7 +172,7 @@
             <h3 style="margin:0 0 10px 0;">🔑 PIN Keamanan</h3>
             <input type="password" id="modalPinInput" class="input-standard" maxlength="6" inputmode="numeric" style="font-size:32px; letter-spacing:10px; text-align:center; padding:15px; margin-bottom: 20px;">
             <div style="display:flex; gap:10px;">
-                <button class="btn-block" style="background:white; color:#333; border:1px solid #ddd;" onclick="closePinModal()">Batal</button>
+                <button class="btn-block secondary" onclick="closePinModal()">Batal</button>
                 <button class="btn-block" onclick="confirmAndPrint()">Cetak</button>
             </div>
         </div>
@@ -209,388 +183,340 @@
             <h3 style="margin:0 0 10px 0;">🗑️ Hapus Riwayat</h3>
             <p style="font-size:13px; color:var(--text-muted); margin-bottom: 20px;">Yakin ingin menghapus semua daftar riwayat cetak?</p>
             <div style="display:flex; gap:10px;">
-                <button class="btn-block" style="background:white; color:#333; border:1px solid #ddd;" onclick="closeDeleteHistoryModal()">Batal</button>
+                <button class="btn-block secondary" onclick="closeDeleteHistoryModal()">Batal</button>
                 <button class="btn-block" style="background:var(--danger);" onclick="executeClearHistory()">Ya, Hapus</button>
             </div>
         </div>
     </div>
 
     <div id="helpModal" class="modal">
-        <div class="modal-content" style="text-align: left;">
-            <h3 style="text-align: center; margin:0 0 15px 0;">Cara Cek IP PC Server</h3>
-            <p style="font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom:10px;">Cek langsung di PC Server Anda:</p>
-            <ol style="font-size: 13px; color: var(--text-main); padding-left: 20px; line-height: 1.6; margin:0;">
-                <li style="margin-bottom: 8px;">Tekan tombol <strong>Windows + R</strong>.</li>
-                <li style="margin-bottom: 8px;">Ketik <strong>cmd</strong> lalu Enter.</li>
-                <li style="margin-bottom: 8px;">Ketik <strong>ipconfig</strong> dan Enter.</li>
-                <li>Cari baris <strong>IPv4 Address</strong>.</li>
-            </ol>
-            <button class="btn-block" style="background:white; color:#333; border:1px solid #ddd; margin-top: 20px;" onclick="closeHelpModal()">Tutup</button>
+        <div class="modal-content" style="text-align:left;">
+            <h3 style="text-align:center; margin:0 0 15px 0;">Bantu Cari IP Server</h3>
+            <p style="font-size:13px; color:var(--text-muted); line-height:1.5;">Tombol langsung ke pengaturan Wi‑Fi tidak bisa dijamin bekerja di semua browser, HP, dan Windows. Karena itu, aplikasi hanya menampilkan panduan cepat berikut.</p>
+            <div style="font-size:13px; line-height:1.6; color:var(--text-main); margin-top:12px;">
+                <strong>Windows</strong>
+                <ol style="padding-left:20px; margin:6px 0 12px 0;">
+                    <li>Tekan <strong>Windows + R</strong>.</li>
+                    <li>Ketik <strong>cmd</strong>, lalu Enter.</li>
+                    <li>Ketik <strong>ipconfig</strong>.</li>
+                    <li>Lihat <strong>IPv4 Address</strong> Wi‑Fi.</li>
+                </ol>
+                <strong>Android</strong>
+                <ol style="padding-left:20px; margin:6px 0 12px 0;">
+                    <li>Buka <strong>Pengaturan</strong> → <strong>Wi‑Fi</strong>.</li>
+                    <li>Ketuk jaringan yang sedang dipakai.</li>
+                    <li>Lihat detail <strong>IP Address</strong> atau <strong>Gateway</strong>.</li>
+                </ol>
+                <strong>iPhone / iPad</strong>
+                <ol style="padding-left:20px; margin:6px 0 0 0;">
+                    <li>Buka <strong>Settings</strong> → <strong>Wi‑Fi</strong>.</li>
+                    <li>Ketuk ikon <strong>i</strong> pada jaringan aktif.</li>
+                    <li>Lihat <strong>IP Address</strong> dan <strong>Router</strong>.</li>
+                </ol>
+            </div>
+            <button class="btn-block secondary" style="margin-top:20px;" onclick="closeHelpModal()">Tutup</button>
         </div>
     </div>
 
     <script>
         let currentPdfDoc = null, currentImgSrc = null, currentPreviewSheet = 0, totalPreviewSheets = 1, appliedConfig = {};
-
+        let socket;
+        let currentSocketIp = '';
+        let deferredPrompt = null;
+        const CONNECTION_STATUS = {
+            idle: { text: 'Belum terhubung', color: '#94a3b8' },
+            scanning: { text: 'Sedang memindai subnet...', color: '#f59e0b' },
+            connecting: { text: 'Mencoba menghubungkan...', color: '#3b82f6' },
+            connected: { text: 'Server terhubung', color: '#10b981' },
+            disconnected: { text: 'Koneksi terputus', color: '#ef4444' },
+            failed: { text: 'Server tidak terjangkau', color: '#ef4444' }
+        };
+        function setConnectionStatus(state, customText = '') {
+            const textEl = document.getElementById('connectionStatusText');
+            const dotEl = document.getElementById('connectionDot');
+            const cfg = CONNECTION_STATUS[state] || CONNECTION_STATUS.idle;
+            textEl.textContent = customText || cfg.text;
+            dotEl.style.background = cfg.color;
+        }
+        function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+        async function fetchWithRetry(url, options = {}, retryCount = 1, retryDelay = 300) {
+            let lastError;
+            for (let attempt = 0; attempt <= retryCount; attempt++) {
+                try { return await fetch(url, options); }
+                catch (error) { lastError = error; if (attempt < retryCount) await sleep(retryDelay); }
+            }
+            throw lastError;
+        }
         function showToast(message, type = 'info') {
             let container = document.getElementById('toastContainer');
             if (!container) {
                 container = document.createElement('div');
-                container.id = 'toastContainer'; container.className = 'toast-container'; 
+                container.id = 'toastContainer';
+                container.className = 'toast-container';
                 document.body.appendChild(container);
             }
             container.innerHTML = '';
-            const toast = document.createElement('div'); toast.className = 'toast';
-            let icon = type === 'success' ? '✅' : (type === 'error' ? '🚨' : 'ℹ️');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            const icon = type === 'success' ? '✅' : (type === 'error' ? '🚨' : 'ℹ️');
             toast.innerHTML = `<span>${icon}</span> ${message}`;
             container.appendChild(toast);
             setTimeout(() => toast.remove(), 4000);
         }
-
         function showScanModal() { document.getElementById('scanModal').style.display='flex'; }
         function closeScanModal() { document.getElementById('scanModal').style.display='none'; }
         function showHelpModal() { document.getElementById('helpModal').style.display='flex'; }
         function closeHelpModal() { document.getElementById('helpModal').style.display='none'; }
-        
-        function showConfigModal() { 
-            appliedConfig = { colorMode: document.getElementById('colorMode').value, paperSize: document.getElementById('paperSize').value, orientation: document.getElementById('orientation').value, pagesPerSheet: document.getElementById('pagesPerSheet').value, copies: document.getElementById('copies').value, pages: document.getElementById('pages').value };
-            document.getElementById('configModal').style.display='flex'; 
+        function showConfigModal() {
+            appliedConfig = {
+                colorMode: document.getElementById('colorMode').value,
+                paperSize: document.getElementById('paperSize').value,
+                orientation: document.getElementById('orientation').value,
+                pagesPerSheet: document.getElementById('pagesPerSheet').value,
+                copies: document.getElementById('copies').value,
+                pages: document.getElementById('pages').value
+            };
+            document.getElementById('configModal').style.display='flex';
         }
         function cancelConfigModal() { Object.keys(appliedConfig).forEach(k => document.getElementById(k).value = appliedConfig[k]); document.getElementById('configModal').style.display='none'; }
-        function applyConfigModal() { document.getElementById('configModal').style.display='none'; currentPreviewSheet = 0; updateDynamicPreview(); showToast("Tersimpan", "success"); }
-        
-        function showPinModal() { 
-            if(!document.getElementById('fileInput').files[0]) return showToast("Pilih file dokumen terlebih dahulu!", "error"); 
-            document.getElementById('pinModal').style.display='flex'; 
+        function applyConfigModal() { document.getElementById('configModal').style.display='none'; currentPreviewSheet = 0; updateDynamicPreview(); showToast('Tersimpan', 'success'); }
+        function showPinModal() {
+            if(!document.getElementById('fileInput').files[0]) return showToast('Pilih file dokumen terlebih dahulu!', 'error');
+            document.getElementById('pinModal').style.display='flex';
             setTimeout(() => document.getElementById('modalPinInput').focus(), 100);
         }
         function closePinModal() { document.getElementById('pinModal').style.display='none'; document.getElementById('modalPinInput').value = ''; }
-        
         function showDeleteHistoryModal() { document.getElementById('deleteHistoryModal').style.display='flex'; }
         function closeDeleteHistoryModal() { document.getElementById('deleteHistoryModal').style.display='none'; }
-        function executeClearHistory() { localStorage.removeItem('h_v45'); loadHistory(); closeDeleteHistoryModal(); showToast("Dibersihkan", "success"); }
-
-        document.getElementById('fileInput').addEventListener('change', async function(e) {
-            const file = e.target.files[0];
-            if(!file) { 
-                currentPdfDoc = null; currentImgSrc = null; 
-                updateDynamicPreview(); return; 
-            }
-            currentPreviewSheet = 0;
-            const reader = new FileReader();
-            if(file.type === 'application/pdf') {
-                reader.onload = async function() { currentPdfDoc = await pdfjsLib.getDocument(new Uint8Array(this.result)).promise; currentImgSrc = null; updateDynamicPreview(); };
-                reader.readAsArrayBuffer(file);
-            } else {
-                reader.onload = function(e) { currentImgSrc = e.target.result; currentPdfDoc = null; updateDynamicPreview(); };
-                reader.readAsDataURL(file);
-            }
-        });
-
-        async function updateDynamicPreview() {
-            const canvas = document.getElementById('mainPreviewCanvas'), emptyState = document.getElementById('emptyPreviewState');
-            
-            if(!currentPdfDoc && !currentImgSrc) {
-                canvas.style.display = 'none'; emptyState.style.display = 'block';
-                document.getElementById('previewPagination').style.display = 'none'; return;
-            }
-            emptyState.style.display = 'none';
-            canvas.style.display = 'block';
-            
-            const orientation = document.getElementById('orientation').value;
-            const pps = parseInt(document.getElementById('pagesPerSheet').value) || 1;
-            canvas.style.filter = document.getElementById('colorMode').value === 'monochrome' ? 'grayscale(100%)' : 'none';
-            
-            // --- RUMUS GRID YANG BENAR (GANTI BAGIAN INI) ---
-            let cols = 1, rows = 1;
-            if (pps === 2) {
-                cols = orientation === 'landscape' ? 2 : 1;
-                rows = orientation === 'landscape' ? 1 : 2;
-            } else if (pps === 4) {
-                cols = 2; rows = 2; // 4-Up pasti 2x2
-            } else if (pps === 6) {
-                cols = orientation === 'landscape' ? 3 : 2;
-                rows = orientation === 'landscape' ? 2 : 3;
-            } else if (pps > 1) {
-                cols = Math.ceil(Math.sqrt(pps));
-                rows = Math.ceil(pps / cols);
-            }
-            // ------------------------------------------------
-            
-            const base = 1000;
-            canvas.width = orientation === 'landscape' ? base * 1.4 : base;
-            canvas.height = orientation === 'landscape' ? base : base * 1.4;
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = 'white'; ctx.fillRect(0,0, canvas.width, canvas.height);
-
-            // --- JIKA FILE ADALAH GAMBAR (Kini mendukung Grid N-Up & Rotasi) ---
-            if(currentImgSrc) {
-                document.getElementById('previewPagination').style.display = 'none';
-                
-                const imgObj = new Image();
-                imgObj.src = currentImgSrc;
-                await new Promise(r => imgObj.onload = r); // Tunggu gambar dimuat ke memori
-
-                for(let i=0; i < pps; i++) {
-                    const cellW = canvas.width / cols, cellH = canvas.height / rows;
-                    const scale = Math.min((cellW-40)/imgObj.width, (cellH-40)/imgObj.height);
-                    const drawW = imgObj.width * scale;
-                    const drawH = imgObj.height * scale;
-                    const x = (i%cols)*cellW + (cellW-drawW)/2;
-                    const y = Math.floor(i/cols)*cellH + (cellH-drawH)/2;
-                    ctx.drawImage(imgObj, x, y, drawW, drawH);
-                }
-                return;
-            }
-
-            // --- JIKA FILE ADALAH PDF ---
-            const pageArr = Array.from({length: currentPdfDoc.numPages}, (_, i) => i + 1);
-            totalPreviewSheets = Math.ceil(pageArr.length / pps);
-            document.getElementById('previewPagination').style.display = totalPreviewSheets > 1 ? 'flex' : 'none';
-            document.getElementById('previewSheetText').innerText = `${currentPreviewSheet + 1} / ${totalPreviewSheets}`;
-            
-            const start = currentPreviewSheet * pps;
-            for(let i=0; i < Math.min(pps, pageArr.length - start); i++) {
-                const page = await currentPdfDoc.getPage(pageArr[start + i]);
-                
-                const cellW = canvas.width / cols;
-                const cellH = canvas.height / rows;
-                
-                // Ambil ukuran asli halaman PDF
-                const baseVp = page.getViewport({scale: 1});
-                
-                // PERBAIKAN: Sinkronisasi algoritma rotasi layar dengan PC Server
-                let isRotated = (cellW > cellH && baseVp.width < baseVp.height) || 
-                                (cellW < cellH && baseVp.width > baseVp.height);
-                
-                let dW = isRotated ? baseVp.height : baseVp.width;
-                let dH = isRotated ? baseVp.width : baseVp.height;
-                
-                const scale = Math.min((cellW-40)/dW, (cellH-40)/dH);
-                
-                // Minta pdf.js me-render halaman dengan rotasi yang sesuai
-                const renderVp = page.getViewport({scale: scale, rotation: isRotated ? 90 : 0});
-                const off = document.createElement('canvas'); 
-                off.width = renderVp.width; 
-                off.height = renderVp.height;
-                await page.render({canvasContext: off.getContext('2d'), viewport: renderVp}).promise;
-                
-                const xPos = (i%cols)*cellW + (cellW - renderVp.width)/2;
-                const yPos = Math.floor(i/cols)*cellH + (cellH - renderVp.height)/2;
-                
-                ctx.drawImage(off, xPos, yPos);
-            }
+        function executeClearHistory() { localStorage.removeItem('h_v45'); loadHistory(); closeDeleteHistoryModal(); showToast('Dibersihkan', 'success'); }
+        function saveHistory(name) {
+            const ip = document.getElementById('ipAddress').value.trim();
+            let h = JSON.parse(localStorage.getItem('h_v45')) || [];
+            h.unshift({ name, ip, time: new Date().toLocaleString() });
+            localStorage.setItem('h_v45', JSON.stringify(h.slice(0, 5)));
+            loadHistory();
         }
-
-        function changePreviewSheet(dir) { currentPreviewSheet = Math.max(0, Math.min(totalPreviewSheets-1, currentPreviewSheet + dir)); updateDynamicPreview(); }
-
-        let socket;
+        function loadHistory() {
+            const list = document.getElementById('historyList');
+            const h = JSON.parse(localStorage.getItem('h_v45')) || [];
+            list.innerHTML = h.length ? h.map(i => `<li style="padding:10px; border-bottom:1px solid #eee; font-size:12px;"><strong>${i.name}</strong><br>${i.ip || '-'}<br>${i.time}</li>`).join('') : '<li style="text-align:center; padding:10px;">Kosong</li>';
+        }
         function connectSocket(ip) {
-            if(socket) socket.disconnect();
-            socket = io(`http://${ip}:3000`);
+            if (socket && currentSocketIp === ip) return;
+            if (socket) socket.disconnect();
+            currentSocketIp = ip;
+            socket = io(`http://${ip}:3000`, { transports: ['websocket', 'polling'] });
+            socket.on('connect', () => setConnectionStatus('connected', `Server terhubung: ${ip}`));
+            socket.on('disconnect', () => setConnectionStatus('disconnected', `Koneksi server terputus: ${ip}`));
+            socket.on('connect_error', () => setConnectionStatus('failed', `Socket gagal ke ${ip}`));
             socket.on('print-status', data => {
                 document.getElementById('realtimeStatus').style.display='block';
                 document.getElementById('statusMessage').innerText = data.message;
-                const steps = { 'processing': 25, 'printing': 75, 'success': 100, 'error': 100 };
+                const steps = { processing: 25, printing: 75, success: 100, error: 100 };
                 document.getElementById('progressBar').style.width = (steps[data.type] || 0) + '%';
             });
         }
-
-        async function startSmartAutoScan() {
-            closeScanModal();
-            const btn = document.getElementById('scanBtn'); btn.innerHTML = "⏳"; btn.disabled = true;
-            showToast("Memindai seluruh jaringan...", "info");
-            
-            const subnets = ['192.168.1', '192.168.0', '192.168.100', '192.168.8'];
-            let foundServers = []; 
-
-            for (let subnet of subnets) {
-                if (foundServers.length > 0) break; 
-                
-                const promises = [];
-                for(let i=1; i<=254; i++) {
-                    const ip = `${subnet}.${i}`;
-                    promises.push(
-                        fetch(`http://${ip}:3000/ping`, { signal: AbortSignal.timeout(1500) })
-                        .then(r => r.json())
-                        .then(d => {
-                            if(d.status === 'PrintServerActive') {
-                                foundServers.push({ ip: ip, name: d.hostname });
-                            }
-                        }).catch(() => {}) 
-                    );
-                }
-                await Promise.allSettled(promises);
-            }
-            
-            btn.innerHTML = "🔍"; btn.disabled = false;
-            processFoundServers(foundServers);
+        async function pingServer(ip, timeoutMs = 1500, retryCount = 1) {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), timeoutMs);
+            try {
+                const res = await fetchWithRetry(`http://${ip}:3000/ping`, { signal: controller.signal, cache: 'no-store' }, retryCount, 250);
+                if (!res.ok) return null;
+                const data = await res.json();
+                if (data && data.status === 'PrintServerActive') return { ip, name: data.hostname || ip };
+                return null;
+            } catch (_) { return null; }
+            finally { clearTimeout(timer); }
         }
-
-        async function startNetworkScan() {
-            const base = document.getElementById('scanIpInput').value.trim(); 
-            closeScanModal();
-            const btn = document.getElementById('scanBtn'); btn.innerHTML = "⏳"; btn.disabled = true;
-            showToast(`Memindai IP ${base}.x ...`, "info");
-
-            let foundServers = [];
-            const promises = [];
-            
-            for(let i=1; i<=254; i++) {
-                const ip = `${base}.${i}`;
-                promises.push(
-                    fetch(`http://${ip}:3000/ping`, { signal: AbortSignal.timeout(1500) })
-                    .then(r => r.json())
-                    .then(d => {
-                        if(d.status === 'PrintServerActive') {
-                            foundServers.push({ ip: ip, name: d.hostname });
-                        }
-                    }).catch(() => {})
-                );
+        async function scanSubnet(base, timeoutMs = 1500) {
+            const found = [];
+            const chunkSize = 20;
+            for (let start = 1; start <= 254; start += chunkSize) {
+                const tasks = [];
+                for (let i = start; i < Math.min(start + chunkSize, 255); i++) tasks.push(pingServer(`${base}.${i}`, timeoutMs, 1));
+                const results = await Promise.all(tasks);
+                results.filter(Boolean).forEach(item => found.push(item));
             }
-            await Promise.allSettled(promises);
-            
-            btn.innerHTML = "🔍"; btn.disabled = false;
-            processFoundServers(foundServers);
+            return found;
         }
-
         function processFoundServers(servers) {
-            if(servers.length > 0) {
-                const sel = document.getElementById('ipSelect'); 
-                sel.style.display = 'block'; 
-                sel.innerHTML = ''; 
-                
-                if(servers.length > 1) {
-                    sel.add(new Option(`Pilih dari ${servers.length} Server...`, ""));
-                }
-                
-                servers.forEach(srv => sel.add(new Option(`${srv.name} (${srv.ip})`, srv.ip)));
-                
-                document.getElementById('ipAddress').value = servers[0].ip; 
-                if(servers.length === 1) sel.value = servers[0].ip; 
-                
-                updateIpAndFetchPrinters(); 
-                
-                showToast(`Selesai! Ditemukan ${servers.length} Server Print.`, "success");
+            const unique = [];
+            const seen = new Set();
+            servers.forEach(item => { if (!seen.has(item.ip)) { seen.add(item.ip); unique.push(item); } });
+            if(unique.length > 0) {
+                const sel = document.getElementById('ipSelect');
+                sel.style.display = 'block';
+                sel.innerHTML = '';
+                if(unique.length > 1) sel.add(new Option(`Pilih dari ${unique.length} Server...`, ''));
+                unique.forEach(srv => sel.add(new Option(`${srv.name} (${srv.ip})`, srv.ip)));
+                document.getElementById('ipAddress').value = unique[0].ip;
+                if(unique.length === 1) sel.value = unique[0].ip;
+                updateIpAndFetchPrinters();
+                showToast(`Ditemukan ${unique.length} server print.`, 'success');
             } else {
-                showToast("Server Print tidak ditemukan.", "error");
+                setConnectionStatus('failed', 'Server tidak ditemukan di subnet ini');
+                showToast('Server print tidak ditemukan.', 'error');
             }
         }
-
+        async function startNetworkScan() {
+            const base = document.getElementById('scanIpInput').value.trim();
+            if (!/^\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(base)) return showToast('Masukkan 3 blok IP, contoh 192.168.1', 'error');
+            closeScanModal();
+            const btn = document.getElementById('scanBtn');
+            btn.innerHTML = '⏳';
+            btn.disabled = true;
+            setConnectionStatus('scanning', `Memindai subnet ${base}.x ...`);
+            try { processFoundServers(await scanSubnet(base, 1500)); }
+            finally { btn.innerHTML = '🔎'; btn.disabled = false; }
+        }
         async function updateIpAndFetchPrinters() {
             const ip = document.getElementById('ipAddress').value.trim();
             if (!ip) return;
             const sel = document.getElementById('printerSelect');
             sel.innerHTML = '<option value="">⏳ Memuat...</option>';
             sel.disabled = true;
+            setConnectionStatus('connecting', `Menghubungkan ke ${ip} ...`);
             connectSocket(ip);
             try {
-                const r = await fetch(`http://${ip}:3000/printers?_t=${Date.now()}`, { cache: 'no-store' });
+                const r = await fetchWithRetry(`http://${ip}:3000/printers?_t=${Date.now()}`, { cache: 'no-store' }, 1, 300);
+                if (!r.ok) throw new Error('Gagal memuat printer');
                 const data = await r.json();
                 sel.innerHTML = '<option value="">🖨️ Default Printer</option>';
                 data.forEach(p => sel.add(new Option(p.name, p.name)));
-                sel.value = ""; sel.disabled = false;
-                showToast(`Printer Server ${ip} siap!`, "success");
-            } catch(e) {
+                sel.value = '';
+                sel.disabled = false;
+                setConnectionStatus('connected', `Server terhubung: ${ip}`);
+                showToast(`Printer Server ${ip} siap!`, 'success');
+            } catch (e) {
                 sel.innerHTML = '<option value="">⚠️ Gagal terhubung</option>';
                 sel.disabled = false;
+                setConnectionStatus('failed', `Gagal terhubung ke ${ip}`);
             }
         }
-
         async function confirmAndPrint() {
-            const pin = document.getElementById('modalPinInput').value; closePinModal();
-            const ip = document.getElementById('ipAddress').value;
-            
+            const pin = document.getElementById('modalPinInput').value;
+            closePinModal();
+            const ip = document.getElementById('ipAddress').value.trim();
             const fileObj = document.getElementById('fileInput').files[0];
-            if (!fileObj) return;
-
+            if (!fileObj || !ip) return;
             const fd = new FormData();
             fd.append('document', fileObj);
             fd.append('pin', pin);
             fd.append('printerName', document.getElementById('printerSelect').value);
             fd.append('colorMode', document.getElementById('colorMode').value);
-            fd.append('paperSize', document.getElementById('paperSize').value); 
+            fd.append('paperSize', document.getElementById('paperSize').value);
             fd.append('orientation', document.getElementById('orientation').value);
             fd.append('pagesPerSheet', document.getElementById('pagesPerSheet').value);
-            fd.append('copies', document.getElementById('copies').value); 
+            fd.append('copies', document.getElementById('copies').value);
             fd.append('pages', document.getElementById('pages').value);
-            
             try {
-                const r = await fetch(`http://${ip}:3000/print`, { method: 'POST', body: fd });
-                if(r.ok) { 
-                    saveHistory(fileObj.name); 
-                    showToast("Berhasil dicetak", "success");
+                const r = await fetchWithRetry(`http://${ip}:3000/print`, { method: 'POST', body: fd }, 1, 400);
+                if (r.ok) {
+                    saveHistory(fileObj.name);
+                    showToast('Berhasil dicetak', 'success');
                     document.getElementById('fileInput').value = '';
-                    document.getElementById('previewCol').style.display = 'none';
-                    currentPdfDoc = null; currentImgSrc = null;
+                    currentPdfDoc = null; currentImgSrc = null; currentPreviewSheet = 0;
                     updateDynamicPreview();
+                } else {
+                    showToast(await r.text(), 'error');
                 }
-                else showToast(await r.text(), "error");
-            } catch(e) { showToast("Gagal koneksi ke Server", "error"); }
-        }
-
-        function saveHistory(name) {
-            let h = JSON.parse(localStorage.getItem('h_v45')) || [];
-            h.unshift({ name, time: new Date().toLocaleString() });
-            localStorage.setItem('h_v45', JSON.stringify(h.slice(0, 5))); loadHistory();
-        }
-
-        function loadHistory() {
-            const list = document.getElementById('historyList');
-            const h = JSON.parse(localStorage.getItem('h_v45')) || [];
-            list.innerHTML = h.length ? h.map(i => `<li style="padding:10px; border-bottom:1px solid #eee; font-size:12px;"><strong>${i.name}</strong><br>${i.time}</li>`).join('') : '<li style="text-align:center; padding:10px;">Kosong</li>';
-        }
-
-
-        let deferredInstallPrompt = null;
-
-        function isStandaloneMode() {
-            return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-        }
-
-        function updateInstallButtonVisibility() {
-            const btn = document.getElementById('installAppBtn');
-            if (!btn) return;
-            btn.style.display = (!isStandaloneMode() && deferredInstallPrompt) ? 'flex' : 'none';
-        }
-
-        async function registerServiceWorker() {
-            if (!('serviceWorker' in navigator)) return;
-            try {
-                await navigator.serviceWorker.register('./sw.js');
-            } catch (err) {
-                console.warn('SW registration failed:', err);
+            } catch (_) {
+                showToast('Gagal koneksi ke Server', 'error');
             }
         }
-
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredInstallPrompt = e;
-            updateInstallButtonVisibility();
+        document.getElementById('fileInput').addEventListener('change', async function(e) {
+            const file = e.target.files[0];
+            if (!file) { currentPdfDoc = null; currentImgSrc = null; updateDynamicPreview(); return; }
+            currentPreviewSheet = 0;
+            const reader = new FileReader();
+            if (file.type === 'application/pdf') {
+                reader.onload = async function() { currentPdfDoc = await pdfjsLib.getDocument(new Uint8Array(this.result)).promise; currentImgSrc = null; updateDynamicPreview(); };
+                reader.readAsArrayBuffer(file);
+            } else {
+                reader.onload = function(evt) { currentImgSrc = evt.target.result; currentPdfDoc = null; updateDynamicPreview(); };
+                reader.readAsDataURL(file);
+            }
         });
-
-        window.addEventListener('appinstalled', () => {
-            deferredInstallPrompt = null;
-            updateInstallButtonVisibility();
-            showToast('Aplikasi berhasil diinstall', 'success');
-        });
-
-        document.addEventListener('DOMContentLoaded', () => {
-            const installBtn = document.getElementById('installAppBtn');
-            if (installBtn) {
-                installBtn.addEventListener('click', async () => {
-                    if (!deferredInstallPrompt) return;
-                    deferredInstallPrompt.prompt();
-                    try { await deferredInstallPrompt.userChoice; } catch (_) {}
-                    deferredInstallPrompt = null;
-                    updateInstallButtonVisibility();
+        async function updateDynamicPreview() {
+            const canvas = document.getElementById('mainPreviewCanvas');
+            const emptyState = document.getElementById('emptyPreviewState');
+            if(!currentPdfDoc && !currentImgSrc) {
+                canvas.style.display = 'none'; emptyState.style.display = 'block'; document.getElementById('previewPagination').style.display = 'none'; return;
+            }
+            emptyState.style.display = 'none'; canvas.style.display = 'block';
+            const orientation = document.getElementById('orientation').value;
+            const pps = parseInt(document.getElementById('pagesPerSheet').value) || 1;
+            canvas.style.filter = document.getElementById('colorMode').value === 'monochrome' ? 'grayscale(100%)' : 'none';
+            let cols = 1, rows = 1;
+            if (pps === 2) { cols = orientation === 'landscape' ? 2 : 1; rows = orientation === 'landscape' ? 1 : 2; }
+            else if (pps === 4) { cols = 2; rows = 2; }
+            else if (pps === 6) { cols = orientation === 'landscape' ? 3 : 2; rows = orientation === 'landscape' ? 2 : 3; }
+            else if (pps > 1) { cols = Math.ceil(Math.sqrt(pps)); rows = Math.ceil(pps / cols); }
+            const base = 1000;
+            canvas.width = orientation === 'landscape' ? base * 1.4 : base;
+            canvas.height = orientation === 'landscape' ? base : base * 1.4;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = 'white'; ctx.fillRect(0,0, canvas.width, canvas.height);
+            if (currentImgSrc) {
+                document.getElementById('previewPagination').style.display = 'none';
+                const imgObj = new Image(); imgObj.src = currentImgSrc; await new Promise(r => imgObj.onload = r);
+                for(let i=0; i<pps; i++) {
+                    const cellW = canvas.width / cols, cellH = canvas.height / rows;
+                    const scale = Math.min((cellW-40)/imgObj.width, (cellH-40)/imgObj.height);
+                    const drawW = imgObj.width * scale, drawH = imgObj.height * scale;
+                    const x = (i%cols)*cellW + (cellW-drawW)/2, y = Math.floor(i/cols)*cellH + (cellH-drawH)/2;
+                    ctx.drawImage(imgObj, x, y, drawW, drawH);
+                }
+                return;
+            }
+            const pageArr = Array.from({length: currentPdfDoc.numPages}, (_, i) => i + 1);
+            totalPreviewSheets = Math.ceil(pageArr.length / pps);
+            document.getElementById('previewPagination').style.display = totalPreviewSheets > 1 ? 'flex' : 'none';
+            document.getElementById('previewSheetText').innerText = `${currentPreviewSheet + 1} / ${totalPreviewSheets}`;
+            const start = currentPreviewSheet * pps;
+            for(let i=0; i<Math.min(pps, pageArr.length - start); i++) {
+                const page = await currentPdfDoc.getPage(pageArr[start + i]);
+                const cellW = canvas.width / cols, cellH = canvas.height / rows;
+                const baseVp = page.getViewport({scale: 1});
+                const isRotated = (cellW > cellH && baseVp.width < baseVp.height) || (cellW < cellH && baseVp.width > baseVp.height);
+                const dW = isRotated ? baseVp.height : baseVp.width;
+                const dH = isRotated ? baseVp.width : baseVp.height;
+                const scale = Math.min((cellW-40)/dW, (cellH-40)/dH);
+                const renderVp = page.getViewport({scale, rotation: isRotated ? 90 : 0});
+                const off = document.createElement('canvas');
+                off.width = renderVp.width; off.height = renderVp.height;
+                await page.render({canvasContext: off.getContext('2d'), viewport: renderVp}).promise;
+                const xPos = (i%cols)*cellW + (cellW - renderVp.width)/2;
+                const yPos = Math.floor(i/cols)*cellH + (cellH - renderVp.height)/2;
+                ctx.drawImage(off, xPos, yPos);
+            }
+        }
+        function changePreviewSheet(dir) { currentPreviewSheet = Math.max(0, Math.min(totalPreviewSheets-1, currentPreviewSheet + dir)); updateDynamicPreview(); }
+        function setupPwaInstall() {
+            const installBtn = document.getElementById('installBtn');
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+                installBtn.style.display = 'inline-flex';
+            });
+            installBtn.addEventListener('click', async () => {
+                if (!deferredPrompt) return;
+                deferredPrompt.prompt();
+                await deferredPrompt.userChoice;
+                deferredPrompt = null;
+                installBtn.style.display = 'none';
+            });
+            window.addEventListener('appinstalled', () => {
+                installBtn.style.display = 'none';
+                showToast('Aplikasi berhasil diinstall.', 'success');
+            });
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('./sw.js').catch(() => {});
                 });
             }
-            registerServiceWorker();
-            updateInstallButtonVisibility();
-        });
-
-        window.onload = loadHistory;
+        }
+        window.addEventListener('load', () => { loadHistory(); setupPwaInstall(); });
     </script>
 </body>
 </html>
