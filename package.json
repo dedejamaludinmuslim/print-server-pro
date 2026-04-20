@@ -1,7 +1,7 @@
 {
   "name": "print-server-v45",
-  "version": "4.5.4",
-  "description": "Enterprise Print Server with Smart Layout + PWA",
+  "version": "4.5.5",
+  "description": "Hosted-friendly local print server with connection status and light retry",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
