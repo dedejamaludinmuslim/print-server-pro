@@ -1,7 +1,7 @@
 {
   "name": "print-server-v45",
-  "version": "4.5.3-simple",
-  "description": "Enterprise Print Server with simple reachable-network detection",
+  "version": "4.5.3",
+  "description": "Hosted-friendly local print server with multi-subnet auto-detect",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"

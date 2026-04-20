@@ -96,7 +96,7 @@
                         <button class="btn-icon" id="scanBtn" onclick="showScanModal()" title="Pindai Jaringan">🔍</button>
                     </div>
                     <select id="ipSelect" class="input-standard" style="display:none; margin-top: 8px;" onchange="document.getElementById('ipAddress').value = this.value; updateIpAndFetchPrinters();"></select>
-                    <div style="margin-top:8px; font-size:11px; color:var(--text-muted);">Mode sederhana: tanpa memori IP terakhir. Jika auto detect gagal, isi IP server secara manual.</div>
+                    <div style="margin-top:8px; font-size:11px; color:var(--text-muted); line-height:1.4;">Prioritas deteksi: IP terakhir sukses → auto detect multi-subnet → IP manual.</div>
                 </div>
 
                 <div class="input-group">
@@ -155,7 +155,7 @@
     <div id="scanModal" class="modal">
         <div class="modal-content" style="text-align:center;">
             <h3 style="margin:0 0 10px 0;">🔍 Deteksi Jaringan</h3>
-            <p style="font-size:13px; color:var(--text-muted); margin-bottom:20px; line-height: 1.5;">Pilih <strong>Auto Detect</strong> atau masukkan 3 blok IP WiFi secara manual.</p>
+            <p style="font-size:13px; color:var(--text-muted); margin-bottom:20px; line-height: 1.5;">Auto detect akan mencoba beberapa subnet kantor yang masih reachable. Jika gagal, gunakan IP manual.</p>
             <button class="btn-block" style="background: var(--success); margin-bottom: 20px;" onclick="startSmartAutoScan()">⚡ AUTO DETECT SERVER</button>
             <div class="divider"><span>ATAU MANUAL</span></div>
             <div class="input-group" style="margin-bottom: 20px;"><input type="text" id="scanIpInput" class="input-standard" value="192.168.1" style="text-align:center; font-weight:bold;"></div>
@@ -226,50 +226,145 @@
 
     <script>
         let currentPdfDoc = null, currentImgSrc = null, currentPreviewSheet = 0, totalPreviewSheets = 1, appliedConfig = {};
+        const STORAGE_KEYS = {
+            history: 'h_v45',
+            lastServerIp: 'ps_last_server_ip',
+            savedServerIps: 'ps_saved_server_ips',
+            subnetHints: 'ps_subnet_hints'
+        };
+        const DEFAULT_SUBNETS = ['192.168.1', '192.168.4', '192.168.0', '192.168.8', '192.168.10', '192.168.100'];
+        const SCAN_TIMEOUT_MS = 1200;
 
         function showToast(message, type = 'info') {
             let container = document.getElementById('toastContainer');
             if (!container) {
                 container = document.createElement('div');
-                container.id = 'toastContainer'; container.className = 'toast-container'; 
+                container.id = 'toastContainer';
+                container.className = 'toast-container';
                 document.body.appendChild(container);
             }
             container.innerHTML = '';
-            const toast = document.createElement('div'); toast.className = 'toast';
-            let icon = type === 'success' ? '✅' : (type === 'error' ? '🚨' : 'ℹ️');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            const icon = type === 'success' ? '✅' : (type === 'error' ? '🚨' : 'ℹ️');
             toast.innerHTML = `<span>${icon}</span> ${message}`;
             container.appendChild(toast);
             setTimeout(() => toast.remove(), 4000);
+        }
+
+        function readJson(key, fallback) {
+            try { return JSON.parse(localStorage.getItem(key)) ?? fallback; }
+            catch { return fallback; }
+        }
+
+        function writeJson(key, value) {
+            localStorage.setItem(key, JSON.stringify(value));
+        }
+
+        function getSavedServerIps() {
+            return readJson(STORAGE_KEYS.savedServerIps, []);
+        }
+
+        function saveSuccessfulServerIp(ip) {
+            const value = (ip || '').trim();
+            if (!value) return;
+            localStorage.setItem(STORAGE_KEYS.lastServerIp, value);
+            let items = getSavedServerIps().filter(x => x !== value);
+            items.unshift(value);
+            writeJson(STORAGE_KEYS.savedServerIps, items.slice(0, 12));
+            renderIpOptions(items);
+        }
+
+        function getSubnetHints() {
+            const raw = readJson(STORAGE_KEYS.subnetHints, DEFAULT_SUBNETS);
+            const merged = [...raw, ...DEFAULT_SUBNETS].map(s => (s || '').trim()).filter(Boolean);
+            return [...new Set(merged)].slice(0, 16);
+        }
+
+        function rememberSubnet(base) {
+            const clean = (base || '').trim();
+            if (!/^\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(clean)) return;
+            const items = getSubnetHints().filter(x => x !== clean);
+            items.unshift(clean);
+            writeJson(STORAGE_KEYS.subnetHints, items.slice(0, 16));
+        }
+
+        function renderIpOptions(items = getSavedServerIps()) {
+            const sel = document.getElementById('ipSelect');
+            sel.innerHTML = '';
+            if (!items.length) {
+                sel.style.display = 'none';
+                return;
+            }
+            sel.style.display = 'block';
+            sel.add(new Option('IP tersimpan / terdeteksi...', ''));
+            items.forEach(ip => sel.add(new Option(ip, ip)));
+        }
+
+        function dedupeServers(servers) {
+            const map = new Map();
+            (servers || []).forEach(srv => {
+                if (!srv || !srv.ip) return;
+                if (!map.has(srv.ip)) map.set(srv.ip, srv);
+            });
+            return [...map.values()];
+        }
+
+        function setScanButtonLoading(isLoading) {
+            const btn = document.getElementById('scanBtn');
+            btn.innerHTML = isLoading ? '⏳' : '🔍';
+            btn.disabled = isLoading;
         }
 
         function showScanModal() { document.getElementById('scanModal').style.display='flex'; }
         function closeScanModal() { document.getElementById('scanModal').style.display='none'; }
         function showHelpModal() { document.getElementById('helpModal').style.display='flex'; }
         function closeHelpModal() { document.getElementById('helpModal').style.display='none'; }
-        
-        function showConfigModal() { 
-            appliedConfig = { colorMode: document.getElementById('colorMode').value, paperSize: document.getElementById('paperSize').value, orientation: document.getElementById('orientation').value, pagesPerSheet: document.getElementById('pagesPerSheet').value, copies: document.getElementById('copies').value, pages: document.getElementById('pages').value };
-            document.getElementById('configModal').style.display='flex'; 
+
+        function showConfigModal() {
+            appliedConfig = {
+                colorMode: document.getElementById('colorMode').value,
+                paperSize: document.getElementById('paperSize').value,
+                orientation: document.getElementById('orientation').value,
+                pagesPerSheet: document.getElementById('pagesPerSheet').value,
+                copies: document.getElementById('copies').value,
+                pages: document.getElementById('pages').value
+            };
+            document.getElementById('configModal').style.display='flex';
         }
-        function cancelConfigModal() { Object.keys(appliedConfig).forEach(k => document.getElementById(k).value = appliedConfig[k]); document.getElementById('configModal').style.display='none'; }
-        function applyConfigModal() { document.getElementById('configModal').style.display='none'; currentPreviewSheet = 0; updateDynamicPreview(); showToast("Tersimpan", "success"); }
-        
-        function showPinModal() { 
-            if(!document.getElementById('fileInput').files[0]) return showToast("Pilih file dokumen terlebih dahulu!", "error"); 
-            document.getElementById('pinModal').style.display='flex'; 
+        function cancelConfigModal() {
+            Object.keys(appliedConfig).forEach(k => document.getElementById(k).value = appliedConfig[k]);
+            document.getElementById('configModal').style.display='none';
+        }
+        function applyConfigModal() {
+            document.getElementById('configModal').style.display='none';
+            currentPreviewSheet = 0;
+            updateDynamicPreview();
+            showToast('Tersimpan', 'success');
+        }
+
+        function showPinModal() {
+            if(!document.getElementById('fileInput').files[0]) return showToast('Pilih file dokumen terlebih dahulu!', 'error');
+            document.getElementById('pinModal').style.display='flex';
             setTimeout(() => document.getElementById('modalPinInput').focus(), 100);
         }
         function closePinModal() { document.getElementById('pinModal').style.display='none'; document.getElementById('modalPinInput').value = ''; }
-        
+
         function showDeleteHistoryModal() { document.getElementById('deleteHistoryModal').style.display='flex'; }
         function closeDeleteHistoryModal() { document.getElementById('deleteHistoryModal').style.display='none'; }
-        function executeClearHistory() { localStorage.removeItem('h_v45'); loadHistory(); closeDeleteHistoryModal(); showToast("Dibersihkan", "success"); }
+        function executeClearHistory() {
+            localStorage.removeItem(STORAGE_KEYS.history);
+            loadHistory();
+            closeDeleteHistoryModal();
+            showToast('Dibersihkan', 'success');
+        }
 
         document.getElementById('fileInput').addEventListener('change', async function(e) {
             const file = e.target.files[0];
-            if(!file) { 
-                currentPdfDoc = null; currentImgSrc = null; 
-                updateDynamicPreview(); return; 
+            document.getElementById('previewCol').style.display = '';
+            if(!file) {
+                currentPdfDoc = null; currentImgSrc = null;
+                updateDynamicPreview(); return;
             }
             currentPreviewSheet = 0;
             const reader = new FileReader();
@@ -284,25 +379,28 @@
 
         async function updateDynamicPreview() {
             const canvas = document.getElementById('mainPreviewCanvas'), emptyState = document.getElementById('emptyPreviewState');
-            
+            const imgPreview = document.getElementById('imgPreview');
+            imgPreview.style.display = 'none';
+
             if(!currentPdfDoc && !currentImgSrc) {
                 canvas.style.display = 'none'; emptyState.style.display = 'block';
                 document.getElementById('previewPagination').style.display = 'none'; return;
             }
             emptyState.style.display = 'none';
             canvas.style.display = 'block';
-            
+
             const orientation = document.getElementById('orientation').value;
             const pps = parseInt(document.getElementById('pagesPerSheet').value) || 1;
-            canvas.style.filter = document.getElementById('colorMode').value === 'monochrome' ? 'grayscale(100%)' : 'none';
-            
-            // --- RUMUS GRID YANG BENAR (GANTI BAGIAN INI) ---
+            const colorMode = document.getElementById('colorMode').value;
+            canvas.style.filter = colorMode === 'monochrome' ? 'grayscale(100%)' : 'none';
+            document.getElementById('previewBadge').innerText = colorMode === 'monochrome' ? 'Hitam Putih' : 'Warna';
+
             let cols = 1, rows = 1;
             if (pps === 2) {
                 cols = orientation === 'landscape' ? 2 : 1;
                 rows = orientation === 'landscape' ? 1 : 2;
             } else if (pps === 4) {
-                cols = 2; rows = 2; // 4-Up pasti 2x2
+                cols = 2; rows = 2;
             } else if (pps === 6) {
                 cols = orientation === 'landscape' ? 3 : 2;
                 rows = orientation === 'landscape' ? 2 : 3;
@@ -310,22 +408,18 @@
                 cols = Math.ceil(Math.sqrt(pps));
                 rows = Math.ceil(pps / cols);
             }
-            // ------------------------------------------------
-            
+
             const base = 1000;
             canvas.width = orientation === 'landscape' ? base * 1.4 : base;
             canvas.height = orientation === 'landscape' ? base : base * 1.4;
             const ctx = canvas.getContext('2d');
             ctx.fillStyle = 'white'; ctx.fillRect(0,0, canvas.width, canvas.height);
 
-            // --- JIKA FILE ADALAH GAMBAR (Kini mendukung Grid N-Up & Rotasi) ---
             if(currentImgSrc) {
                 document.getElementById('previewPagination').style.display = 'none';
-                
                 const imgObj = new Image();
                 imgObj.src = currentImgSrc;
-                await new Promise(r => imgObj.onload = r); // Tunggu gambar dimuat ke memori
-
+                await new Promise(r => imgObj.onload = r);
                 for(let i=0; i < pps; i++) {
                     const cellW = canvas.width / cols, cellH = canvas.height / rows;
                     const scale = Math.min((cellW-40)/imgObj.width, (cellH-40)/imgObj.height);
@@ -338,176 +432,170 @@
                 return;
             }
 
-            // --- JIKA FILE ADALAH PDF ---
             const pageArr = Array.from({length: currentPdfDoc.numPages}, (_, i) => i + 1);
             totalPreviewSheets = Math.ceil(pageArr.length / pps);
-            document.getElementById('previewPagination').style.display = totalPreviewSheets > 1 ? 'flex' : 'none';
+            const pagination = document.getElementById('previewPagination');
+            pagination.style.display = totalPreviewSheets > 1 ? 'flex' : 'none';
             document.getElementById('previewSheetText').innerText = `${currentPreviewSheet + 1} / ${totalPreviewSheets}`;
-            
+            document.getElementById('btnPrevPage').disabled = currentPreviewSheet <= 0;
+            document.getElementById('btnNextPage').disabled = currentPreviewSheet >= totalPreviewSheets - 1;
+
             const start = currentPreviewSheet * pps;
             for(let i=0; i < Math.min(pps, pageArr.length - start); i++) {
                 const page = await currentPdfDoc.getPage(pageArr[start + i]);
-                
                 const cellW = canvas.width / cols;
                 const cellH = canvas.height / rows;
-                
-                // Ambil ukuran asli halaman PDF
                 const baseVp = page.getViewport({scale: 1});
-                
-                // PERBAIKAN: Sinkronisasi algoritma rotasi layar dengan PC Server
-                let isRotated = (cellW > cellH && baseVp.width < baseVp.height) || 
-                                (cellW < cellH && baseVp.width > baseVp.height);
-                
-                let dW = isRotated ? baseVp.height : baseVp.width;
-                let dH = isRotated ? baseVp.width : baseVp.height;
-                
+                const isRotated = (cellW > cellH && baseVp.width < baseVp.height) || (cellW < cellH && baseVp.width > baseVp.height);
+                const dW = isRotated ? baseVp.height : baseVp.width;
+                const dH = isRotated ? baseVp.width : baseVp.height;
                 const scale = Math.min((cellW-40)/dW, (cellH-40)/dH);
-                
-                // Minta pdf.js me-render halaman dengan rotasi yang sesuai
                 const renderVp = page.getViewport({scale: scale, rotation: isRotated ? 90 : 0});
-                const off = document.createElement('canvas'); 
-                off.width = renderVp.width; 
+                const off = document.createElement('canvas');
+                off.width = renderVp.width;
                 off.height = renderVp.height;
                 await page.render({canvasContext: off.getContext('2d'), viewport: renderVp}).promise;
-                
                 const xPos = (i%cols)*cellW + (cellW - renderVp.width)/2;
                 const yPos = Math.floor(i/cols)*cellH + (cellH - renderVp.height)/2;
-                
                 ctx.drawImage(off, xPos, yPos);
             }
         }
 
-        function changePreviewSheet(dir) { currentPreviewSheet = Math.max(0, Math.min(totalPreviewSheets-1, currentPreviewSheet + dir)); updateDynamicPreview(); }
+        function changePreviewSheet(dir) {
+            currentPreviewSheet = Math.max(0, Math.min(totalPreviewSheets-1, currentPreviewSheet + dir));
+            updateDynamicPreview();
+        }
 
         let socket;
         function connectSocket(ip) {
             if(socket) socket.disconnect();
-            socket = io(`http://${ip}:3000`);
+            socket = io(`http://${ip}:3000`, { transports: ['polling', 'websocket'] });
             socket.on('print-status', data => {
                 document.getElementById('realtimeStatus').style.display='block';
                 document.getElementById('statusMessage').innerText = data.message;
-                const steps = { 'processing': 25, 'printing': 75, 'success': 100, 'error': 100 };
-                document.getElementById('progressBar').style.width = (steps[data.type] || 0) + '%';
+                const steps = { processing: 25, printing: 75, success: 100, error: 100 };
+                document.getElementById('progressBar').style.width = `${steps[data.type] || 0}%`;
             });
+        }
+
+        async function pingServer(ip) {
+            const res = await fetch(`http://${ip}:3000/ping`, {
+                cache: 'no-store',
+                signal: AbortSignal.timeout(SCAN_TIMEOUT_MS)
+            });
+            if (!res.ok) throw new Error(`Ping gagal ${res.status}`);
+            const data = await res.json();
+            if (data.status !== 'PrintServerActive') throw new Error('Server tidak aktif');
+            return data;
+        }
+
+        async function fetchPrinters(ip) {
+            const res = await fetch(`http://${ip}:3000/printers?_t=${Date.now()}`, { cache: 'no-store', signal: AbortSignal.timeout(3000) });
+            if (!res.ok) throw new Error(`Gagal memuat printer (${res.status})`);
+            return res.json();
+        }
+
+        async function tryConnectToServer(ip, silent = false) {
+            const cleanIp = (ip || '').trim();
+            if (!cleanIp) return false;
+            const sel = document.getElementById('printerSelect');
+            sel.innerHTML = '<option value="">⏳ Memuat...</option>';
+            sel.disabled = true;
+            try {
+                await pingServer(cleanIp);
+                connectSocket(cleanIp);
+                const printers = await fetchPrinters(cleanIp);
+                document.getElementById('ipAddress').value = cleanIp;
+                sel.innerHTML = '<option value="">🖨️ Default Printer</option>';
+                printers.forEach(p => sel.add(new Option(p.name, p.name)));
+                sel.value = '';
+                sel.disabled = false;
+                saveSuccessfulServerIp(cleanIp);
+                if (!silent) showToast(`Printer Server ${cleanIp} siap!`, 'success');
+                return true;
+            } catch (e) {
+                sel.innerHTML = '<option value="">⚠️ Gagal terhubung</option>';
+                sel.disabled = false;
+                if (!silent) showToast(`Gagal terhubung ke ${cleanIp}`, 'error');
+                return false;
+            }
+        }
+
+        async function scanSubnet(base) {
+            const cleanBase = (base || '').trim();
+            if (!/^\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(cleanBase)) return [];
+            const promises = [];
+            for(let i = 1; i <= 254; i++) {
+                const ip = `${cleanBase}.${i}`;
+                promises.push(
+                    pingServer(ip)
+                        .then(data => ({ ip, name: data.hostname || ip, localIps: data.localIps || [] }))
+                        .catch(() => null)
+                );
+            }
+            const results = await Promise.allSettled(promises);
+            return results.map(r => r.status === 'fulfilled' ? r.value : null).filter(Boolean);
         }
 
         async function startSmartAutoScan() {
             closeScanModal();
-            const btn = document.getElementById('scanBtn'); btn.innerHTML = "⏳"; btn.disabled = true;
-            showToast("Memindai seluruh jaringan...", "info");
-            
-            const subnets = ['192.168.1', '192.168.0', '192.168.100', '192.168.8'];
-            let foundServers = []; 
-
-            for (let subnet of subnets) {
-                if (foundServers.length > 0) break; 
-                
-                const promises = [];
-                for(let i=1; i<=254; i++) {
-                    const ip = `${subnet}.${i}`;
-                    promises.push(
-                        fetch(`http://${ip}:3000/ping`, { signal: AbortSignal.timeout(1500) })
-                        .then(r => r.json())
-                        .then(d => {
-                            if(d.status === 'PrintServerActive') {
-                                foundServers.push({ ip: ip, name: d.hostname });
-                            }
-                        }).catch(() => {}) 
-                    );
+            setScanButtonLoading(true);
+            showToast('Memindai subnet yang masih reachable...', 'info');
+            try {
+                const subnets = getSubnetHints();
+                const allResults = [];
+                for (const subnet of subnets) {
+                    const partial = await scanSubnet(subnet);
+                    allResults.push(...partial);
                 }
-                await Promise.allSettled(promises);
+                processFoundServers(allResults);
+            } finally {
+                setScanButtonLoading(false);
             }
-            
-            btn.innerHTML = "🔍"; btn.disabled = false;
-            processFoundServers(foundServers);
         }
 
         async function startNetworkScan() {
-            const base = document.getElementById('scanIpInput').value.trim(); 
+            const base = document.getElementById('scanIpInput').value.trim();
             closeScanModal();
-            const btn = document.getElementById('scanBtn'); btn.innerHTML = "⏳"; btn.disabled = true;
-            showToast(`Memindai IP ${base}.x ...`, "info");
-
-            let foundServers = [];
-            const promises = [];
-            
-            for(let i=1; i<=254; i++) {
-                const ip = `${base}.${i}`;
-                promises.push(
-                    fetch(`http://${ip}:3000/ping`, { signal: AbortSignal.timeout(1500) })
-                    .then(r => r.json())
-                    .then(d => {
-                        if(d.status === 'PrintServerActive') {
-                            foundServers.push({ ip: ip, name: d.hostname });
-                        }
-                    }).catch(() => {})
-                );
+            setScanButtonLoading(true);
+            rememberSubnet(base);
+            showToast(`Memindai IP ${base}.x ...`, 'info');
+            try {
+                const foundServers = await scanSubnet(base);
+                processFoundServers(foundServers);
+            } finally {
+                setScanButtonLoading(false);
             }
-            await Promise.allSettled(promises);
-            
-            btn.innerHTML = "🔍"; btn.disabled = false;
-            processFoundServers(foundServers);
-        }
-
-        function uniqueServers(servers) {
-            const map = new Map();
-            servers.forEach(srv => {
-                if (srv && srv.ip && !map.has(srv.ip)) map.set(srv.ip, srv);
-            });
-            return Array.from(map.values());
         }
 
         function processFoundServers(servers) {
-            const finalServers = uniqueServers(servers);
-            const sel = document.getElementById('ipSelect');
-            sel.innerHTML = '';
-
-            if(finalServers.length > 0) {
-                sel.style.display = 'block';
-
-                if(finalServers.length > 1) {
-                    sel.add(new Option(`Pilih dari ${finalServers.length} Server...`, ""));
+            const uniqueServers = dedupeServers(servers);
+            if(uniqueServers.length > 0) {
+                const existingIps = getSavedServerIps();
+                const mergedIps = [...new Set([...uniqueServers.map(s => s.ip), ...existingIps])];
+                renderIpOptions(mergedIps);
+                document.getElementById('ipAddress').value = uniqueServers[0].ip;
+                saveSuccessfulServerIp(uniqueServers[0].ip);
+                if(uniqueServers.length === 1) {
+                    document.getElementById('ipSelect').value = uniqueServers[0].ip;
                 }
-
-                finalServers.forEach(srv => sel.add(new Option(`${srv.name} (${srv.ip})`, srv.ip)));
-
-                document.getElementById('ipAddress').value = finalServers[0].ip;
-                if(finalServers.length === 1) sel.value = finalServers[0].ip;
-
                 updateIpAndFetchPrinters();
-                showToast(`Selesai! Ditemukan ${finalServers.length} Server Print.`, "success");
+                showToast(`Selesai! Ditemukan ${uniqueServers.length} server yang reachable.`, 'success');
             } else {
-                sel.style.display = 'none';
-                showToast("Server Print tidak ditemukan. Coba isi IP manual.", "error");
+                showToast('Server print tidak ditemukan pada subnet yang dicoba.', 'error');
             }
         }
 
-        async function updateIpAndFetchPrinters() {
+        async function updateIpAndFetchPrinters(silent = false) {
             const ip = document.getElementById('ipAddress').value.trim();
-            if (!ip) return;
-            const sel = document.getElementById('printerSelect');
-            sel.innerHTML = '<option value="">⏳ Memuat...</option>';
-            sel.disabled = true;
-            connectSocket(ip);
-            try {
-                const r = await fetch(`http://${ip}:3000/printers?_t=${Date.now()}`, { cache: 'no-store' });
-                if (!r.ok) throw new Error('Fetch printer gagal');
-                const data = await r.json();
-                sel.innerHTML = '<option value="">🖨️ Default Printer</option>';
-                data.forEach(p => sel.add(new Option(p.name, p.name)));
-                sel.value = "";
-                sel.disabled = false;
-                showToast(`Printer Server ${ip} siap!`, "success");
-            } catch(e) {
-                sel.innerHTML = '<option value="">⚠️ Gagal terhubung</option>';
-                sel.disabled = false;
-            }
+            if (!ip) return false;
+            return tryConnectToServer(ip, silent);
         }
 
         async function confirmAndPrint() {
-            const pin = document.getElementById('modalPinInput').value; closePinModal();
-            const ip = document.getElementById('ipAddress').value;
-            
+            const pin = document.getElementById('modalPinInput').value;
+            closePinModal();
+            const ip = document.getElementById('ipAddress').value.trim();
             const fileObj = document.getElementById('fileInput').files[0];
             if (!fileObj) return;
 
@@ -516,38 +604,58 @@
             fd.append('pin', pin);
             fd.append('printerName', document.getElementById('printerSelect').value);
             fd.append('colorMode', document.getElementById('colorMode').value);
-            fd.append('paperSize', document.getElementById('paperSize').value); 
+            fd.append('paperSize', document.getElementById('paperSize').value);
             fd.append('orientation', document.getElementById('orientation').value);
             fd.append('pagesPerSheet', document.getElementById('pagesPerSheet').value);
-            fd.append('copies', document.getElementById('copies').value); 
+            fd.append('copies', document.getElementById('copies').value);
             fd.append('pages', document.getElementById('pages').value);
-            
+
             try {
                 const r = await fetch(`http://${ip}:3000/print`, { method: 'POST', body: fd });
-                if(r.ok) { 
-                    saveHistory(fileObj.name); 
-                    showToast("Berhasil dicetak", "success");
+                if(r.ok) {
+                    saveHistory(fileObj.name);
+                    showToast('Berhasil dicetak', 'success');
                     document.getElementById('fileInput').value = '';
-                    document.getElementById('previewCol').style.display = 'none';
                     currentPdfDoc = null; currentImgSrc = null;
                     updateDynamicPreview();
+                } else {
+                    showToast(await r.text(), 'error');
                 }
-                else showToast(await r.text(), "error");
-            } catch(e) { showToast("Gagal koneksi ke Server", "error"); }
+            } catch(e) {
+                showToast('Gagal koneksi ke Server', 'error');
+            }
         }
 
         function saveHistory(name) {
-            let h = JSON.parse(localStorage.getItem('h_v45')) || [];
+            let h = readJson(STORAGE_KEYS.history, []);
             h.unshift({ name, time: new Date().toLocaleString() });
-            localStorage.setItem('h_v45', JSON.stringify(h.slice(0, 5))); loadHistory();
+            writeJson(STORAGE_KEYS.history, h.slice(0, 5));
+            loadHistory();
         }
 
         function loadHistory() {
             const list = document.getElementById('historyList');
-            const h = JSON.parse(localStorage.getItem('h_v45')) || [];
+            const h = readJson(STORAGE_KEYS.history, []);
             list.innerHTML = h.length ? h.map(i => `<li style="padding:10px; border-bottom:1px solid #eee; font-size:12px;"><strong>${i.name}</strong><br>${i.time}</li>`).join('') : '<li style="text-align:center; padding:10px;">Kosong</li>';
         }
-        window.onload = () => { loadHistory(); document.getElementById('ipSelect').style.display = 'none'; };
+
+        async function bootstrapConnection() {
+            renderIpOptions();
+            const lastIp = localStorage.getItem(STORAGE_KEYS.lastServerIp) || '';
+            if (lastIp) {
+                document.getElementById('ipAddress').value = lastIp;
+                const ok = await tryConnectToServer(lastIp, true);
+                if (ok) showToast(`Tersambung otomatis ke IP terakhir: ${lastIp}`, 'success');
+            }
+        }
+
+        window.onload = async () => {
+            loadHistory();
+            renderIpOptions();
+            const saved = getSubnetHints();
+            if (saved[0]) document.getElementById('scanIpInput').value = saved[0];
+            await bootstrapConnection();
+        };
     </script>
 </body>
 </html>
