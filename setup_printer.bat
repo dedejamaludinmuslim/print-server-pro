@@ -1,13 +1,13 @@
 @echo off
-setlocal
-title Installer - Print Server Pro V4.5.3
+title Installer - Print Server Pro V4.5
 color 0B
 
 echo ===================================================
-echo     INSTALLER OFFLINE PRINT SERVER PRO V4.5.3
+echo      INSTALLER OFFLINE PRINT SERVER PRO V4.5
 echo ===================================================
 echo.
 
+:: 1. Cek ketersediaan Node.js
 echo [1/4] Mengecek sistem Node.js...
 node -v >nul 2>&1
 if %errorlevel% neq 0 (
@@ -19,10 +19,11 @@ if %errorlevel% neq 0 (
     pause
     exit /b
 )
-echo Node.js terdeteksi!
+echo Node.js terdeteksi! Melanjutkan proses...
 echo.
 
-echo [2/4] Menginstall modul aplikasi...
+:: 2. Install dependensi (node_modules)
+echo [2/4] Mengunduh dan memasang modul aplikasi...
 call npm install
 if %errorlevel% neq 0 (
     echo.
@@ -32,30 +33,33 @@ if %errorlevel% neq 0 (
 )
 echo.
 
-echo [3/4] Memasang PM2...
+:: 3. Install PM2 (Agar server berjalan di latar belakang tanpa jendela CMD hitam)
+echo [3/4] Memasang PM2 (Server Manager)...
 call npm install -g pm2
 echo.
 
-echo [4/4] Menyalakan server...
+:: 4. Nyalakan Server
+echo [4/4] Menyalakan Mesin Server...
+:: Matikan dulu jika sebelumnya sudah ada yang menyala
 call pm2 stop print-server >nul 2>&1
 call pm2 delete print-server >nul 2>&1
-set ALLOWED_ORIGINS=https://printer-upmp.vercel.app
+
+:: Nyalakan yang baru
 call pm2 start server.js --name "print-server"
 call pm2 save
 
 echo.
 echo ===================================================
-echo  INSTALLASI SUKSES! MODE HOSTED-LOCAL SIAP DIPAKAI
+echo   INSTALLASI SUKSES! MESIN CETAK AKTIF!
 echo ===================================================
 echo.
-echo Web publik default yang diizinkan:
-echo https://printer-upmp.vercel.app
+echo Aplikasi Print Server Anda sudah menyala di latar belakang.
+echo Anda bisa menutup jendela ini sekarang.
 echo.
-echo Akses dari perangkat lain tetap mengandalkan jaringan yang masih reachable.
-echo Prioritas deteksi: IP terakhir sukses -> auto detect multi-subnet -> manual IP.
+echo Untuk mengaksesnya dari HP atau Laptop lain, buka browser dan ketik:
+echo http://localhost:3000  (Jika dibuka dari PC ini)
 echo.
-echo Cek IP server lokal Anda:
+echo Jika butuh cek IP otomatis jaringan ini:
 ipconfig | findstr /i "ipv4"
 echo.
 pause
-endlocal
