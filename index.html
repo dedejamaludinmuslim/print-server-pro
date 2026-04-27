@@ -154,12 +154,13 @@
             </div>
             <div style="display:flex; gap:12px;">
                 <div class="input-group" style="flex:1;"><label>Orientasi:</label><select id="orientation" class="input-standard"><option value="portrait">Portrait</option><option value="landscape">Landscape</option></select></div>
-                <div class="input-group" style="flex:1;"><label>Hal/Lembar:</label><input type="number" id="pagesPerSheet" class="input-standard" value="1" min="1" max="16"></div>
+                <div class="input-group" style="flex:1;"><label>Hal/Lembar:</label><select id="pagesPerSheet" class="input-standard"><option value="1">1</option><option value="2">2</option><option value="4">4</option><option value="6">6</option><option value="9">9</option><option value="16">16</option></select></div>
             </div>
             <div style="display:flex; gap:12px;">
-                <div class="input-group" style="flex:1;"><label>Jumlah Copy:</label><input type="number" id="copies" class="input-standard" value="1" min="1"></div>
+                <div class="input-group" style="flex:1;"><label>Jumlah Copy:</label><input type="number" id="copies" class="input-standard" value="1" min="1" max="50"></div>
                 <div class="input-group" style="flex:1;"><label>Rincian Halaman:</label><input type="text" id="pages" class="input-standard" placeholder="1,3,5-7"></div>
             </div>
+            <div style="font-size:12px; color:var(--text-muted); margin-top:-4px;">Orientasi mengatur layout keluaran. Untuk gambar dan PDF, sistem akan memutar isi bila diperlukan agar paling pas di kertas.</div>
             <div style="display:flex; gap:10px; margin-top:20px;">
                 <button class="btn-block secondary" onclick="cancelConfigModal()">Batal</button>
                 <button class="btn-block" onclick="applyConfigModal()">Simpan</button>
@@ -247,6 +248,90 @@
             }
             throw lastError;
         }
+        const SUPPORTED_PPS = [1, 2, 4, 6, 9, 16];
+        const PAPER_DIMENSIONS = {
+            A4: { portrait: { width: 595.28, height: 841.89 }, landscape: { width: 841.89, height: 595.28 } },
+            F4: { portrait: { width: 595.28, height: 935.43 }, landscape: { width: 935.43, height: 595.28 } }
+        };
+        function getPaperViewport(paperSize, orientation) {
+            const paper = PAPER_DIMENSIONS[paperSize] || PAPER_DIMENSIONS.A4;
+            return paper[orientation] || paper.portrait;
+        }
+        function getGrid(pps, orientation) {
+            const safePps = SUPPORTED_PPS.includes(pps) ? pps : 1;
+            let cols = 1, rows = 1;
+            if (safePps === 2) { cols = orientation === 'landscape' ? 2 : 1; rows = orientation === 'landscape' ? 1 : 2; }
+            else if (safePps === 4) { cols = 2; rows = 2; }
+            else if (safePps === 6) { cols = orientation === 'landscape' ? 3 : 2; rows = orientation === 'landscape' ? 2 : 3; }
+            else if (safePps > 1) { cols = Math.ceil(Math.sqrt(safePps)); rows = Math.ceil(safePps / cols); }
+            return { cols, rows, safePps };
+        }
+        function parsePagesInput(value) {
+            const raw = (value || '').trim();
+            if (!raw) return { ok: true, normalized: '', message: '' };
+            const parts = raw.split(',').map(v => v.trim()).filter(Boolean);
+            if (!parts.length) return { ok: true, normalized: '', message: '' };
+            const normalized = [];
+            for (const part of parts) {
+                if (/^\d+$/.test(part)) {
+                    const n = parseInt(part, 10);
+                    if (n < 1) return { ok: false, normalized: raw, message: 'Nomor halaman harus dimulai dari 1.' };
+                    normalized.push(String(n));
+                    continue;
+                }
+                const match = part.match(/^(\d+)\s*-\s*(\d+)$/);
+                if (!match) return { ok: false, normalized: raw, message: 'Format halaman gunakan contoh: 1,3,5-7' };
+                let start = parseInt(match[1], 10);
+                let end = parseInt(match[2], 10);
+                if (start < 1 || end < 1) return { ok: false, normalized: raw, message: 'Nomor halaman harus dimulai dari 1.' };
+                if (start > end) [start, end] = [end, start]
+                normalized.push(start === end ? String(start) : `${start}-${end}`);
+            }
+            return { ok: true, normalized: normalized.join(','), message: '' };
+        }
+        function validatePrintSettings(showFeedback = true) {
+            const copiesEl = document.getElementById('copies');
+            const ppsEl = document.getElementById('pagesPerSheet');
+            const pagesEl = document.getElementById('pages');
+            const copies = parseInt(copiesEl.value, 10);
+            const pps = parseInt(ppsEl.value, 10);
+            if (!Number.isInteger(copies) || copies < 1 || copies > 50) {
+                copiesEl.setCustomValidity('Jumlah copy harus 1 sampai 50.');
+                if (showFeedback) { copiesEl.reportValidity(); showToast('Jumlah copy harus 1 sampai 50.', 'error'); }
+                return false;
+            }
+            copiesEl.setCustomValidity('');
+            if (!SUPPORTED_PPS.includes(pps)) {
+                ppsEl.setCustomValidity('Hal per lembar yang didukung: 1, 2, 4, 6, 9, atau 16.');
+                if (showFeedback) { ppsEl.reportValidity(); showToast('Hal per lembar yang didukung: 1, 2, 4, 6, 9, atau 16.', 'error'); }
+                return false;
+            }
+            ppsEl.setCustomValidity('');
+            const pageCheck = parsePagesInput(pagesEl.value);
+            if (!pageCheck.ok) {
+                pagesEl.setCustomValidity(pageCheck.message);
+                if (showFeedback) { pagesEl.reportValidity(); showToast(pageCheck.message, 'error'); }
+                return false;
+            }
+            pagesEl.setCustomValidity('');
+            pagesEl.value = pageCheck.normalized;
+            return true;
+        }
+        function drawImageInCell(ctx, imgObj, cellX, cellY, cellW, cellH, padding, forceRotate = false) {
+            const rotate = forceRotate || ((cellW > cellH && imgObj.width < imgObj.height) || (cellW < cellH && imgObj.width > imgObj.height));
+            const targetW = rotate ? imgObj.height : imgObj.width;
+            const targetH = rotate ? imgObj.width : imgObj.height;
+            const scale = Math.min((cellW - padding) / targetW, (cellH - padding) / targetH);
+            const drawW = imgObj.width * scale;
+            const drawH = imgObj.height * scale;
+            const centerX = cellX + cellW / 2;
+            const centerY = cellY + cellH / 2;
+            ctx.save();
+            ctx.translate(centerX, centerY);
+            if (rotate) ctx.rotate(Math.PI / 2);
+            ctx.drawImage(imgObj, -drawW / 2, -drawH / 2, drawW, drawH);
+            ctx.restore();
+        }
         function showToast(message, type = 'info') {
             let container = document.getElementById('toastContainer');
             if (!container) {
@@ -282,6 +367,7 @@
         function applyConfigModal() { document.getElementById('configModal').style.display='none'; currentPreviewSheet = 0; updateDynamicPreview(); showToast('Tersimpan', 'success'); }
         function showPinModal() {
             if(!document.getElementById('fileInput').files[0]) return showToast('Pilih file dokumen terlebih dahulu!', 'error');
+            if (!validatePrintSettings(true)) return;
             document.getElementById('pinModal').style.display='flex';
             setTimeout(() => document.getElementById('modalPinInput').focus(), 100);
         }
@@ -399,6 +485,7 @@
             const ip = document.getElementById('ipAddress').value.trim();
             const fileObj = document.getElementById('fileInput').files[0];
             if (!fileObj || !ip) return;
+            if (!validatePrintSettings(true)) return;
             const fd = new FormData();
             fd.append('document', fileObj);
             fd.append('pin', pin);
@@ -440,54 +527,67 @@
         async function updateDynamicPreview() {
             const canvas = document.getElementById('mainPreviewCanvas');
             const emptyState = document.getElementById('emptyPreviewState');
-            if(!currentPdfDoc && !currentImgSrc) {
-                canvas.style.display = 'none'; emptyState.style.display = 'block'; document.getElementById('previewPagination').style.display = 'none'; return;
-            }
-            emptyState.style.display = 'none'; canvas.style.display = 'block';
-            const orientation = document.getElementById('orientation').value;
-            const pps = parseInt(document.getElementById('pagesPerSheet').value) || 1;
-            canvas.style.filter = document.getElementById('colorMode').value === 'monochrome' ? 'grayscale(100%)' : 'none';
-            let cols = 1, rows = 1;
-            if (pps === 2) { cols = orientation === 'landscape' ? 2 : 1; rows = orientation === 'landscape' ? 1 : 2; }
-            else if (pps === 4) { cols = 2; rows = 2; }
-            else if (pps === 6) { cols = orientation === 'landscape' ? 3 : 2; rows = orientation === 'landscape' ? 2 : 3; }
-            else if (pps > 1) { cols = Math.ceil(Math.sqrt(pps)); rows = Math.ceil(pps / cols); }
-            const base = 1000;
-            canvas.width = orientation === 'landscape' ? base * 1.4 : base;
-            canvas.height = orientation === 'landscape' ? base : base * 1.4;
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = 'white'; ctx.fillRect(0,0, canvas.width, canvas.height);
-            if (currentImgSrc) {
+            if (!currentPdfDoc && !currentImgSrc) {
+                canvas.style.display = 'none';
+                emptyState.style.display = 'block';
                 document.getElementById('previewPagination').style.display = 'none';
-                const imgObj = new Image(); imgObj.src = currentImgSrc; await new Promise(r => imgObj.onload = r);
-                for(let i=0; i<pps; i++) {
-                    const cellW = canvas.width / cols, cellH = canvas.height / rows;
-                    const scale = Math.min((cellW-40)/imgObj.width, (cellH-40)/imgObj.height);
-                    const drawW = imgObj.width * scale, drawH = imgObj.height * scale;
-                    const x = (i%cols)*cellW + (cellW-drawW)/2, y = Math.floor(i/cols)*cellH + (cellH-drawH)/2;
-                    ctx.drawImage(imgObj, x, y, drawW, drawH);
-                }
+                document.getElementById('previewBadge').textContent = document.getElementById('colorMode').value === 'monochrome' ? 'Hitam Putih' : 'Warna';
                 return;
             }
-            const pageArr = Array.from({length: currentPdfDoc.numPages}, (_, i) => i + 1);
-            totalPreviewSheets = Math.ceil(pageArr.length / pps);
+            validatePrintSettings(false);
+            emptyState.style.display = 'none';
+            canvas.style.display = 'block';
+            const orientation = document.getElementById('orientation').value;
+            const paperSize = document.getElementById('paperSize').value;
+            const pps = parseInt(document.getElementById('pagesPerSheet').value, 10) || 1;
+            const { cols, rows, safePps } = getGrid(pps, orientation);
+            const paperViewport = getPaperViewport(paperSize, orientation);
+            const baseHeight = 1000;
+            const ratio = paperViewport.width / paperViewport.height;
+            canvas.height = baseHeight;
+            canvas.width = Math.max(700, Math.round(baseHeight * ratio));
+            canvas.style.filter = document.getElementById('colorMode').value === 'monochrome' ? 'grayscale(100%)' : 'none';
+            document.getElementById('previewBadge').textContent = `${paperSize} • ${orientation === 'landscape' ? 'Landscape' : 'Portrait'} • ${document.getElementById('colorMode').value === 'monochrome' ? 'Hitam Putih' : 'Warna'}`;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            if (currentImgSrc) {
+                totalPreviewSheets = 1;
+                currentPreviewSheet = 0;
+                document.getElementById('previewPagination').style.display = 'none';
+                document.getElementById('btnPrevPage').disabled = true;
+                document.getElementById('btnNextPage').disabled = true;
+                const imgObj = new Image();
+                imgObj.src = currentImgSrc;
+                await new Promise(r => imgObj.onload = r);
+                const cellW = canvas.width / cols;
+                const cellH = canvas.height / rows;
+                drawImageInCell(ctx, imgObj, 0, 0, cellW, cellH, 40, false);
+                return;
+            }
+            const pageArr = Array.from({ length: currentPdfDoc.numPages }, (_, i) => i + 1);
+            totalPreviewSheets = Math.ceil(pageArr.length / safePps);
             document.getElementById('previewPagination').style.display = totalPreviewSheets > 1 ? 'flex' : 'none';
             document.getElementById('previewSheetText').innerText = `${currentPreviewSheet + 1} / ${totalPreviewSheets}`;
-            const start = currentPreviewSheet * pps;
-            for(let i=0; i<Math.min(pps, pageArr.length - start); i++) {
+            document.getElementById('btnPrevPage').disabled = currentPreviewSheet <= 0;
+            document.getElementById('btnNextPage').disabled = currentPreviewSheet >= totalPreviewSheets - 1;
+            const start = currentPreviewSheet * safePps;
+            for (let i = 0; i < Math.min(safePps, pageArr.length - start); i++) {
                 const page = await currentPdfDoc.getPage(pageArr[start + i]);
-                const cellW = canvas.width / cols, cellH = canvas.height / rows;
-                const baseVp = page.getViewport({scale: 1});
+                const cellW = canvas.width / cols;
+                const cellH = canvas.height / rows;
+                const baseVp = page.getViewport({ scale: 1 });
                 const isRotated = (cellW > cellH && baseVp.width < baseVp.height) || (cellW < cellH && baseVp.width > baseVp.height);
                 const dW = isRotated ? baseVp.height : baseVp.width;
                 const dH = isRotated ? baseVp.width : baseVp.height;
-                const scale = Math.min((cellW-40)/dW, (cellH-40)/dH);
-                const renderVp = page.getViewport({scale, rotation: isRotated ? 90 : 0});
+                const scale = Math.min((cellW - 40) / dW, (cellH - 40) / dH);
+                const renderVp = page.getViewport({ scale, rotation: isRotated ? 90 : 0 });
                 const off = document.createElement('canvas');
-                off.width = renderVp.width; off.height = renderVp.height;
-                await page.render({canvasContext: off.getContext('2d'), viewport: renderVp}).promise;
-                const xPos = (i%cols)*cellW + (cellW - renderVp.width)/2;
-                const yPos = Math.floor(i/cols)*cellH + (cellH - renderVp.height)/2;
+                off.width = renderVp.width;
+                off.height = renderVp.height;
+                await page.render({ canvasContext: off.getContext('2d'), viewport: renderVp }).promise;
+                const xPos = (i % cols) * cellW + (cellW - renderVp.width) / 2;
+                const yPos = Math.floor(i / cols) * cellH + (cellH - renderVp.height) / 2;
                 ctx.drawImage(off, xPos, yPos);
             }
         }
@@ -516,7 +616,16 @@
                 });
             }
         }
-        window.addEventListener('load', () => { loadHistory(); setupPwaInstall(); });
+        ['copies', 'pages', 'pagesPerSheet', 'paperSize', 'orientation'].forEach((id) => {
+            const el = document.getElementById(id);
+            const eventName = id === 'pages' ? 'blur' : 'change';
+            el.addEventListener(eventName, () => {
+                if (id === 'pages' || id === 'copies' || id === 'pagesPerSheet') validatePrintSettings(false);
+                currentPreviewSheet = 0;
+                updateDynamicPreview();
+            });
+        });
+        window.addEventListener('load', () => { loadHistory(); setupPwaInstall(); validatePrintSettings(false); });
     </script>
 </body>
 </html>

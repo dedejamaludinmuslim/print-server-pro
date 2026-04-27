@@ -81,13 +81,58 @@ function updateStatus(message, type = 'info') {
   io.emit('print-status', { message, type });
 }
 
-async function convertImageToPdf(imagePath, mimeType, originalName, orientation) {
+const SUPPORTED_PPS = new Set([1, 2, 4, 6, 9, 16]);
+const MAX_COPIES = 50;
+const PAPER_DIMENSIONS = {
+  A4: { portrait: { width: 595.28, height: 841.89 }, landscape: { width: 841.89, height: 595.28 } },
+  F4: { portrait: { width: 595.28, height: 935.43 }, landscape: { width: 935.43, height: 595.28 } },
+};
+function getPaperSizeConfig(paperSize = 'A4', orientation = 'portrait') {
+  const paper = PAPER_DIMENSIONS[paperSize] || PAPER_DIMENSIONS.A4;
+  return paper[orientation] || paper.portrait;
+}
+function getGrid(pps = 1, orientation = 'portrait') {
+  const safePps = SUPPORTED_PPS.has(pps) ? pps : 1;
+  let cols = 1, rows = 1;
+  if (safePps === 2) { cols = orientation === 'landscape' ? 2 : 1; rows = orientation === 'landscape' ? 1 : 2; }
+  else if (safePps === 4) { cols = 2; rows = 2; }
+  else if (safePps === 6) { cols = orientation === 'landscape' ? 3 : 2; rows = orientation === 'landscape' ? 2 : 3; }
+  else if (safePps > 1) { cols = Math.ceil(Math.sqrt(safePps)); rows = Math.ceil(safePps / cols); }
+  return { cols, rows, safePps };
+}
+function parsePagesInput(pagesInput, total) {
+  if (!pagesInput || !String(pagesInput).trim()) return [];
+  const keep = [];
+  String(pagesInput).split(',').forEach(part => {
+    const p = part.trim();
+    if (!p) return;
+    if (p.includes('-')) {
+      let [s, e] = p.split('-').map(n => parseInt(n.trim(), 10));
+      if (Number.isNaN(s) || Number.isNaN(e) || s < 1 || e < 1) return;
+      if (s > e) [s, e] = [e, s];
+      for (let i = s; i <= e; i += 1) if (i <= total) keep.push(i - 1);
+    } else {
+      const n = parseInt(p, 10);
+      if (!Number.isNaN(n) && n > 0 && n <= total) keep.push(n - 1);
+    }
+  });
+  return [...new Set(keep)].sort((a, b) => a - b);
+}
+function sanitizePrintOptions(body) {
+  const orientation = body.orientation === 'landscape' ? 'landscape' : 'portrait';
+  const paperSize = body.paperSize === 'F4' ? 'F4' : 'A4';
+  const colorMode = body.colorMode === 'monochrome' ? 'monochrome' : 'color';
+  const copies = Math.min(MAX_COPIES, Math.max(1, parseInt(body.copies, 10) || 1));
+  const pagesPerSheetRaw = parseInt(body.pagesPerSheet, 10) || 1;
+  const pagesPerSheet = SUPPORTED_PPS.has(pagesPerSheetRaw) ? pagesPerSheetRaw : 1;
+  return { orientation, paperSize, colorMode, copies, pagesPerSheet, pages: String(body.pages || '').trim(), printerName: body.printerName || '' };
+}
+
+async function convertImageToPdf(imagePath, mimeType, originalName, paperSize, orientation) {
   const imgBytes = fs.readFileSync(imagePath);
   const pdfDoc = await PDFDocument.create();
   let image;
-
   const isPng = (mimeType && mimeType.includes('png')) || (originalName && originalName.toLowerCase().endsWith('.png'));
-
   try {
     if (isPng) image = await pdfDoc.embedPng(imgBytes);
     else image = await pdfDoc.embedJpg(imgBytes);
@@ -95,24 +140,23 @@ async function convertImageToPdf(imagePath, mimeType, originalName, orientation)
     try { image = await pdfDoc.embedJpg(imgBytes); }
     catch (_) { image = await pdfDoc.embedPng(imgBytes); }
   }
-
-  let a4W = 595.28, a4H = 841.89;
-  if (orientation === 'landscape') {
-    a4W = 841.89;
-    a4H = 595.28;
-  }
-  const page = pdfDoc.addPage([a4W, a4H]);
-  const scale = Math.min((a4W - 40) / image.width, (a4H - 40) / image.height);
-  const scaledW = image.width * scale;
-  const scaledH = image.height * scale;
-
+  const pageSize = getPaperSizeConfig(paperSize, orientation);
+  const page = pdfDoc.addPage([pageSize.width, pageSize.height]);
+  const shouldRotate = (pageSize.width > pageSize.height && image.width < image.height) || (pageSize.width < pageSize.height && image.width > image.height);
+  const targetW = shouldRotate ? image.height : image.width;
+  const targetH = shouldRotate ? image.width : image.height;
+  const scale = Math.min((pageSize.width - 40) / targetW, (pageSize.height - 40) / targetH);
+  const drawW = image.width * scale;
+  const drawH = image.height * scale;
+  const centerX = pageSize.width / 2;
+  const centerY = pageSize.height / 2;
   page.drawImage(image, {
-    x: (a4W - scaledW) / 2,
-    y: (a4H - scaledH) / 2,
-    width: scaledW,
-    height: scaledH,
+    x: shouldRotate ? centerX - drawH / 2 : centerX - drawW / 2,
+    y: shouldRotate ? centerY - drawW / 2 : centerY - drawH / 2,
+    width: drawW,
+    height: drawH,
+    rotate: shouldRotate ? degrees(90) : degrees(0),
   });
-
   const pdfBytes = await pdfDoc.save();
   const newPdfPath = imagePath + '_converted.pdf';
   fs.writeFileSync(newPdfPath, pdfBytes);
@@ -127,7 +171,7 @@ app.get('/ping', (req, res) => {
     hostname: os.hostname(),
     ipHint: localIps[0] || '',
     localIps,
-    version: '4.5.5',
+    version: '4.5.7',
   });
 });
 
@@ -148,76 +192,41 @@ app.get('/printers', async (req, res) => {
   }
 });
 
-async function processPdf(filePath, pagesInput, orientation, pps) {
+async function processPdf(filePath, pagesInput, paperSize, orientation, pps) {
   const bytes = fs.readFileSync(filePath);
   let pdfDoc = await PDFDocument.load(bytes);
-
-  if (pagesInput) {
-    const total = pdfDoc.getPageCount();
-    let keep = [];
-    pagesInput.split(',').forEach(p => {
-      if (p.includes('-')) {
-        let [s, e] = p.split('-').map(n => parseInt(n.trim(), 10));
-        if (Number.isNaN(s) || Number.isNaN(e)) return;
-        if (s > e) [s, e] = [e, s];
-        for (let i = s; i <= e; i++) if (i > 0 && i <= total) keep.push(i - 1);
-      } else {
-        let n = parseInt(p.trim(), 10);
-        if (!Number.isNaN(n) && n > 0 && n <= total) keep.push(n - 1);
-      }
+  const keep = parsePagesInput(pagesInput, pdfDoc.getPageCount());
+  if (keep.length) {
+    const newDoc = await PDFDocument.create();
+    const copied = await newDoc.copyPages(pdfDoc, keep);
+    copied.forEach(pg => newDoc.addPage(pg));
+    pdfDoc = newDoc;
+  }
+  const { cols, rows, safePps } = getGrid(pps, orientation);
+  const outputSize = getPaperSizeConfig(paperSize, orientation);
+  const pages = pdfDoc.getPages();
+  const final = await PDFDocument.create();
+  const cellW = outputSize.width / cols;
+  const cellH = outputSize.height / rows;
+  let curPage;
+  for (let i = 0; i < pages.length; i += 1) {
+    if (i % safePps === 0) curPage = final.addPage([outputSize.width, outputSize.height]);
+    const emb = await final.embedPage(pages[i]);
+    const rot = (cellW > cellH && emb.width < emb.height) || (cellW < cellH && emb.width > emb.height);
+    const dW = rot ? emb.height : emb.width;
+    const dH = rot ? emb.width : emb.height;
+    const scale = Math.min((cellW - 10) / dW, (cellH - 10) / dH);
+    const x = (i % safePps % cols) * cellW + (cellW - dW * scale) / 2;
+    const y = outputSize.height - (Math.floor(i % safePps / cols) + 1) * cellH + (cellH - dH * scale) / 2;
+    curPage.drawPage(emb, {
+      x: x + (rot ? dH * scale : 0),
+      y,
+      width: emb.width * scale,
+      height: emb.height * scale,
+      rotate: rot ? degrees(90) : degrees(0),
     });
-    keep = [...new Set(keep)];
-    if (keep.length) {
-      const newDoc = await PDFDocument.create();
-      const copied = await newDoc.copyPages(pdfDoc, keep);
-      copied.forEach(pg => newDoc.addPage(pg));
-      pdfDoc = newDoc;
-    }
   }
-
-  if (orientation === 'landscape' || pps > 1) {
-    const pages = pdfDoc.getPages();
-    const final = await PDFDocument.create();
-    let sW = 595.28, sH = 841.89; if (orientation === 'landscape') [sW, sH] = [841.89, 595.28];
-
-    let cols = 1, rows = 1;
-    if (pps === 2) {
-      cols = orientation === 'landscape' ? 2 : 1;
-      rows = orientation === 'landscape' ? 1 : 2;
-    } else if (pps === 4) {
-      cols = 2; rows = 2;
-    } else if (pps === 6) {
-      cols = orientation === 'landscape' ? 3 : 2;
-      rows = orientation === 'landscape' ? 2 : 3;
-    } else if (pps > 1) {
-      cols = Math.ceil(Math.sqrt(pps));
-      rows = Math.ceil(pps / cols);
-    }
-
-    const cellW = sW / cols;
-    const cellH = sH / rows;
-    let curPage;
-    for (let i = 0; i < pages.length; i++) {
-      if (i % pps === 0) curPage = final.addPage([sW, sH]);
-      const emb = await final.embedPage(pages[i]);
-      const rot = (cellW > cellH && emb.width < emb.height) || (cellW < cellH && emb.width > emb.height);
-      const dW = rot ? emb.height : emb.width;
-      const dH = rot ? emb.width : emb.height;
-      const scale = Math.min((cellW - 10) / dW, (cellH - 10) / dH);
-      const x = (i % pps % cols) * cellW + (cellW - dW * scale) / 2;
-      const y = sH - (Math.floor(i % pps / cols) + 1) * cellH + (cellH - dH * scale) / 2;
-
-      curPage.drawPage(emb, {
-        x: x + (rot ? dH * scale : 0),
-        y,
-        width: emb.width * scale,
-        height: emb.height * scale,
-        rotate: rot ? degrees(90) : degrees(0),
-      });
-    }
-    pdfDoc = final;
-  }
-  fs.writeFileSync(filePath, await pdfDoc.save());
+  fs.writeFileSync(filePath, await final.save());
 }
 
 app.post('/print', upload.single('document'), async (req, res) => {
@@ -226,6 +235,7 @@ app.post('/print', upload.single('document'), async (req, res) => {
   let fPath = req.file ? req.file.path : '';
   const mimeType = req.file ? req.file.mimetype : '';
   const originalName = req.file ? req.file.originalname : '';
+  const options = sanitizePrintOptions(req.body);
 
   try {
     if (!fPath || !fs.existsSync(fPath)) throw new Error('File dokumen tidak ditemukan.');
@@ -233,16 +243,16 @@ app.post('/print', upload.single('document'), async (req, res) => {
 
     if ((mimeType && mimeType.includes('image')) || /\.(jpg|jpeg|png)$/i.test(originalName)) {
       updateStatus('Menyesuaikan Gambar ke Kertas...', 'processing');
-      fPath = await convertImageToPdf(fPath, mimeType, originalName, req.body.orientation);
+      fPath = await convertImageToPdf(fPath, mimeType, originalName, options.paperSize, options.orientation);
     }
 
-    await processPdf(fPath, req.body.pages, req.body.orientation, parseInt(req.body.pagesPerSheet, 10) || 1);
+    await processPdf(fPath, options.pages, options.paperSize, options.orientation, options.pagesPerSheet);
 
     const opts = {
-      printer: req.body.printerName,
-      monochrome: req.body.colorMode === 'monochrome',
-      copies: parseInt(req.body.copies, 10) || 1,
-      paperSize: req.body.paperSize === 'F4' ? '210x330mm' : 'A4',
+      printer: options.printerName,
+      monochrome: options.colorMode === 'monochrome',
+      copies: options.copies,
+      paperSize: options.paperSize === 'F4' ? '210x330mm' : 'A4',
     };
 
     updateStatus('Mencetak ke mesin fisik...', 'printing');
@@ -259,4 +269,4 @@ app.post('/print', upload.single('document'), async (req, res) => {
   }
 });
 
-server.listen(port, '0.0.0.0', () => console.log(`Print Server V4.5.5 Ready on ${port}`));
+server.listen(port, '0.0.0.0', () => console.log(`Print Server V4.5.7 Ready on ${port}`));

@@ -1,7 +1,7 @@
 {
   "name": "print-server-v456",
-  "version": "4.5.6",
-  "description": "Hosted local print server with manual subnet scan and lightweight PWA",
+  "version": "4.5.7",
+  "description": "Print Server with refined print settings",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
