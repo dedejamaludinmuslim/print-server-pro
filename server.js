@@ -151,7 +151,9 @@ async function convertImageToPdf(imagePath, mimeType, originalName, paperSize, o
   const centerX = pageSize.width / 2;
   const centerY = pageSize.height / 2;
   page.drawImage(image, {
-    x: shouldRotate ? centerX - drawH / 2 : centerX - drawW / 2,
+    // pdf-lib rotates around the image's lower-left origin, so the x/y compensation
+    // for 90deg rotation must differ from the non-rotated case to stay centered.
+    x: shouldRotate ? centerX + drawH / 2 : centerX - drawW / 2,
     y: shouldRotate ? centerY - drawW / 2 : centerY - drawH / 2,
     width: drawW,
     height: drawH,
@@ -171,7 +173,7 @@ app.get('/ping', (req, res) => {
     hostname: os.hostname(),
     ipHint: localIps[0] || '',
     localIps,
-    version: '4.5.7',
+    version: '4.5.7-imagefix',
   });
 });
 
