@@ -173,7 +173,7 @@ app.get('/ping', (req, res) => {
     hostname: os.hostname(),
     ipHint: localIps[0] || '',
     localIps,
-    version: '4.5.7-printfix',
+    version: '4.5.7-driverfix',
   });
 });
 
@@ -251,13 +251,16 @@ app.post('/print', upload.single('document'), async (req, res) => {
     await processPdf(fPath, options.pages, options.paperSize, options.orientation, options.pagesPerSheet);
 
     const opts = {
-      printer: options.printerName,
-      monochrome: options.colorMode === 'monochrome',
-      copies: options.copies,
-      paperSize: options.paperSize === 'F4' ? '210x330mm' : 'A4',
-      orientation: options.orientation,
-      scale: 'noscale',
-    };
+            printer: options.printerName,
+            monochrome: options.colorMode === 'monochrome',
+            copies: options.copies,
+            paperSize: options.paperSize === 'F4' ? '210x330mm' : 'A4',
+            // orientation sengaja tidak diteruskan ke driver print karena
+            // layout final sudah dibentuk di preprocessing backend.
+            // Mengirim orientation lagi ke driver bisa menyebabkan rotasi ganda
+            // dan pergeseran/clip area cetak.
+            scale: 'shrink'
+        };
 
     updateStatus('Mencetak ke mesin fisik...', 'printing');
     await ptp.print(fPath, opts);
