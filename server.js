@@ -173,7 +173,7 @@ app.get('/ping', (req, res) => {
     hostname: os.hostname(),
     ipHint: localIps[0] || '',
     localIps,
-    version: '4.5.7-imagefix',
+    version: '4.5.7-printfix',
   });
 });
 
@@ -255,6 +255,8 @@ app.post('/print', upload.single('document'), async (req, res) => {
       monochrome: options.colorMode === 'monochrome',
       copies: options.copies,
       paperSize: options.paperSize === 'F4' ? '210x330mm' : 'A4',
+      orientation: options.orientation,
+      scale: 'noscale',
     };
 
     updateStatus('Mencetak ke mesin fisik...', 'printing');
