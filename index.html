@@ -9,6 +9,7 @@
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';</script>
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         :root {
@@ -127,6 +128,10 @@
                 </div>
                 <div style="padding: 20px; border-top: 1px solid var(--border-soft); background: white;">
                     <button id="printBtn" class="btn-block" onclick="showPinModal()">🚀 GASSS CETAK !!!</button>
+                    <button id="compatPrintBtn" class="btn-block" style="margin-top:10px; background:#334155; display:none;" onclick="showPinModal(true)">🖼️ Cetak Mode Kompatibilitas PDF</button>
+                    <div id="compatHint" style="display:none; margin-top:8px; font-size:11px; color:var(--text-muted); line-height:1.4;">
+                        Jika PDF gagal dicetak normal, aplikasi akan otomatis mencoba mode ini. Tombol ini tetap bisa dipakai manual.
+                    </div>
                 </div>
             </div>
         </div>
@@ -174,7 +179,7 @@
             <input type="password" id="modalPinInput" class="input-standard" maxlength="6" inputmode="numeric" style="font-size:32px; letter-spacing:10px; text-align:center; padding:15px; margin-bottom: 20px;">
             <div style="display:flex; gap:10px;">
                 <button class="btn-block secondary" onclick="closePinModal()">Batal</button>
-                <button class="btn-block" onclick="confirmAndPrint()">Cetak</button>
+                <button class="btn-block" onclick="confirmAndPrint(pendingCompatibilityPrint)">Cetak</button>
             </div>
         </div>
     </div>
@@ -365,9 +370,11 @@
         }
         function cancelConfigModal() { Object.keys(appliedConfig).forEach(k => document.getElementById(k).value = appliedConfig[k]); document.getElementById('configModal').style.display='none'; }
         function applyConfigModal() { document.getElementById('configModal').style.display='none'; currentPreviewSheet = 0; updateDynamicPreview(); showToast('Tersimpan', 'success'); }
-        function showPinModal() {
+        let pendingCompatibilityPrint = false;
+        function showPinModal(useCompatibilityMode = false) {
             if(!document.getElementById('fileInput').files[0]) return showToast('Pilih file dokumen terlebih dahulu!', 'error');
             if (!validatePrintSettings(true)) return;
+            pendingCompatibilityPrint = Boolean(useCompatibilityMode);
             document.getElementById('pinModal').style.display='flex';
             setTimeout(() => document.getElementById('modalPinInput').focus(), 100);
         }
@@ -472,6 +479,7 @@
                 sel.value = '';
                 sel.disabled = false;
                 setConnectionStatus('connected', `Server terhubung: ${ip}`);
+                sessionStorage.setItem('activePrintServerIp', ip);
                 showToast(`Printer Server ${ip} siap!`, 'success');
             } catch (e) {
                 sel.innerHTML = '<option value="">⚠️ Gagal terhubung</option>';
@@ -479,13 +487,67 @@
                 setConnectionStatus('failed', `Gagal terhubung ke ${ip}`);
             }
         }
-        async function confirmAndPrint() {
-            const pin = document.getElementById('modalPinInput').value;
-            closePinModal();
-            const ip = document.getElementById('ipAddress').value.trim();
-            const fileObj = document.getElementById('fileInput').files[0];
-            if (!fileObj || !ip) return;
-            if (!validatePrintSettings(true)) return;
+        
+        function getSelectedPdfPages(totalPages) {
+            const raw = (document.getElementById('pages').value || '').trim();
+            if (!raw) return Array.from({ length: totalPages }, (_, i) => i + 1);
+            const parsed = parsePagesInput(raw);
+            if (!parsed.ok || !parsed.normalized) return Array.from({ length: totalPages }, (_, i) => i + 1);
+            const selected = [];
+            parsed.normalized.split(',').forEach(part => {
+                if (part.includes('-')) {
+                    let [a, b] = part.split('-').map(n => parseInt(n, 10));
+                    if (a > b) [a, b] = [b, a];
+                    for (let n = a; n <= b; n += 1) if (n >= 1 && n <= totalPages) selected.push(n);
+                } else {
+                    const n = parseInt(part, 10);
+                    if (n >= 1 && n <= totalPages) selected.push(n);
+                }
+            });
+            return [...new Set(selected)];
+        }
+
+        async function buildCompatibilityPdfFromCurrentPdf() {
+            if (!currentPdfDoc || !window.PDFLib) {
+                throw new Error('Mode kompatibilitas belum siap. Pastikan file PDF sudah tampil di preview dan koneksi internet tersedia untuk memuat PDF-lib.');
+            }
+            const { PDFDocument } = window.PDFLib;
+            const outPdf = await PDFDocument.create();
+            const selectedPages = getSelectedPdfPages(currentPdfDoc.numPages);
+            if (selectedPages.length > 120) {
+                const ok = confirm(`Mode kompatibilitas akan merender ${selectedPages.length} halaman. Proses bisa lama. Lanjutkan?`);
+                if (!ok) throw new Error('Dibatalkan pengguna.');
+            }
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d', { alpha: false });
+            const renderScale = 1.6;
+            document.getElementById('realtimeStatus').style.display='block';
+            for (let idx = 0; idx < selectedPages.length; idx += 1) {
+                const pageNumber = selectedPages[idx];
+                document.getElementById('statusMessage').innerText = `Mode kompatibilitas: merender halaman ${idx + 1}/${selectedPages.length}...`;
+                document.getElementById('progressBar').style.width = `${Math.round((idx / selectedPages.length) * 65)}%`;
+                const page = await currentPdfDoc.getPage(pageNumber);
+                const vp = page.getViewport({ scale: renderScale });
+                canvas.width = Math.ceil(vp.width);
+                canvas.height = Math.ceil(vp.height);
+                ctx.fillStyle = 'white';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                await page.render({ canvasContext: ctx, viewport: vp }).promise;
+                const jpgDataUrl = canvas.toDataURL('image/jpeg', 0.82);
+                const jpgBytes = await fetch(jpgDataUrl).then(r => r.arrayBuffer());
+                const jpg = await outPdf.embedJpg(jpgBytes);
+                const baseVp = page.getViewport({ scale: 1 });
+                const pdfPage = outPdf.addPage([baseVp.width, baseVp.height]);
+                pdfPage.drawImage(jpg, { x: 0, y: 0, width: baseVp.width, height: baseVp.height });
+                if (idx % 3 === 2) await new Promise(r => setTimeout(r, 0));
+            }
+            document.getElementById('statusMessage').innerText = 'Mode kompatibilitas: menyiapkan file cetak...';
+            document.getElementById('progressBar').style.width = '70%';
+            const bytes = await outPdf.save();
+            return new File([bytes], 'compatibility-print.pdf', { type: 'application/pdf' });
+        }
+
+async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false) {
             const fd = new FormData();
             fd.append('document', fileObj);
             fd.append('pin', pin);
@@ -495,31 +557,112 @@
             fd.append('orientation', document.getElementById('orientation').value);
             fd.append('pagesPerSheet', document.getElementById('pagesPerSheet').value);
             fd.append('copies', document.getElementById('copies').value);
-            fd.append('pages', document.getElementById('pages').value);
+            fd.append('pages', useCompatibilityMode ? '' : document.getElementById('pages').value);
+            return await fetchWithRetry(`http://${ip}:3000/print`, { method: 'POST', body: fd }, 1, 400);
+        }
+
+        function resetAfterSuccessfulPrint(ip, printedName) {
+            sessionStorage.setItem('activePrintServerIp', ip);
+            saveHistory(printedName);
+            showToast('Berhasil dicetak', 'success');
+            document.getElementById('fileInput').value = '';
+            currentPdfDoc = null; currentImgSrc = null; currentPreviewSheet = 0;
+            document.getElementById('compatPrintBtn').style.display = 'none';
+            document.getElementById('compatHint').style.display = 'none';
+            updateDynamicPreview();
+        }
+
+        async function buildCompatibilityFileOrThrow() {
+            if (!currentPdfDoc) {
+                throw new Error('Mode kompatibilitas hanya untuk PDF yang sudah tampil di preview.');
+            }
+            return await buildCompatibilityPdfFromCurrentPdf();
+        }
+
+        async function confirmAndPrint(useCompatibilityMode = false) {
+            const pin = document.getElementById('modalPinInput').value;
+            closePinModal();
+            const ip = document.getElementById('ipAddress').value.trim();
+            const originalFile = document.getElementById('fileInput').files[0];
+            if (!originalFile || !ip) return;
+            if (!validatePrintSettings(true)) return;
+
             try {
-                const r = await fetchWithRetry(`http://${ip}:3000/print`, { method: 'POST', body: fd }, 1, 400);
-                if (r.ok) {
-                    saveHistory(fileObj.name);
-                    showToast('Berhasil dicetak', 'success');
-                    document.getElementById('fileInput').value = '';
-                    currentPdfDoc = null; currentImgSrc = null; currentPreviewSheet = 0;
-                    updateDynamicPreview();
-                } else {
-                    showToast(await r.text(), 'error');
+                let fileToPrint = originalFile;
+
+                if (useCompatibilityMode) {
+                    fileToPrint = await buildCompatibilityFileOrThrow();
                 }
-            } catch (_) {
-                showToast('Gagal koneksi ke Server', 'error');
+
+                const r = await submitPrintRequest(ip, pin, fileToPrint, useCompatibilityMode);
+
+                if (r.ok) {
+                    resetAfterSuccessfulPrint(ip, originalFile.name);
+                    return;
+                }
+
+                const errText = await r.text();
+                console.error('Print failed:', r.status, errText);
+
+                const canAutoFallback = !useCompatibilityMode && currentPdfDoc;
+                if (canAutoFallback) {
+                    showToast('Cetak normal gagal. Mencoba otomatis Mode Kompatibilitas PDF...', 'info');
+                    document.getElementById('realtimeStatus').style.display='block';
+                    document.getElementById('statusMessage').innerText = 'Cetak normal gagal. Menyiapkan Mode Kompatibilitas PDF...';
+                    document.getElementById('progressBar').style.width = '5%';
+
+                    const compatibilityFile = await buildCompatibilityFileOrThrow();
+                    const retry = await submitPrintRequest(ip, pin, compatibilityFile, true);
+
+                    if (retry.ok) {
+                        resetAfterSuccessfulPrint(ip, originalFile.name + ' (Mode Kompatibilitas)');
+                        return;
+                    }
+
+                    const retryErr = await retry.text();
+                    console.error('Compatibility print failed:', retry.status, retryErr);
+                    showToast(retryErr || `Mode kompatibilitas juga gagal. Kode: ${retry.status}`, 'error');
+                    return;
+                }
+
+                showToast(errText || `Gagal cetak. Kode: ${r.status}`, 'error');
+            } catch (err) {
+                console.error('Print connection/error:', err);
+                const canAutoFallback = !useCompatibilityMode && currentPdfDoc && !String(err.message || '').includes('Mode kompatibilitas');
+                if (canAutoFallback) {
+                    try {
+                        showToast('Koneksi cetak normal gagal. Mencoba Mode Kompatibilitas PDF...', 'info');
+                        const compatibilityFile = await buildCompatibilityFileOrThrow();
+                        const retry = await submitPrintRequest(ip, pin, compatibilityFile, true);
+                        if (retry.ok) {
+                            resetAfterSuccessfulPrint(ip, originalFile.name + ' (Mode Kompatibilitas)');
+                            return;
+                        }
+                        const retryErr = await retry.text();
+                        showToast(retryErr || `Mode kompatibilitas juga gagal. Kode: ${retry.status}`, 'error');
+                        return;
+                    } catch (fallbackErr) {
+                        console.error('Auto compatibility fallback failed:', fallbackErr);
+                        showToast(fallbackErr.message || 'Mode kompatibilitas otomatis gagal.', 'error');
+                        return;
+                    }
+                }
+                showToast(err.message || 'Gagal koneksi ke Server. Cek server/ukuran file/firewall.', 'error');
             }
         }
         document.getElementById('fileInput').addEventListener('change', async function(e) {
             const file = e.target.files[0];
-            if (!file) { currentPdfDoc = null; currentImgSrc = null; updateDynamicPreview(); return; }
+            if (!file) { currentPdfDoc = null; currentImgSrc = null; document.getElementById('compatPrintBtn').style.display = 'none'; document.getElementById('compatHint').style.display = 'none'; updateDynamicPreview(); return; }
             currentPreviewSheet = 0;
             const reader = new FileReader();
             if (file.type === 'application/pdf') {
+                document.getElementById('compatPrintBtn').style.display = 'flex';
+                document.getElementById('compatHint').style.display = 'block';
                 reader.onload = async function() { currentPdfDoc = await pdfjsLib.getDocument(new Uint8Array(this.result)).promise; currentImgSrc = null; updateDynamicPreview(); };
                 reader.readAsArrayBuffer(file);
             } else {
+                document.getElementById('compatPrintBtn').style.display = 'none';
+                document.getElementById('compatHint').style.display = 'none';
                 reader.onload = function(evt) { currentImgSrc = evt.target.result; currentPdfDoc = null; updateDynamicPreview(); };
                 reader.readAsDataURL(file);
             }
@@ -616,6 +759,16 @@
                 });
             }
         }
+        function restoreActiveServerFromSession() {
+            const ip = sessionStorage.getItem('activePrintServerIp');
+            if (!ip) return;
+            const ipInput = document.getElementById('ipAddress');
+            if (!ipInput.value.trim()) {
+                ipInput.value = ip;
+                updateIpAndFetchPrinters();
+            }
+        }
+
         ['copies', 'pages', 'pagesPerSheet', 'paperSize', 'orientation'].forEach((id) => {
             const el = document.getElementById(id);
             const eventName = id === 'pages' ? 'blur' : 'change';
@@ -625,7 +778,7 @@
                 updateDynamicPreview();
             });
         });
-        window.addEventListener('load', () => { loadHistory(); setupPwaInstall(); validatePrintSettings(false); });
+        window.addEventListener('load', () => { loadHistory(); setupPwaInstall(); validatePrintSettings(false); restoreActiveServerFromSession(); });
     </script>
 </body>
 </html>

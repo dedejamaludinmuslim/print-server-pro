@@ -13,6 +13,10 @@ const app = express();
 const server = http.createServer(app);
 const port = 3000;
 const APP_PIN = process.env.APP_PIN || '4545';
+const MAX_UPLOAD_MB = Math.min(500, Math.max(1, parseInt(process.env.MAX_UPLOAD_MB || '200', 10) || 200));
+const LARGE_PDF_THRESHOLD_PAGES = Math.max(1, parseInt(process.env.LARGE_PDF_THRESHOLD_PAGES || '30', 10) || 30);
+const LARGE_PDF_THRESHOLD_MB = Math.max(1, parseInt(process.env.LARGE_PDF_THRESHOLD_MB || '25', 10) || 25);
+const LARGE_PDF_CHUNK_PAGES = Math.max(1, parseInt(process.env.LARGE_PDF_CHUNK_PAGES || '15', 10) || 15);
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'https://printer-upmp.vercel.app,http://127.0.0.1:5500,http://localhost:5500')
   .split(',')
   .map(v => v.trim())
@@ -64,7 +68,8 @@ app.use(express.static(__dirname));
 
 const uploadDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
-const upload = multer({ dest: uploadDir, limits: { fileSize: 25 * 1024 * 1024 } });
+const upload = multer({ dest: uploadDir, limits: { fileSize: MAX_UPLOAD_MB * 1024 * 1024 } });
+const uploadDocument = upload.single('document');
 
 function getLocalIpList() {
   const nets = os.networkInterfaces();
@@ -83,6 +88,7 @@ function updateStatus(message, type = 'info') {
 
 const SUPPORTED_PPS = new Set([1, 2, 4, 6, 9, 16]);
 const MAX_COPIES = 50;
+const PREVIEW_PADDING_RATIO = 0.04; // sinkron dengan preview: 40px dari canvas tinggi 1000px
 const PAPER_DIMENSIONS = {
   A4: { portrait: { width: 595.28, height: 841.89 }, landscape: { width: 841.89, height: 595.28 } },
   F4: { portrait: { width: 595.28, height: 935.43 }, landscape: { width: 935.43, height: 595.28 } },
@@ -128,37 +134,61 @@ function sanitizePrintOptions(body) {
   return { orientation, paperSize, colorMode, copies, pagesPerSheet, pages: String(body.pages || '').trim(), printerName: body.printerName || '' };
 }
 
-async function convertImageToPdf(imagePath, mimeType, originalName, paperSize, orientation) {
+async function loadEmbeddedImage(pdfDoc, imagePath, mimeType, originalName) {
   const imgBytes = fs.readFileSync(imagePath);
-  const pdfDoc = await PDFDocument.create();
-  let image;
   const isPng = (mimeType && mimeType.includes('png')) || (originalName && originalName.toLowerCase().endsWith('.png'));
   try {
-    if (isPng) image = await pdfDoc.embedPng(imgBytes);
-    else image = await pdfDoc.embedJpg(imgBytes);
+    if (isPng) return await pdfDoc.embedPng(imgBytes);
+    return await pdfDoc.embedJpg(imgBytes);
   } catch (e) {
-    try { image = await pdfDoc.embedJpg(imgBytes); }
-    catch (_) { image = await pdfDoc.embedPng(imgBytes); }
+    try { return await pdfDoc.embedJpg(imgBytes); }
+    catch (_) { return await pdfDoc.embedPng(imgBytes); }
   }
-  const pageSize = getPaperSizeConfig(paperSize, orientation);
-  const page = pdfDoc.addPage([pageSize.width, pageSize.height]);
-  const shouldRotate = (pageSize.width > pageSize.height && image.width < image.height) || (pageSize.width < pageSize.height && image.width > image.height);
+}
+
+function getCellPadding(outputSize, cellW, cellH) {
+  const preferred = outputSize.height * PREVIEW_PADDING_RATIO;
+  return Math.max(6, Math.min(preferred, cellW * 0.35, cellH * 0.35));
+}
+
+function drawImageInPdfCell(page, image, cellX, cellY, cellW, cellH, padding) {
+  const shouldRotate = (cellW > cellH && image.width < image.height) || (cellW < cellH && image.width > image.height);
   const targetW = shouldRotate ? image.height : image.width;
   const targetH = shouldRotate ? image.width : image.height;
-  const scale = Math.min((pageSize.width - 40) / targetW, (pageSize.height - 40) / targetH);
+  const scale = Math.min((cellW - padding) / targetW, (cellH - padding) / targetH);
   const drawW = image.width * scale;
   const drawH = image.height * scale;
-  const centerX = pageSize.width / 2;
-  const centerY = pageSize.height / 2;
+  const centerX = cellX + cellW / 2;
+  const centerY = cellY + cellH / 2;
   page.drawImage(image, {
-    // pdf-lib rotates around the image's lower-left origin, so the x/y compensation
-    // for 90deg rotation must differ from the non-rotated case to stay centered.
+    // Untuk rotasi 90°, pdf-lib memutar dari titik origin kiri-bawah.
+    // Kompensasi ini membuat bounding box hasil rotasi tetap berada di tengah sel,
+    // sama seperti preview canvas di frontend.
     x: shouldRotate ? centerX + drawH / 2 : centerX - drawW / 2,
     y: shouldRotate ? centerY - drawW / 2 : centerY - drawH / 2,
     width: drawW,
     height: drawH,
     rotate: shouldRotate ? degrees(90) : degrees(0),
   });
+}
+
+async function convertImageToPdf(imagePath, mimeType, originalName, paperSize, orientation, pps) {
+  const pdfDoc = await PDFDocument.create();
+  const image = await loadEmbeddedImage(pdfDoc, imagePath, mimeType, originalName);
+  const outputSize = getPaperSizeConfig(paperSize, orientation);
+  const { cols, rows } = getGrid(pps, orientation);
+  const page = pdfDoc.addPage([outputSize.width, outputSize.height]);
+  const cellW = outputSize.width / cols;
+  const cellH = outputSize.height / rows;
+  const padding = getCellPadding(outputSize, cellW, cellH);
+
+  // Gambar tunggal ditempatkan langsung pada layout final.
+  // Ini menghindari bug lama: gambar dibungkus jadi PDF full-page dulu,
+  // lalu full-page PDF itu dikecilkan lagi pada mode Hal/Lembar.
+  const cellX = 0;
+  const cellY = outputSize.height - cellH;
+  drawImageInPdfCell(page, image, cellX, cellY, cellW, cellH, padding);
+
   const pdfBytes = await pdfDoc.save();
   const newPdfPath = imagePath + '_converted.pdf';
   fs.writeFileSync(newPdfPath, pdfBytes);
@@ -173,7 +203,7 @@ app.get('/ping', (req, res) => {
     hostname: os.hostname(),
     ipHint: localIps[0] || '',
     localIps,
-    version: '4.5.7-driverfix',
+    version: '4.5.7-syncfix',
   });
 });
 
@@ -186,6 +216,17 @@ app.get('/connection-info', (req, res) => {
   });
 });
 
+app.get('/limits', (req, res) => {
+  res.json({
+    maxUploadMb: MAX_UPLOAD_MB,
+    largePdfThresholdPages: LARGE_PDF_THRESHOLD_PAGES,
+    largePdfThresholdMb: LARGE_PDF_THRESHOLD_MB,
+    largePdfChunkPages: LARGE_PDF_CHUNK_PAGES,
+    supportedFileTypes: ['pdf', 'png', 'jpg', 'jpeg'],
+    version: '4.5.12',
+  });
+});
+
 app.get('/printers', async (req, res) => {
   try {
     res.json(await ptp.getPrinters());
@@ -193,6 +234,12 @@ app.get('/printers', async (req, res) => {
     res.status(500).send('Gagal');
   }
 });
+
+function shouldProcessPdf(options) {
+  // Untuk PDF panjang, jangan layout ulang bila pengaturan masih standar.
+  // Ini mengurangi risiko gagal pada file puluhan/ratusan halaman.
+  return Boolean(options.pages) || options.pagesPerSheet !== 1 || options.orientation !== 'portrait';
+}
 
 async function processPdf(filePath, pagesInput, paperSize, orientation, pps) {
   const bytes = fs.readFileSync(filePath);
@@ -210,6 +257,7 @@ async function processPdf(filePath, pagesInput, paperSize, orientation, pps) {
   const final = await PDFDocument.create();
   const cellW = outputSize.width / cols;
   const cellH = outputSize.height / rows;
+  const padding = getCellPadding(outputSize, cellW, cellH);
   let curPage;
   for (let i = 0; i < pages.length; i += 1) {
     if (i % safePps === 0) curPage = final.addPage([outputSize.width, outputSize.height]);
@@ -217,11 +265,11 @@ async function processPdf(filePath, pagesInput, paperSize, orientation, pps) {
     const rot = (cellW > cellH && emb.width < emb.height) || (cellW < cellH && emb.width > emb.height);
     const dW = rot ? emb.height : emb.width;
     const dH = rot ? emb.width : emb.height;
-    const scale = Math.min((cellW - 10) / dW, (cellH - 10) / dH);
+    const scale = Math.min((cellW - padding) / dW, (cellH - padding) / dH);
     const x = (i % safePps % cols) * cellW + (cellW - dW * scale) / 2;
     const y = outputSize.height - (Math.floor(i % safePps / cols) + 1) * cellH + (cellH - dH * scale) / 2;
     curPage.drawPage(emb, {
-      x: x + (rot ? dH * scale : 0),
+      x: x + (rot ? dW * scale : 0),
       y,
       width: emb.width * scale,
       height: emb.height * scale,
@@ -231,44 +279,152 @@ async function processPdf(filePath, pagesInput, paperSize, orientation, pps) {
   fs.writeFileSync(filePath, await final.save());
 }
 
-app.post('/print', upload.single('document'), async (req, res) => {
+
+
+async function getPdfPageCount(filePath) {
+  const bytes = fs.readFileSync(filePath);
+  const pdfDoc = await PDFDocument.load(bytes, { ignoreEncryption: true });
+  return pdfDoc.getPageCount();
+}
+
+function getFileSizeMb(filePath) {
+  try {
+    return fs.statSync(filePath).size / (1024 * 1024);
+  } catch (_) {
+    return 0;
+  }
+}
+
+async function splitPdfToChunkFiles(filePath, chunkSize) {
+  const bytes = fs.readFileSync(filePath);
+  const sourceDoc = await PDFDocument.load(bytes, { ignoreEncryption: true });
+  const totalPages = sourceDoc.getPageCount();
+  const chunks = [];
+
+  for (let start = 0; start < totalPages; start += chunkSize) {
+    const end = Math.min(start + chunkSize, totalPages);
+    const outDoc = await PDFDocument.create();
+    const indices = [];
+    for (let i = start; i < end; i += 1) indices.push(i);
+    const copied = await outDoc.copyPages(sourceDoc, indices);
+    copied.forEach(page => outDoc.addPage(page));
+
+    const outPath = `${filePath}_chunk_${start + 1}-${end}.pdf`;
+    fs.writeFileSync(outPath, await outDoc.save());
+    chunks.push({ path: outPath, start: start + 1, end, totalPages });
+  }
+
+  return chunks;
+}
+
+async function printPdfInChunks(filePath, opts, chunkSize) {
+  const chunks = await splitPdfToChunkFiles(filePath, chunkSize);
+  const cleanup = chunks.map(c => c.path);
+
+  try {
+    for (let i = 0; i < chunks.length; i += 1) {
+      const chunk = chunks[i];
+      updateStatus(
+        `Mencetak bagian ${i + 1}/${chunks.length} halaman ${chunk.start}-${chunk.end} dari ${chunk.totalPages}...`,
+        'printing'
+      );
+      await ptp.print(chunk.path, opts);
+    }
+  } finally {
+    cleanup.forEach(p => {
+      try { if (p && fs.existsSync(p)) fs.unlinkSync(p); } catch (_) {}
+    });
+  }
+}
+
+function preserveUploadedExtension(filePath, originalName) {
+  const ext = path.extname(originalName || '').toLowerCase();
+  const allowed = new Set(['.pdf', '.png', '.jpg', '.jpeg']);
+  if (!filePath || !fs.existsSync(filePath) || !allowed.has(ext)) return filePath;
+  if (path.extname(filePath).toLowerCase() === ext) return filePath;
+  const target = `${filePath}${ext}`;
+  try {
+    fs.renameSync(filePath, target);
+    return target;
+  } catch (_) {
+    try {
+      fs.copyFileSync(filePath, target);
+      fs.unlinkSync(filePath);
+      return target;
+    } catch (_) {
+      return filePath;
+    }
+  }
+}
+
+app.post('/print',
+  (req, res, next) => {
+    uploadDocument(req, res, (err) => {
+      if (!err) return next();
+      const message = err.code === 'LIMIT_FILE_SIZE'
+        ? `Ukuran file melebihi batas ${MAX_UPLOAD_MB} MB. Kompres file atau naikkan MAX_UPLOAD_MB di environment.`
+        : `Upload gagal: ${err.message}`;
+      updateStatus(`Gagal: ${message}`, 'error');
+      return res.status(err.code === 'LIMIT_FILE_SIZE' ? 413 : 400).send(message);
+    });
+  },
+  async (req, res) => {
   if (req.body.pin !== APP_PIN) return res.status(401).send('PIN Salah!');
 
   let fPath = req.file ? req.file.path : '';
   const mimeType = req.file ? req.file.mimetype : '';
   const originalName = req.file ? req.file.originalname : '';
   const options = sanitizePrintOptions(req.body);
+  fPath = preserveUploadedExtension(fPath, originalName);
 
   try {
     if (!fPath || !fs.existsSync(fPath)) throw new Error('File dokumen tidak ditemukan.');
     updateStatus('Memproses dokumen...', 'processing');
 
-    if ((mimeType && mimeType.includes('image')) || /\.(jpg|jpeg|png)$/i.test(originalName)) {
+    const isImageFile = (mimeType && mimeType.includes('image')) || /\.(jpg|jpeg|png)$/i.test(originalName);
+    const isPdfFile = (mimeType && mimeType.includes('pdf')) || /\.pdf$/i.test(originalName) || /\.pdf$/i.test(fPath);
+    let pdfPageCount = 0;
+    let pdfSizeMb = getFileSizeMb(fPath);
+    let shouldChunkPdf = false;
+
+    if (isImageFile) {
       updateStatus('Menyesuaikan Gambar ke Kertas...', 'processing');
-      fPath = await convertImageToPdf(fPath, mimeType, originalName, options.paperSize, options.orientation);
+      fPath = await convertImageToPdf(fPath, mimeType, originalName, options.paperSize, options.orientation, options.pagesPerSheet);
+    } else if (isPdfFile && shouldProcessPdf(options)) {
+      await processPdf(fPath, options.pages, options.paperSize, options.orientation, options.pagesPerSheet);
+      pdfPageCount = await getPdfPageCount(fPath);
+      pdfSizeMb = getFileSizeMb(fPath);
+      shouldChunkPdf = pdfPageCount >= LARGE_PDF_THRESHOLD_PAGES || pdfSizeMb >= LARGE_PDF_THRESHOLD_MB;
+    } else if (isPdfFile) {
+      pdfPageCount = await getPdfPageCount(fPath);
+      pdfSizeMb = getFileSizeMb(fPath);
+      shouldChunkPdf = pdfPageCount >= LARGE_PDF_THRESHOLD_PAGES || pdfSizeMb >= LARGE_PDF_THRESHOLD_MB;
+      updateStatus(`PDF asli: ${pdfPageCount} halaman, ${pdfSizeMb.toFixed(1)} MB. ${shouldChunkPdf ? 'Akan dicetak per bagian.' : 'Akan dikirim langsung.'}`, 'processing');
+    } else {
+      throw new Error('Format file tidak didukung. Gunakan PDF, JPG, JPEG, atau PNG.');
     }
 
-    await processPdf(fPath, options.pages, options.paperSize, options.orientation, options.pagesPerSheet);
-
     const opts = {
-            printer: options.printerName,
-            monochrome: options.colorMode === 'monochrome',
-            copies: options.copies,
-            paperSize: options.paperSize === 'F4' ? '210x330mm' : 'A4',
-            // orientation sengaja tidak diteruskan ke driver print karena
-            // layout final sudah dibentuk di preprocessing backend.
-            // Mengirim orientation lagi ke driver bisa menyebabkan rotasi ganda
-            // dan pergeseran/clip area cetak.
-            scale: 'shrink'
-        };
+      printer: options.printerName,
+      monochrome: options.colorMode === 'monochrome',
+      copies: options.copies,
+      paperSize: options.paperSize === 'F4' ? '210x330mm' : 'A4',
+      scale: 'shrink',
+    };
 
-    updateStatus('Mencetak ke mesin fisik...', 'printing');
-    await ptp.print(fPath, opts);
+    if (isPdfFile && shouldChunkPdf) {
+      updateStatus(`PDF besar terdeteksi. Mencetak per ${LARGE_PDF_CHUNK_PAGES} halaman agar spooler/printer lebih stabil...`, 'printing');
+      await printPdfInChunks(fPath, opts, LARGE_PDF_CHUNK_PAGES);
+    } else {
+      updateStatus('Mencetak ke mesin fisik...', 'printing');
+      await ptp.print(fPath, opts);
+    }
     updateStatus('Cetak Sukses!', 'success');
     res.send('OK');
   } catch (e) {
+    console.error('[PRINT ERROR]', e);
     updateStatus(`Gagal: ${e.message}`, 'error');
-    res.status(500).send(e.message);
+    res.status(500).send(`PRINT_FAILED: ${e.message}`);
   } finally {
     if (fPath && fs.existsSync(fPath)) {
       try { fs.unlinkSync(fPath); } catch (_) {}
@@ -276,4 +432,8 @@ app.post('/print', upload.single('document'), async (req, res) => {
   }
 });
 
-server.listen(port, '0.0.0.0', () => console.log(`Print Server V4.5.7 Ready on ${port}`));
+server.requestTimeout = 0;
+server.headersTimeout = 0;
+server.timeout = 0;
+
+server.listen(port, '0.0.0.0', () => console.log(`Print Server V4.5.12 Ready on ${port}`));
