@@ -8,6 +8,8 @@ const os = require('os');
 const { PDFDocument, degrees } = require('pdf-lib');
 const { Server } = require('socket.io');
 const http = require('http');
+const { spawn } = require('child_process');
+const crypto = require('crypto');
 
 const app = express();
 const server = http.createServer(app);
@@ -17,6 +19,8 @@ const MAX_UPLOAD_MB = Math.min(500, Math.max(1, parseInt(process.env.MAX_UPLOAD_
 const LARGE_PDF_THRESHOLD_PAGES = Math.max(1, parseInt(process.env.LARGE_PDF_THRESHOLD_PAGES || '30', 10) || 30);
 const LARGE_PDF_THRESHOLD_MB = Math.max(1, parseInt(process.env.LARGE_PDF_THRESHOLD_MB || '25', 10) || 25);
 const LARGE_PDF_CHUNK_PAGES = Math.max(1, parseInt(process.env.LARGE_PDF_CHUNK_PAGES || '15', 10) || 15);
+const DOCX_CONVERT_TIMEOUT_MS = Math.max(30000, parseInt(process.env.DOCX_CONVERT_TIMEOUT_MS || '180000', 10) || 180000);
+const LIBREOFFICE_PATH = process.env.LIBREOFFICE_PATH || '';
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'https://printer-upmp.vercel.app,http://127.0.0.1:5500,http://localhost:5500')
   .split(',')
   .map(v => v.trim())
@@ -285,14 +289,24 @@ app.get('/connection-info', (req, res) => {
   });
 });
 
+app.get('/docx-converter-status', (req, res) => {
+  const executable = findLibreOfficeExecutable();
+  res.json({
+    available: Boolean(executable),
+    executable: executable || null,
+    timeoutSeconds: Math.round(DOCX_CONVERT_TIMEOUT_MS / 1000),
+    version: '4.5.14',
+  });
+});
+
 app.get('/limits', (req, res) => {
   res.json({
     maxUploadMb: MAX_UPLOAD_MB,
     largePdfThresholdPages: LARGE_PDF_THRESHOLD_PAGES,
     largePdfThresholdMb: LARGE_PDF_THRESHOLD_MB,
     largePdfChunkPages: LARGE_PDF_CHUNK_PAGES,
-    supportedFileTypes: ['pdf', 'png', 'jpg', 'jpeg'],
-    version: '4.5.13',
+    supportedFileTypes: ['pdf', 'png', 'jpg', 'jpeg', 'docx'],
+    version: '4.5.14',
   });
 });
 
@@ -418,9 +432,132 @@ async function printPdfInChunks(filePath, opts, chunkSize) {
   }
 }
 
+
+function findLibreOfficeExecutable() {
+  const candidates = [
+    LIBREOFFICE_PATH,
+    process.env.PROGRAMFILES ? path.join(process.env.PROGRAMFILES, 'LibreOffice', 'program', 'soffice.exe') : '',
+    process.env['PROGRAMFILES(X86)'] ? path.join(process.env['PROGRAMFILES(X86)'], 'LibreOffice', 'program', 'soffice.exe') : '',
+    'C:\\Program Files\\LibreOffice\\program\\soffice.exe',
+    'C:\\Program Files (x86)\\LibreOffice\\program\\soffice.exe',
+    'soffice',
+    'libreoffice',
+  ].filter(Boolean);
+
+  for (const candidate of candidates) {
+    if (candidate === 'soffice' || candidate === 'libreoffice') return candidate;
+    try {
+      if (fs.existsSync(candidate)) return candidate;
+    } catch (_) {}
+  }
+  return '';
+}
+
+function pathToLibreOfficeFileUrl(folderPath) {
+  const resolved = path.resolve(folderPath).replace(/\\/g, '/');
+  return `file:///${encodeURI(resolved)}`;
+}
+
+function runProcess(executable, args, timeoutMs) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(executable, args, {
+      windowsHide: true,
+      shell: false,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+
+    let stdout = '';
+    let stderr = '';
+    let settled = false;
+
+    const finish = (err, result) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      if (err) reject(err);
+      else resolve(result);
+    };
+
+    child.stdout.on('data', chunk => { stdout += chunk.toString(); });
+    child.stderr.on('data', chunk => { stderr += chunk.toString(); });
+    child.on('error', err => finish(err));
+    child.on('close', code => {
+      if (code === 0) finish(null, { code, stdout, stderr });
+      else finish(new Error(`LibreOffice keluar dengan kode ${code}. ${stderr || stdout}`.trim()));
+    });
+
+    const timer = setTimeout(() => {
+      try { child.kill('SIGKILL'); } catch (_) {}
+      finish(new Error(`Konversi DOCX melewati batas waktu ${Math.round(timeoutMs / 1000)} detik.`));
+    }, timeoutMs);
+  });
+}
+
+async function convertDocxToPdf(docxPath, originalName) {
+  const executable = findLibreOfficeExecutable();
+  if (!executable) {
+    throw new Error(
+      'LibreOffice tidak ditemukan. Instal LibreOffice atau atur environment LIBREOFFICE_PATH ke soffice.exe.'
+    );
+  }
+
+  const jobId = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const jobDir = path.join(uploadDir, `docx-${jobId}`);
+  const outputDir = path.join(jobDir, 'output');
+  const profileDir = path.join(jobDir, 'profile');
+  fs.mkdirSync(outputDir, { recursive: true });
+  fs.mkdirSync(profileDir, { recursive: true });
+
+  const safeBase = path.basename(originalName || 'document.docx', path.extname(originalName || 'document.docx'))
+    .replace(/[<>:"/\\|?*\x00-\x1F]/g, '_')
+    .slice(0, 120) || 'document';
+  const inputPath = path.join(jobDir, `${safeBase}.docx`);
+  fs.copyFileSync(docxPath, inputPath);
+
+  const args = [
+    '--headless',
+    '--nologo',
+    '--nodefault',
+    '--nofirststartwizard',
+    `-env:UserInstallation=${pathToLibreOfficeFileUrl(profileDir)}`,
+    '--convert-to',
+    'pdf:writer_pdf_Export',
+    '--outdir',
+    outputDir,
+    inputPath,
+  ];
+
+  try {
+    updateStatus('Mengonversi DOCX menjadi PDF...', 'processing');
+    await runProcess(executable, args, DOCX_CONVERT_TIMEOUT_MS);
+
+    const expected = path.join(outputDir, `${safeBase}.pdf`);
+    let pdfPath = expected;
+    if (!fs.existsSync(pdfPath)) {
+      const found = fs.readdirSync(outputDir).find(name => name.toLowerCase().endsWith('.pdf'));
+      if (found) pdfPath = path.join(outputDir, found);
+    }
+
+    if (!fs.existsSync(pdfPath)) {
+      throw new Error('LibreOffice selesai berjalan, tetapi file PDF hasil konversi tidak ditemukan.');
+    }
+
+    const finalPdfPath = path.join(uploadDir, `converted-${jobId}.pdf`);
+    fs.copyFileSync(pdfPath, finalPdfPath);
+    return {
+      pdfPath: finalPdfPath,
+      outputName: `${safeBase}.pdf`,
+      cleanupDir: jobDir,
+    };
+  } catch (error) {
+    try { fs.rmSync(jobDir, { recursive: true, force: true }); } catch (_) {}
+    throw error;
+  }
+}
+
 function preserveUploadedExtension(filePath, originalName) {
   const ext = path.extname(originalName || '').toLowerCase();
-  const allowed = new Set(['.pdf', '.png', '.jpg', '.jpeg']);
+  const allowed = new Set(['.pdf', '.png', '.jpg', '.jpeg', '.docx']);
   if (!filePath || !fs.existsSync(filePath) || !allowed.has(ext)) return filePath;
   if (path.extname(filePath).toLowerCase() === ext) return filePath;
   const target = `${filePath}${ext}`;
@@ -437,6 +574,66 @@ function preserveUploadedExtension(filePath, originalName) {
     }
   }
 }
+
+app.post('/convert-docx',
+  (req, res, next) => {
+    uploadDocument(req, res, (err) => {
+      if (!err) return next();
+      const message = err.code === 'LIMIT_FILE_SIZE'
+        ? `Ukuran file melebihi batas ${MAX_UPLOAD_MB} MB.`
+        : `Upload gagal: ${err.message}`;
+      updateStatus(`Gagal: ${message}`, 'error');
+      return res.status(err.code === 'LIMIT_FILE_SIZE' ? 413 : 400).send(message);
+    });
+  },
+  async (req, res) => {
+    let uploadedPath = req.file ? req.file.path : '';
+    let convertedPath = '';
+    let cleanupDir = '';
+
+    try {
+      if (!req.file || !uploadedPath || !fs.existsSync(uploadedPath)) {
+        throw new Error('File DOCX tidak ditemukan.');
+      }
+
+      const originalName = req.file.originalname || 'document.docx';
+      const mimeType = req.file.mimetype || '';
+      const isDocx = /\.docx$/i.test(originalName)
+        || mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
+      if (!isDocx) {
+        throw new Error('Endpoint ini hanya menerima file DOCX.');
+      }
+
+      uploadedPath = preserveUploadedExtension(uploadedPath, originalName);
+      const result = await convertDocxToPdf(uploadedPath, originalName);
+      convertedPath = result.pdfPath;
+      cleanupDir = result.cleanupDir;
+
+      const stat = fs.statSync(convertedPath);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Length', stat.size);
+      res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(result.outputName)}"`);
+      res.setHeader('X-Converted-Filename', encodeURIComponent(result.outputName));
+      res.setHeader('Access-Control-Expose-Headers', 'X-Converted-Filename, Content-Disposition');
+      updateStatus('Konversi DOCX berhasil. PDF siap dipreview dan dicetak.', 'success');
+
+      const stream = fs.createReadStream(convertedPath);
+      stream.on('error', next);
+      stream.pipe(res);
+    } catch (error) {
+      console.error('[DOCX CONVERSION ERROR]', error);
+      updateStatus(`Gagal konversi DOCX: ${error.message}`, 'error');
+      if (!res.headersSent) res.status(500).send(`DOCX_CONVERSION_FAILED: ${error.message}`);
+    } finally {
+      res.on('finish', () => {
+        try { if (uploadedPath && fs.existsSync(uploadedPath)) fs.unlinkSync(uploadedPath); } catch (_) {}
+        try { if (convertedPath && fs.existsSync(convertedPath)) fs.unlinkSync(convertedPath); } catch (_) {}
+        try { if (cleanupDir) fs.rmSync(cleanupDir, { recursive: true, force: true }); } catch (_) {}
+      });
+    }
+  }
+);
 
 app.post('/print',
   (req, res, next) => {
@@ -533,4 +730,4 @@ server.requestTimeout = 0;
 server.headersTimeout = 0;
 server.timeout = 0;
 
-server.listen(port, '0.0.0.0', () => console.log(`Print Server V4.5.13 Ready on ${port}`));
+server.listen(port, '0.0.0.0', () => console.log(`Print Server V4.5.14 Ready on ${port}`));

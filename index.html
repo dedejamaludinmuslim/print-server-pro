@@ -95,6 +95,13 @@
                 <div class="section-title"><span>📁 Pilih File (PDF/Gambar)</span></div>
                 <div class="input-group">
                     <input type="file" id="fileInput" class="input-standard" accept=".pdf, .png, .jpg, .jpeg" style="padding:10px; border:1px dashed #cbd5e1; cursor:pointer;" />
+                <div id="docxConversionPanel" style="display:none; margin-top:10px; padding:10px; border:1px solid var(--border); border-radius:10px; background:rgba(51,65,85,.05);">
+                    <div id="docxConversionStatus" style="font-size:12px; line-height:1.5; color:var(--text-muted);">DOCX belum dikonversi.</div>
+                    <button type="button" id="convertDocxBtn" class="btn-block" style="margin-top:8px; background:#475569;" onclick="convertSelectedDocx(true)">
+                        🔄 Konversi Ulang DOCX ke PDF
+                    </button>
+                </div>
+
                 </div>
                 <div id="realtimeStatus" style="display:none; margin-top:20px;">
                     <div id="statusMessage" style="font-size:12px; font-weight:600;">Menunggu...</div>
@@ -255,6 +262,10 @@
     <script>
         let currentPdfDoc = null, currentImgSrc = null, currentPreviewSheet = 0, totalPreviewSheets = 1, appliedConfig = {};
         let currentSourceInfo = { kind: 'none', width: 595.28, height: 841.89, label: 'Belum ada file', standard: 'A4' };
+        let currentPrintableFile = null;
+        let currentOriginalFileName = '';
+        let currentInputKind = 'none';
+        let docxConversionInProgress = false;
         let socket;
         let currentSocketIp = '';
         let deferredPrompt = null;
@@ -476,6 +487,7 @@
         let pendingCompatibilityPrint = false;
         function showPinModal(useCompatibilityMode = false) {
             if(!document.getElementById('fileInput').files[0]) return showToast('Pilih file dokumen terlebih dahulu!', 'error');
+            if (currentInputKind === 'docx' && !currentPrintableFile) return showToast('DOCX belum berhasil dikonversi menjadi PDF.', 'error');
             if (!validatePrintSettings(true)) return;
             pendingCompatibilityPrint = Boolean(useCompatibilityMode);
             document.getElementById('pinModal').style.display='flex';
@@ -671,6 +683,10 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
             showToast('Berhasil dicetak', 'success');
             document.getElementById('fileInput').value = '';
             currentPdfDoc = null; currentImgSrc = null; currentPreviewSheet = 0;
+            currentPrintableFile = null;
+            currentOriginalFileName = '';
+            currentInputKind = 'none';
+            document.getElementById('docxConversionPanel').style.display = 'none';
             currentSourceInfo = { kind: 'none', width: 595.28, height: 841.89, label: 'Belum ada file', standard: 'A4' };
             document.getElementById('sourceSizeInfo').value = 'Belum ada file';
             document.getElementById('compatPrintBtn').style.display = 'none';
@@ -689,7 +705,9 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
             const pin = document.getElementById('modalPinInput').value;
             closePinModal();
             const ip = document.getElementById('ipAddress').value.trim();
-            const originalFile = document.getElementById('fileInput').files[0];
+            const inputFile = document.getElementById('fileInput').files[0];
+            const originalFile = currentPrintableFile || inputFile;
+            const historyName = currentOriginalFileName || (inputFile ? inputFile.name : originalFile?.name);
             if (!originalFile || !ip) return;
             if (!validatePrintSettings(true)) return;
 
@@ -703,7 +721,7 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
                 const r = await submitPrintRequest(ip, pin, fileToPrint, useCompatibilityMode);
 
                 if (r.ok) {
-                    resetAfterSuccessfulPrint(ip, originalFile.name);
+                    resetAfterSuccessfulPrint(ip, historyName);
                     return;
                 }
 
@@ -721,7 +739,7 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
                     const retry = await submitPrintRequest(ip, pin, compatibilityFile, true);
 
                     if (retry.ok) {
-                        resetAfterSuccessfulPrint(ip, originalFile.name + ' (Mode Kompatibilitas)');
+                        resetAfterSuccessfulPrint(ip, historyName + ' (Mode Kompatibilitas)');
                         return;
                     }
 
@@ -741,7 +759,7 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
                         const compatibilityFile = await buildCompatibilityFileOrThrow();
                         const retry = await submitPrintRequest(ip, pin, compatibilityFile, true);
                         if (retry.ok) {
-                            resetAfterSuccessfulPrint(ip, originalFile.name + ' (Mode Kompatibilitas)');
+                            resetAfterSuccessfulPrint(ip, historyName + ' (Mode Kompatibilitas)');
                             return;
                         }
                         const retryErr = await retry.text();
@@ -756,8 +774,131 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
                 showToast(err.message || 'Gagal koneksi ke Server. Cek server/ukuran file/firewall.', 'error');
             }
         }
+
+        function isDocxFile(file) {
+            return Boolean(file) && (
+                /\.docx$/i.test(file.name || '') ||
+                file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+            );
+        }
+
+        function setDocxConversionStatus(message, type = 'info') {
+            const panel = document.getElementById('docxConversionPanel');
+            const status = document.getElementById('docxConversionStatus');
+            const button = document.getElementById('convertDocxBtn');
+            panel.style.display = 'block';
+            status.textContent = message;
+            status.style.color = type === 'error' ? '#dc2626' : type === 'success' ? '#15803d' : 'var(--text-muted)';
+            button.disabled = docxConversionInProgress;
+        }
+
+        async function loadPdfFileIntoPreview(pdfFile, sourceLabel = '') {
+            const arrayBuffer = await pdfFile.arrayBuffer();
+            currentPdfDoc = await pdfjsLib.getDocument(new Uint8Array(arrayBuffer)).promise;
+            currentImgSrc = null;
+            currentPrintableFile = pdfFile;
+
+            const first = await currentPdfDoc.getPage(1);
+            const firstVp = first.getViewport({ scale: 1 });
+            let mixed = false;
+            const sampleCount = Math.min(currentPdfDoc.numPages, 20);
+            for (let n = 2; n <= sampleCount; n += 1) {
+                const p = await currentPdfDoc.getPage(n);
+                const vp = p.getViewport({ scale: 1 });
+                if (Math.abs(vp.width - firstVp.width) > 2 || Math.abs(vp.height - firstVp.height) > 2) {
+                    mixed = true;
+                    break;
+                }
+            }
+
+            currentSourceInfo = {
+                kind: 'pdf',
+                width: firstVp.width,
+                height: firstVp.height,
+                standard: detectStandardPaper(firstVp.width, firstVp.height),
+                mixed
+            };
+            document.getElementById('sourceSizeInfo').value =
+                `${sourceLabel ? sourceLabel + ' → ' : ''}${formatSourceSize(currentSourceInfo)} • ${currentPdfDoc.numPages} halaman`;
+            document.getElementById('compatPrintBtn').style.display = 'flex';
+            document.getElementById('compatHint').style.display = 'block';
+            currentPreviewSheet = 0;
+            await updateDynamicPreview();
+        }
+
+        async function convertSelectedDocx(manual = false) {
+            const sourceFile = document.getElementById('fileInput').files[0];
+            const ip = document.getElementById('ipAddress').value.trim();
+
+            if (!sourceFile || !isDocxFile(sourceFile)) {
+                showToast('Pilih file DOCX terlebih dahulu.', 'error');
+                return;
+            }
+            if (!ip) {
+                setDocxConversionStatus('Server printer belum dipilih. Scan atau isi IP server terlebih dahulu.', 'error');
+                showToast('Hubungkan ke server printer sebelum mengonversi DOCX.', 'error');
+                return;
+            }
+            if (docxConversionInProgress) return;
+
+            docxConversionInProgress = true;
+            setDocxConversionStatus(manual ? 'Mengonversi ulang DOCX menjadi PDF…' : 'Mengonversi DOCX menjadi PDF secara otomatis…');
+            document.getElementById('realtimeStatus').style.display = 'block';
+            document.getElementById('statusMessage').innerText = 'Mengunggah dan mengonversi DOCX menjadi PDF…';
+            document.getElementById('progressBar').style.width = '20%';
+
+            const fd = new FormData();
+            fd.append('document', sourceFile);
+
+            try {
+                const response = await fetch(`http://${ip}:3000/convert-docx`, {
+                    method: 'POST',
+                    body: fd
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(errorText || `Konversi gagal. Kode ${response.status}`);
+                }
+
+                document.getElementById('progressBar').style.width = '75%';
+                const blob = await response.blob();
+                const encodedName = response.headers.get('X-Converted-Filename');
+                let outputName = sourceFile.name.replace(/\.docx$/i, '.pdf');
+                if (encodedName) {
+                    try { outputName = decodeURIComponent(encodedName); } catch (_) {}
+                }
+
+                const pdfFile = new File([blob], outputName, { type: 'application/pdf' });
+                currentInputKind = 'docx';
+                currentOriginalFileName = sourceFile.name;
+                await loadPdfFileIntoPreview(pdfFile, `DOCX: ${sourceFile.name}`);
+                setDocxConversionStatus(`Konversi berhasil: ${outputName}. PDF siap dipreview dan dicetak.`, 'success');
+                document.getElementById('statusMessage').innerText = 'Konversi DOCX berhasil. PDF siap dicetak.';
+                document.getElementById('progressBar').style.width = '100%';
+                showToast('DOCX berhasil dikonversi menjadi PDF.', 'success');
+            } catch (error) {
+                console.error('DOCX conversion failed:', error);
+                currentPrintableFile = null;
+                currentPdfDoc = null;
+                setDocxConversionStatus(error.message || 'Konversi DOCX gagal.', 'error');
+                document.getElementById('statusMessage').innerText = error.message || 'Konversi DOCX gagal.';
+                document.getElementById('progressBar').style.width = '100%';
+                showToast(error.message || 'Konversi DOCX gagal.', 'error');
+                updateDynamicPreview();
+            } finally {
+                docxConversionInProgress = false;
+                document.getElementById('convertDocxBtn').disabled = false;
+            }
+        }
+
         document.getElementById('fileInput').addEventListener('change', async function(e) {
             const file = e.target.files[0];
+            currentPrintableFile = null;
+            currentOriginalFileName = file ? file.name : '';
+            currentInputKind = 'none';
+            document.getElementById('docxConversionPanel').style.display = 'none';
+
             if (!file) {
                 currentPdfDoc = null;
                 currentImgSrc = null;
@@ -768,38 +909,39 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
                 updateDynamicPreview();
                 return;
             }
+
             currentPreviewSheet = 0;
+
+            if (isDocxFile(file)) {
+                currentInputKind = 'docx';
+                currentPdfDoc = null;
+                currentImgSrc = null;
+                currentSourceInfo = { kind: 'none', width: 595.28, height: 841.89, label: 'DOCX menunggu konversi', standard: 'A4' };
+                document.getElementById('sourceSizeInfo').value = `DOCX: ${file.name} • menunggu konversi`;
+                document.getElementById('compatPrintBtn').style.display = 'none';
+                document.getElementById('compatHint').style.display = 'none';
+                setDocxConversionStatus('DOCX dipilih. Konversi otomatis akan dimulai.');
+                await updateDynamicPreview();
+                await convertSelectedDocx(false);
+                return;
+            }
+
             const reader = new FileReader();
-            if (file.type === 'application/pdf') {
+            if (file.type === 'application/pdf' || /\.pdf$/i.test(file.name)) {
+                currentInputKind = 'pdf';
+                currentPrintableFile = file;
+                currentOriginalFileName = file.name;
                 document.getElementById('compatPrintBtn').style.display = 'flex';
                 document.getElementById('compatHint').style.display = 'block';
                 reader.onload = async function() {
-                    currentPdfDoc = await pdfjsLib.getDocument(new Uint8Array(this.result)).promise;
-                    currentImgSrc = null;
-                    const first = await currentPdfDoc.getPage(1);
-                    const firstVp = first.getViewport({ scale: 1 });
-                    let mixed = false;
-                    const sampleCount = Math.min(currentPdfDoc.numPages, 20);
-                    for (let n = 2; n <= sampleCount; n += 1) {
-                        const p = await currentPdfDoc.getPage(n);
-                        const vp = p.getViewport({ scale: 1 });
-                        if (Math.abs(vp.width - firstVp.width) > 2 || Math.abs(vp.height - firstVp.height) > 2) {
-                            mixed = true;
-                            break;
-                        }
-                    }
-                    currentSourceInfo = {
-                        kind: 'pdf',
-                        width: firstVp.width,
-                        height: firstVp.height,
-                        standard: detectStandardPaper(firstVp.width, firstVp.height),
-                        mixed
-                    };
-                    document.getElementById('sourceSizeInfo').value = formatSourceSize(currentSourceInfo);
-                    updateDynamicPreview();
+                    const pdfFile = new File([this.result], file.name, { type: 'application/pdf' });
+                    await loadPdfFileIntoPreview(pdfFile);
                 };
                 reader.readAsArrayBuffer(file);
             } else {
+                currentInputKind = 'image';
+                currentPrintableFile = file;
+                currentOriginalFileName = file.name;
                 document.getElementById('compatPrintBtn').style.display = 'none';
                 document.getElementById('compatHint').style.display = 'none';
                 reader.onload = function(evt) {
