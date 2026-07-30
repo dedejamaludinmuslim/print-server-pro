@@ -309,7 +309,7 @@ app.get('/docx-converter-status', async (req, res) => {
       executable: libreOfficeExecutable || null,
       timeoutSeconds: Math.round(DOCX_CONVERT_TIMEOUT_MS / 1000),
     },
-    version: '4.5.15',
+    version: '4.5.16',
   });
 });
 
@@ -320,7 +320,7 @@ app.get('/limits', (req, res) => {
     largePdfThresholdMb: LARGE_PDF_THRESHOLD_MB,
     largePdfChunkPages: LARGE_PDF_CHUNK_PAGES,
     supportedFileTypes: ['pdf', 'png', 'jpg', 'jpeg', 'docx'],
-    version: '4.5.15',
+    version: '4.5.16',
   });
 });
 
@@ -784,7 +784,15 @@ app.post('/convert-docx',
       updateStatus(`Konversi DOCX berhasil melalui ${result.engine === 'microsoft-word' ? 'Microsoft Word' : 'LibreOffice'}. PDF siap dipreview dan dicetak.`, 'success');
 
       const stream = fs.createReadStream(convertedPath);
-      stream.on('error', next);
+      stream.on('error', (streamError) => {
+        console.error('[DOCX PDF STREAM ERROR]', streamError);
+        updateStatus(`Gagal mengirim PDF hasil konversi: ${streamError.message}`, 'error');
+        if (!res.headersSent) {
+          res.status(500).send(`DOCX_STREAM_FAILED: ${streamError.message}`);
+        } else {
+          res.destroy(streamError);
+        }
+      });
       stream.pipe(res);
     } catch (error) {
       console.error('[DOCX CONVERSION ERROR]', error);
@@ -895,4 +903,4 @@ server.requestTimeout = 0;
 server.headersTimeout = 0;
 server.timeout = 0;
 
-server.listen(port, '0.0.0.0', () => console.log(`Print Server V4.5.15 Ready on ${port}`));
+server.listen(port, '0.0.0.0', () => console.log(`Print Server V4.5.16 Ready on ${port}`));

@@ -46,7 +46,6 @@ call pm2 delete print-server >nul 2>&1
 
 :: Nyalakan yang baru
 call pm2 start server.js --name "print-server"
-call pm2 update
 call pm2 save
 
 echo.
