@@ -826,6 +826,25 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
             await updateDynamicPreview();
         }
 
+
+        async function checkDocxConverterStatus(ip) {
+            if (!ip) return;
+            try {
+                const response = await fetchWithRetry(`http://${ip}:3000/docx-converter-status?_t=${Date.now()}`, { cache: 'no-store' }, 0, 250);
+                if (!response.ok) return;
+                const data = await response.json();
+                const panel = document.getElementById('docxConversionPanel');
+                if (!panel || panel.style.display === 'none') return;
+                if (data.primary === 'microsoft-word') {
+                    setDocxConversionStatus(`Converter utama tersedia: Microsoft Word${data.microsoftWord?.version ? ' versi ' + data.microsoftWord.version : ''}.`);
+                } else if (data.primary === 'libreoffice') {
+                    setDocxConversionStatus('Microsoft Word tidak tersedia. LibreOffice akan digunakan sebagai fallback.');
+                } else {
+                    setDocxConversionStatus('Tidak ada converter DOCX yang tersedia di PC server.', 'error');
+                }
+            } catch (_) {}
+        }
+
         async function convertSelectedDocx(manual = false) {
             const sourceFile = document.getElementById('fileInput').files[0];
             const ip = document.getElementById('ipAddress').value.trim();
@@ -864,6 +883,12 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
                 document.getElementById('progressBar').style.width = '75%';
                 const blob = await response.blob();
                 const encodedName = response.headers.get('X-Converted-Filename');
+                const converterEngine = response.headers.get('X-Converter-Engine') || 'unknown';
+                const converterLabel = converterEngine === 'microsoft-word'
+                    ? 'Microsoft Word'
+                    : converterEngine === 'libreoffice'
+                        ? 'LibreOffice'
+                        : 'converter dokumen';
                 let outputName = sourceFile.name.replace(/\.docx$/i, '.pdf');
                 if (encodedName) {
                     try { outputName = decodeURIComponent(encodedName); } catch (_) {}
@@ -873,8 +898,8 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
                 currentInputKind = 'docx';
                 currentOriginalFileName = sourceFile.name;
                 await loadPdfFileIntoPreview(pdfFile, `DOCX: ${sourceFile.name}`);
-                setDocxConversionStatus(`Konversi berhasil: ${outputName}. PDF siap dipreview dan dicetak.`, 'success');
-                document.getElementById('statusMessage').innerText = 'Konversi DOCX berhasil. PDF siap dicetak.';
+                setDocxConversionStatus(`Konversi berhasil melalui ${converterLabel}: ${outputName}. PDF siap dipreview dan dicetak.`, 'success');
+                document.getElementById('statusMessage').innerText = `Konversi DOCX berhasil melalui ${converterLabel}. PDF siap dicetak.`;
                 document.getElementById('progressBar').style.width = '100%';
                 showToast('DOCX berhasil dikonversi menjadi PDF.', 'success');
             } catch (error) {
@@ -920,7 +945,8 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
                 document.getElementById('sourceSizeInfo').value = `DOCX: ${file.name} • menunggu konversi`;
                 document.getElementById('compatPrintBtn').style.display = 'none';
                 document.getElementById('compatHint').style.display = 'none';
-                setDocxConversionStatus('DOCX dipilih. Konversi otomatis akan dimulai.');
+                setDocxConversionStatus('DOCX dipilih. Memeriksa converter di PC server…');
+                await checkDocxConverterStatus(document.getElementById('ipAddress').value.trim());
                 await updateDynamicPreview();
                 await convertSelectedDocx(false);
                 return;

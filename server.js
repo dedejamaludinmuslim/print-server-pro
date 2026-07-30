@@ -21,6 +21,8 @@ const LARGE_PDF_THRESHOLD_MB = Math.max(1, parseInt(process.env.LARGE_PDF_THRESH
 const LARGE_PDF_CHUNK_PAGES = Math.max(1, parseInt(process.env.LARGE_PDF_CHUNK_PAGES || '15', 10) || 15);
 const DOCX_CONVERT_TIMEOUT_MS = Math.max(30000, parseInt(process.env.DOCX_CONVERT_TIMEOUT_MS || '180000', 10) || 180000);
 const LIBREOFFICE_PATH = process.env.LIBREOFFICE_PATH || '';
+const WORD_CONVERT_TIMEOUT_MS = Math.max(30000, parseInt(process.env.WORD_CONVERT_TIMEOUT_MS || '180000', 10) || 180000);
+const WORD_CONVERTER_ENABLED = String(process.env.WORD_CONVERTER_ENABLED || 'true').toLowerCase() !== 'false';
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'https://printer-upmp.vercel.app,http://127.0.0.1:5500,http://localhost:5500')
   .split(',')
   .map(v => v.trim())
@@ -289,13 +291,25 @@ app.get('/connection-info', (req, res) => {
   });
 });
 
-app.get('/docx-converter-status', (req, res) => {
-  const executable = findLibreOfficeExecutable();
+app.get('/docx-converter-status', async (req, res) => {
+  const word = await detectMicrosoftWordDesktop();
+  const libreOfficeExecutable = findLibreOfficeExecutable();
   res.json({
-    available: Boolean(executable),
-    executable: executable || null,
-    timeoutSeconds: Math.round(DOCX_CONVERT_TIMEOUT_MS / 1000),
-    version: '4.5.14',
+    available: Boolean(word.available || libreOfficeExecutable),
+    primary: word.available ? 'microsoft-word' : (libreOfficeExecutable ? 'libreoffice' : null),
+    microsoftWord: {
+      enabled: WORD_CONVERTER_ENABLED,
+      available: Boolean(word.available),
+      version: word.version || null,
+      reason: word.reason || null,
+      timeoutSeconds: Math.round(WORD_CONVERT_TIMEOUT_MS / 1000),
+    },
+    libreOffice: {
+      available: Boolean(libreOfficeExecutable),
+      executable: libreOfficeExecutable || null,
+      timeoutSeconds: Math.round(DOCX_CONVERT_TIMEOUT_MS / 1000),
+    },
+    version: '4.5.15',
   });
 });
 
@@ -306,7 +320,7 @@ app.get('/limits', (req, res) => {
     largePdfThresholdMb: LARGE_PDF_THRESHOLD_MB,
     largePdfChunkPages: LARGE_PDF_CHUNK_PAGES,
     supportedFileTypes: ['pdf', 'png', 'jpg', 'jpeg', 'docx'],
-    version: '4.5.14',
+    version: '4.5.15',
   });
 });
 
@@ -433,6 +447,117 @@ async function printPdfInChunks(filePath, opts, chunkSize) {
 }
 
 
+
+function findPowerShellExecutable() {
+  const candidates = [
+    process.env.SystemRoot ? path.join(process.env.SystemRoot, 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe') : '',
+    'powershell.exe',
+    'pwsh.exe',
+  ].filter(Boolean);
+
+  for (const candidate of candidates) {
+    if (candidate === 'powershell.exe' || candidate === 'pwsh.exe') return candidate;
+    try {
+      if (fs.existsSync(candidate)) return candidate;
+    } catch (_) {}
+  }
+  return '';
+}
+
+async function detectMicrosoftWordDesktop() {
+  if (!WORD_CONVERTER_ENABLED || process.platform !== 'win32') {
+    return { available: false, reason: 'Word converter hanya aktif di Windows.' };
+  }
+
+  const powershell = findPowerShellExecutable();
+  if (!powershell) return { available: false, reason: 'PowerShell tidak ditemukan.' };
+
+  const script = [
+    "$ErrorActionPreference = 'Stop'",
+    "$word = $null",
+    "try {",
+    "  $word = New-Object -ComObject Word.Application",
+    "  $version = $word.Version",
+    "  Write-Output ('AVAILABLE|' + $version)",
+    "} catch {",
+    "  Write-Output ('UNAVAILABLE|' + $_.Exception.Message)",
+    "} finally {",
+    "  if ($null -ne $word) { try { $word.Quit() } catch {} }",
+    "  [System.GC]::Collect()",
+    "  [System.GC]::WaitForPendingFinalizers()",
+    "}",
+  ].join('; ');
+
+  try {
+    const result = await runProcess(
+      powershell,
+      ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', script],
+      30000
+    );
+    const output = `${result.stdout || ''}\n${result.stderr || ''}`.trim();
+    const availableLine = output.split(/\r?\n/).find(line => line.startsWith('AVAILABLE|'));
+    if (availableLine) return { available: true, version: availableLine.split('|').slice(1).join('|') || null };
+    const unavailableLine = output.split(/\r?\n/).find(line => line.startsWith('UNAVAILABLE|'));
+    return {
+      available: false,
+      reason: unavailableLine ? unavailableLine.split('|').slice(1).join('|') : 'Microsoft Word desktop tidak dapat diakses melalui COM.',
+    };
+  } catch (error) {
+    return { available: false, reason: error.message };
+  }
+}
+
+function escapePowerShellSingleQuoted(value) {
+  return String(value).replace(/'/g, "''");
+}
+
+async function convertDocxWithMicrosoftWord(docxPath, outputPdfPath) {
+  if (!WORD_CONVERTER_ENABLED) throw new Error('Converter Microsoft Word dinonaktifkan.');
+  if (process.platform !== 'win32') throw new Error('Converter Microsoft Word hanya tersedia di Windows.');
+
+  const powershell = findPowerShellExecutable();
+  if (!powershell) throw new Error('PowerShell tidak ditemukan.');
+
+  const input = escapePowerShellSingleQuoted(path.resolve(docxPath));
+  const output = escapePowerShellSingleQuoted(path.resolve(outputPdfPath));
+  const script = [
+    "$ErrorActionPreference = 'Stop'",
+    "$word = $null",
+    "$doc = $null",
+    "try {",
+    "  $word = New-Object -ComObject Word.Application",
+    "  $word.Visible = $false",
+    "  $word.DisplayAlerts = 0",
+    `  $doc = $word.Documents.Open('${input}', $false, $true, $false)`,
+    "  $wdExportFormatPDF = 17",
+    "  $wdExportOptimizeForPrint = 0",
+    "  $wdExportAllDocument = 0",
+    "  $wdExportDocumentContent = 0",
+    `  $doc.ExportAsFixedFormat('${output}', $wdExportFormatPDF, $false, $wdExportOptimizeForPrint, $wdExportAllDocument, 1, 1, $wdExportDocumentContent, $true, $true, 0, $true, $true, $false)`,
+    "  Write-Output 'WORD_CONVERSION_OK'",
+    "} finally {",
+    "  if ($null -ne $doc) { try { $doc.Close($false) } catch {} }",
+    "  if ($null -ne $word) { try { $word.Quit() } catch {} }",
+    "  if ($null -ne $doc) { [System.Runtime.InteropServices.Marshal]::ReleaseComObject($doc) | Out-Null }",
+    "  if ($null -ne $word) { [System.Runtime.InteropServices.Marshal]::ReleaseComObject($word) | Out-Null }",
+    "  [System.GC]::Collect()",
+    "  [System.GC]::WaitForPendingFinalizers()",
+    "}",
+  ].join('; ');
+
+  updateStatus('Mengonversi DOCX dengan Microsoft Word...', 'processing');
+  const result = await runProcess(
+    powershell,
+    ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', script],
+    WORD_CONVERT_TIMEOUT_MS
+  );
+
+  if (!fs.existsSync(outputPdfPath)) {
+    throw new Error(`Microsoft Word selesai berjalan tetapi PDF tidak ditemukan. ${result.stderr || result.stdout || ''}`.trim());
+  }
+  return { engine: 'microsoft-word', details: result.stdout.trim() };
+}
+
 function findLibreOfficeExecutable() {
   const candidates = [
     LIBREOFFICE_PATH,
@@ -493,7 +618,7 @@ function runProcess(executable, args, timeoutMs) {
   });
 }
 
-async function convertDocxToPdf(docxPath, originalName) {
+async function convertDocxWithLibreOffice(docxPath, originalName) {
   const executable = findLibreOfficeExecutable();
   if (!executable) {
     throw new Error(
@@ -548,10 +673,49 @@ async function convertDocxToPdf(docxPath, originalName) {
       pdfPath: finalPdfPath,
       outputName: `${safeBase}.pdf`,
       cleanupDir: jobDir,
+      engine: 'libreoffice',
     };
   } catch (error) {
     try { fs.rmSync(jobDir, { recursive: true, force: true }); } catch (_) {}
     throw error;
+  }
+}
+
+
+async function convertDocxToPdf(docxPath, originalName) {
+  const jobId = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const safeBase = path.basename(originalName || 'document.docx', path.extname(originalName || 'document.docx'))
+    .replace(/[<>:"/\\|?*\x00-\x1F]/g, '_')
+    .slice(0, 120) || 'document';
+
+  const wordOutputPath = path.join(uploadDir, `word-converted-${jobId}.pdf`);
+  let wordError = null;
+
+  if (WORD_CONVERTER_ENABLED && process.platform === 'win32') {
+    try {
+      const wordResult = await convertDocxWithMicrosoftWord(docxPath, wordOutputPath);
+      return {
+        pdfPath: wordOutputPath,
+        outputName: `${safeBase}.pdf`,
+        cleanupDir: '',
+        engine: wordResult.engine,
+      };
+    } catch (error) {
+      wordError = error;
+      console.error('[WORD CONVERSION ERROR]', error);
+      try { if (fs.existsSync(wordOutputPath)) fs.unlinkSync(wordOutputPath); } catch (_) {}
+      updateStatus('Konversi Microsoft Word gagal. Mencoba LibreOffice...', 'processing');
+    }
+  }
+
+  try {
+    return await convertDocxWithLibreOffice(docxPath, originalName);
+  } catch (libreOfficeError) {
+    const details = [
+      wordError ? `Microsoft Word: ${wordError.message}` : 'Microsoft Word: tidak tersedia atau dinonaktifkan.',
+      `LibreOffice: ${libreOfficeError.message}`,
+    ].join(' | ');
+    throw new Error(`Semua converter DOCX gagal. ${details}`);
   }
 }
 
@@ -615,8 +779,9 @@ app.post('/convert-docx',
       res.setHeader('Content-Length', stat.size);
       res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(result.outputName)}"`);
       res.setHeader('X-Converted-Filename', encodeURIComponent(result.outputName));
-      res.setHeader('Access-Control-Expose-Headers', 'X-Converted-Filename, Content-Disposition');
-      updateStatus('Konversi DOCX berhasil. PDF siap dipreview dan dicetak.', 'success');
+      res.setHeader('X-Converter-Engine', result.engine || 'unknown');
+      res.setHeader('Access-Control-Expose-Headers', 'X-Converted-Filename, X-Converter-Engine, Content-Disposition');
+      updateStatus(`Konversi DOCX berhasil melalui ${result.engine === 'microsoft-word' ? 'Microsoft Word' : 'LibreOffice'}. PDF siap dipreview dan dicetak.`, 'success');
 
       const stream = fs.createReadStream(convertedPath);
       stream.on('error', next);
@@ -730,4 +895,4 @@ server.requestTimeout = 0;
 server.headersTimeout = 0;
 server.timeout = 0;
 
-server.listen(port, '0.0.0.0', () => console.log(`Print Server V4.5.14 Ready on ${port}`));
+server.listen(port, '0.0.0.0', () => console.log(`Print Server V4.5.15 Ready on ${port}`));
