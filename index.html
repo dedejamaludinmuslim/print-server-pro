@@ -153,19 +153,47 @@
     <div id="configModal" class="modal">
         <div class="modal-content">
             <h3 style="text-align:center; margin:0 0 20px 0;">⚙️ Pengaturan</h3>
+            <div class="input-group">
+                <label>Ukuran Dokumen Sumber:</label>
+                <input id="sourceSizeInfo" class="input-standard" value="Belum ada file" readonly style="color:var(--text-muted);">
+            </div>
             <div style="display:flex; gap:12px;">
                 <div class="input-group" style="flex:1;"><label>Warna:</label><select id="colorMode" class="input-standard"><option value="color">Warna</option><option value="monochrome">Hitam Putih</option></select></div>
-                <div class="input-group" style="flex:1;"><label>Kertas:</label><select id="paperSize" class="input-standard"><option value="A4">A4</option><option value="F4">F4</option></select></div>
+                <div class="input-group" style="flex:1;"><label>Kertas Printer:</label>
+                    <select id="paperSize" class="input-standard">
+                        <option value="SOURCE">Sama dengan Dokumen</option>
+                        <option value="A4">A4</option>
+                        <option value="F4">F4 (210 × 330 mm)</option>
+                        <option value="LETTER">Letter</option>
+                        <option value="LEGAL">Legal</option>
+                    </select>
+                </div>
             </div>
             <div style="display:flex; gap:12px;">
-                <div class="input-group" style="flex:1;"><label>Orientasi:</label><select id="orientation" class="input-standard"><option value="portrait">Portrait</option><option value="landscape">Landscape</option></select></div>
+                <div class="input-group" style="flex:1;"><label>Orientasi Kertas:</label>
+                    <select id="orientation" class="input-standard">
+                        <option value="auto">Otomatis</option>
+                        <option value="portrait">Portrait</option>
+                        <option value="landscape">Landscape</option>
+                    </select>
+                </div>
+                <div class="input-group" style="flex:1;"><label>Skala Cetak:</label>
+                    <select id="scaleMode" class="input-standard">
+                        <option value="shrink">Perkecil jika Perlu</option>
+                        <option value="fit">Sesuaikan ke Kertas</option>
+                        <option value="actual">Ukuran Asli</option>
+                        <option value="fill">Isi Kertas (Bisa Terpotong)</option>
+                    </select>
+                </div>
+            </div>
+            <div style="display:flex; gap:12px;">
                 <div class="input-group" style="flex:1;"><label>Hal/Lembar:</label><select id="pagesPerSheet" class="input-standard"><option value="1">1</option><option value="2">2</option><option value="4">4</option><option value="6">6</option><option value="9">9</option><option value="16">16</option></select></div>
-            </div>
-            <div style="display:flex; gap:12px;">
                 <div class="input-group" style="flex:1;"><label>Jumlah Copy:</label><input type="number" id="copies" class="input-standard" value="1" min="1" max="50"></div>
-                <div class="input-group" style="flex:1;"><label>Rincian Halaman:</label><input type="text" id="pages" class="input-standard" placeholder="1,3,5-7"></div>
             </div>
-            <div style="font-size:12px; color:var(--text-muted); margin-top:-4px;">Orientasi mengatur layout keluaran. Untuk gambar dan PDF, sistem akan memutar isi bila diperlukan agar paling pas di kertas.</div>
+            <div class="input-group"><label>Rincian Halaman:</label><input type="text" id="pages" class="input-standard" placeholder="1,3,5-7"></div>
+            <div style="font-size:12px; color:var(--text-muted); line-height:1.5; margin-top:-4px;">
+                Ukuran dokumen dibaca otomatis. Kertas printer menentukan media fisik. Mode <strong>Ukuran Asli</strong> mempertahankan skala 100%; mode <strong>Isi Kertas</strong> dapat memotong tepi.
+            </div>
             <div style="display:flex; gap:10px; margin-top:20px;">
                 <button class="btn-block secondary" onclick="cancelConfigModal()">Batal</button>
                 <button class="btn-block" onclick="applyConfigModal()">Simpan</button>
@@ -226,6 +254,7 @@
 
     <script>
         let currentPdfDoc = null, currentImgSrc = null, currentPreviewSheet = 0, totalPreviewSheets = 1, appliedConfig = {};
+        let currentSourceInfo = { kind: 'none', width: 595.28, height: 841.89, label: 'Belum ada file', standard: 'A4' };
         let socket;
         let currentSocketIp = '';
         let deferredPrompt = null;
@@ -255,12 +284,52 @@
         }
         const SUPPORTED_PPS = [1, 2, 4, 6, 9, 16];
         const PAPER_DIMENSIONS = {
-            A4: { portrait: { width: 595.28, height: 841.89 }, landscape: { width: 841.89, height: 595.28 } },
-            F4: { portrait: { width: 595.28, height: 935.43 }, landscape: { width: 935.43, height: 595.28 } }
+            A4: { width: 595.28, height: 841.89, label: 'A4' },
+            F4: { width: 595.28, height: 935.43, label: 'F4' },
+            LETTER: { width: 612, height: 792, label: 'Letter' },
+            LEGAL: { width: 612, height: 1008, label: 'Legal' }
         };
-        function getPaperViewport(paperSize, orientation) {
-            const paper = PAPER_DIMENSIONS[paperSize] || PAPER_DIMENSIONS.A4;
-            return paper[orientation] || paper.portrait;
+        function normalizeDimensions(width, height) {
+            return width <= height ? { width, height } : { width: height, height: width };
+        }
+        function detectStandardPaper(width, height) {
+            const n = normalizeDimensions(width, height);
+            let best = 'A4';
+            let bestError = Infinity;
+            Object.entries(PAPER_DIMENSIONS).forEach(([key, dim]) => {
+                const error = Math.abs(n.width - dim.width) + Math.abs(n.height - dim.height);
+                if (error < bestError) { best = key; bestError = error; }
+            });
+            return bestError <= 30 ? best : 'CUSTOM';
+        }
+        function formatSourceSize(info) {
+            if (!info || info.kind === 'none') return 'Belum ada file';
+            if (info.kind === 'image') return `Gambar ${Math.round(info.pixelWidth)} × ${Math.round(info.pixelHeight)} px • ukuran fisik diasumsikan 96 DPI`;
+            const mmW = info.width * 25.4 / 72;
+            const mmH = info.height * 25.4 / 72;
+            const standardLabel = info.standard && info.standard !== 'CUSTOM' ? `${PAPER_DIMENSIONS[info.standard].label} • ` : '';
+            const mixed = info.mixed ? ' • ukuran halaman campuran' : '';
+            return `${standardLabel}${mmW.toFixed(1)} × ${mmH.toFixed(1)} mm${mixed}`;
+        }
+        function resolveOrientation(requested, sourceWidth, sourceHeight, pps) {
+            if (requested === 'portrait' || requested === 'landscape') return requested;
+            if (pps === 2 || pps === 6) return 'landscape';
+            return sourceWidth > sourceHeight ? 'landscape' : 'portrait';
+        }
+        function resolvePaperViewport(paperSize, orientation, sourceWidth, sourceHeight, sourceStandard) {
+            let base;
+            if (paperSize === 'SOURCE') {
+                if (sourceStandard && PAPER_DIMENSIONS[sourceStandard]) base = PAPER_DIMENSIONS[sourceStandard];
+                else if (sourceWidth && sourceHeight) {
+                    const n = normalizeDimensions(sourceWidth, sourceHeight);
+                    base = { width: n.width, height: n.height, label: 'Dokumen' };
+                } else base = PAPER_DIMENSIONS.A4;
+            } else {
+                base = PAPER_DIMENSIONS[paperSize] || PAPER_DIMENSIONS.A4;
+            }
+            return orientation === 'landscape'
+                ? { width: base.height, height: base.width }
+                : { width: base.width, height: base.height };
         }
         function getGrid(pps, orientation) {
             const safePps = SUPPORTED_PPS.includes(pps) ? pps : 1;
@@ -270,6 +339,29 @@
             else if (safePps === 6) { cols = orientation === 'landscape' ? 3 : 2; rows = orientation === 'landscape' ? 2 : 3; }
             else if (safePps > 1) { cols = Math.ceil(Math.sqrt(safePps)); rows = Math.ceil(safePps / cols); }
             return { cols, rows, safePps };
+        }
+        function getEffectiveScaleMode(scaleMode, pps) {
+            if ((scaleMode === 'actual' || scaleMode === 'fill') && pps > 1) return 'shrink';
+            return ['fit', 'shrink', 'actual', 'fill'].includes(scaleMode) ? scaleMode : 'shrink';
+        }
+        function computePlacement(sourceWidth, sourceHeight, cellWidth, cellHeight, padding, scaleMode, allowRotate = true) {
+            const rotate = allowRotate && ((cellWidth > cellHeight && sourceWidth < sourceHeight) || (cellWidth < cellHeight && sourceWidth > sourceHeight));
+            const placedSourceW = rotate ? sourceHeight : sourceWidth;
+            const placedSourceH = rotate ? sourceWidth : sourceHeight;
+            const availableW = Math.max(1, cellWidth - padding);
+            const availableH = Math.max(1, cellHeight - padding);
+            const fitScale = Math.min(availableW / placedSourceW, availableH / placedSourceH);
+            const fillScale = Math.max(availableW / placedSourceW, availableH / placedSourceH);
+            let scale = fitScale;
+            if (scaleMode === 'shrink') scale = Math.min(1, fitScale);
+            else if (scaleMode === 'actual') scale = 1;
+            else if (scaleMode === 'fill') scale = fillScale;
+            return {
+                rotate,
+                scale,
+                width: placedSourceW * scale,
+                height: placedSourceH * scale
+            };
         }
         function parsePagesInput(value) {
             const raw = (value || '').trim();
@@ -322,19 +414,29 @@
             pagesEl.value = pageCheck.normalized;
             return true;
         }
-        function drawImageInCell(ctx, imgObj, cellX, cellY, cellW, cellH, padding, forceRotate = false) {
-            const rotate = forceRotate || ((cellW > cellH && imgObj.width < imgObj.height) || (cellW < cellH && imgObj.width > imgObj.height));
-            const targetW = rotate ? imgObj.height : imgObj.width;
-            const targetH = rotate ? imgObj.width : imgObj.height;
-            const scale = Math.min((cellW - padding) / targetW, (cellH - padding) / targetH);
-            const drawW = imgObj.width * scale;
-            const drawH = imgObj.height * scale;
+        function drawImageInCell(ctx, imgObj, cellX, cellY, cellW, cellH, padding, scaleMode, paperScale) {
+            const sourceWPt = imgObj.width * 72 / 96;
+            const sourceHPt = imgObj.height * 72 / 96;
+            const placement = computePlacement(
+                sourceWPt * paperScale,
+                sourceHPt * paperScale,
+                cellW,
+                cellH,
+                padding,
+                scaleMode,
+                true
+            );
             const centerX = cellX + cellW / 2;
             const centerY = cellY + cellH / 2;
             ctx.save();
+            ctx.beginPath();
+            ctx.rect(cellX, cellY, cellW, cellH);
+            ctx.clip();
             ctx.translate(centerX, centerY);
-            if (rotate) ctx.rotate(Math.PI / 2);
-            ctx.drawImage(imgObj, -drawW / 2, -drawH / 2, drawW, drawH);
+            if (placement.rotate) ctx.rotate(Math.PI / 2);
+            const rawDrawW = imgObj.width * (placement.scale * paperScale * 72 / 96);
+            const rawDrawH = imgObj.height * (placement.scale * paperScale * 72 / 96);
+            ctx.drawImage(imgObj, -rawDrawW / 2, -rawDrawH / 2, rawDrawW, rawDrawH);
             ctx.restore();
         }
         function showToast(message, type = 'info') {
@@ -362,6 +464,7 @@
                 colorMode: document.getElementById('colorMode').value,
                 paperSize: document.getElementById('paperSize').value,
                 orientation: document.getElementById('orientation').value,
+                scaleMode: document.getElementById('scaleMode').value,
                 pagesPerSheet: document.getElementById('pagesPerSheet').value,
                 copies: document.getElementById('copies').value,
                 pages: document.getElementById('pages').value
@@ -555,6 +658,7 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
             fd.append('colorMode', document.getElementById('colorMode').value);
             fd.append('paperSize', document.getElementById('paperSize').value);
             fd.append('orientation', document.getElementById('orientation').value);
+            fd.append('scaleMode', document.getElementById('scaleMode').value);
             fd.append('pagesPerSheet', document.getElementById('pagesPerSheet').value);
             fd.append('copies', document.getElementById('copies').value);
             fd.append('pages', useCompatibilityMode ? '' : document.getElementById('pages').value);
@@ -567,6 +671,8 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
             showToast('Berhasil dicetak', 'success');
             document.getElementById('fileInput').value = '';
             currentPdfDoc = null; currentImgSrc = null; currentPreviewSheet = 0;
+            currentSourceInfo = { kind: 'none', width: 595.28, height: 841.89, label: 'Belum ada file', standard: 'A4' };
+            document.getElementById('sourceSizeInfo').value = 'Belum ada file';
             document.getElementById('compatPrintBtn').style.display = 'none';
             document.getElementById('compatHint').style.display = 'none';
             updateDynamicPreview();
@@ -652,18 +758,69 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
         }
         document.getElementById('fileInput').addEventListener('change', async function(e) {
             const file = e.target.files[0];
-            if (!file) { currentPdfDoc = null; currentImgSrc = null; document.getElementById('compatPrintBtn').style.display = 'none'; document.getElementById('compatHint').style.display = 'none'; updateDynamicPreview(); return; }
+            if (!file) {
+                currentPdfDoc = null;
+                currentImgSrc = null;
+                currentSourceInfo = { kind: 'none', width: 595.28, height: 841.89, label: 'Belum ada file', standard: 'A4' };
+                document.getElementById('sourceSizeInfo').value = 'Belum ada file';
+                document.getElementById('compatPrintBtn').style.display = 'none';
+                document.getElementById('compatHint').style.display = 'none';
+                updateDynamicPreview();
+                return;
+            }
             currentPreviewSheet = 0;
             const reader = new FileReader();
             if (file.type === 'application/pdf') {
                 document.getElementById('compatPrintBtn').style.display = 'flex';
                 document.getElementById('compatHint').style.display = 'block';
-                reader.onload = async function() { currentPdfDoc = await pdfjsLib.getDocument(new Uint8Array(this.result)).promise; currentImgSrc = null; updateDynamicPreview(); };
+                reader.onload = async function() {
+                    currentPdfDoc = await pdfjsLib.getDocument(new Uint8Array(this.result)).promise;
+                    currentImgSrc = null;
+                    const first = await currentPdfDoc.getPage(1);
+                    const firstVp = first.getViewport({ scale: 1 });
+                    let mixed = false;
+                    const sampleCount = Math.min(currentPdfDoc.numPages, 20);
+                    for (let n = 2; n <= sampleCount; n += 1) {
+                        const p = await currentPdfDoc.getPage(n);
+                        const vp = p.getViewport({ scale: 1 });
+                        if (Math.abs(vp.width - firstVp.width) > 2 || Math.abs(vp.height - firstVp.height) > 2) {
+                            mixed = true;
+                            break;
+                        }
+                    }
+                    currentSourceInfo = {
+                        kind: 'pdf',
+                        width: firstVp.width,
+                        height: firstVp.height,
+                        standard: detectStandardPaper(firstVp.width, firstVp.height),
+                        mixed
+                    };
+                    document.getElementById('sourceSizeInfo').value = formatSourceSize(currentSourceInfo);
+                    updateDynamicPreview();
+                };
                 reader.readAsArrayBuffer(file);
             } else {
                 document.getElementById('compatPrintBtn').style.display = 'none';
                 document.getElementById('compatHint').style.display = 'none';
-                reader.onload = function(evt) { currentImgSrc = evt.target.result; currentPdfDoc = null; updateDynamicPreview(); };
+                reader.onload = function(evt) {
+                    currentImgSrc = evt.target.result;
+                    currentPdfDoc = null;
+                    const img = new Image();
+                    img.onload = () => {
+                        currentSourceInfo = {
+                            kind: 'image',
+                            width: img.width * 72 / 96,
+                            height: img.height * 72 / 96,
+                            pixelWidth: img.width,
+                            pixelHeight: img.height,
+                            standard: 'A4',
+                            mixed: false
+                        };
+                        document.getElementById('sourceSizeInfo').value = formatSourceSize(currentSourceInfo);
+                        updateDynamicPreview();
+                    };
+                    img.src = currentImgSrc;
+                };
                 reader.readAsDataURL(file);
             }
         });
@@ -677,23 +834,46 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
                 document.getElementById('previewBadge').textContent = document.getElementById('colorMode').value === 'monochrome' ? 'Hitam Putih' : 'Warna';
                 return;
             }
+
             validatePrintSettings(false);
             emptyState.style.display = 'none';
             canvas.style.display = 'block';
-            const orientation = document.getElementById('orientation').value;
+
+            const requestedOrientation = document.getElementById('orientation').value;
             const paperSize = document.getElementById('paperSize').value;
+            const requestedScaleMode = document.getElementById('scaleMode').value;
             const pps = parseInt(document.getElementById('pagesPerSheet').value, 10) || 1;
-            const { cols, rows, safePps } = getGrid(pps, orientation);
-            const paperViewport = getPaperViewport(paperSize, orientation);
+            const resolvedOrientation = resolveOrientation(requestedOrientation, currentSourceInfo.width, currentSourceInfo.height, pps);
+            const scaleMode = getEffectiveScaleMode(requestedScaleMode, pps);
+            const paperViewport = resolvePaperViewport(
+                paperSize,
+                resolvedOrientation,
+                currentSourceInfo.width,
+                currentSourceInfo.height,
+                currentSourceInfo.standard
+            );
+            const { cols, rows, safePps } = getGrid(pps, resolvedOrientation);
+
             const baseHeight = 1000;
             const ratio = paperViewport.width / paperViewport.height;
             canvas.height = baseHeight;
-            canvas.width = Math.max(700, Math.round(baseHeight * ratio));
+            canvas.width = Math.max(650, Math.round(baseHeight * ratio));
+            const paperScale = canvas.width / paperViewport.width;
+            const paddingPt = Math.max(6, paperViewport.height * 0.04);
+            const paddingPx = paddingPt * paperScale;
             canvas.style.filter = document.getElementById('colorMode').value === 'monochrome' ? 'grayscale(100%)' : 'none';
-            document.getElementById('previewBadge').textContent = `${paperSize} • ${orientation === 'landscape' ? 'Landscape' : 'Portrait'} • ${document.getElementById('colorMode').value === 'monochrome' ? 'Hitam Putih' : 'Warna'}`;
+
+            const paperLabel = paperSize === 'SOURCE'
+                ? `Sama dengan Dokumen (${currentSourceInfo.standard === 'CUSTOM' ? 'Kustom' : (PAPER_DIMENSIONS[currentSourceInfo.standard]?.label || 'A4')})`
+                : PAPER_DIMENSIONS[paperSize].label;
+            const scaleLabels = { fit: 'Fit', shrink: 'Shrink', actual: '100%', fill: 'Fill' };
+            document.getElementById('previewBadge').textContent =
+                `${paperLabel} • ${resolvedOrientation === 'landscape' ? 'Landscape' : 'Portrait'} • ${scaleLabels[scaleMode]} • ${document.getElementById('colorMode').value === 'monochrome' ? 'Hitam Putih' : 'Warna'}`;
+
             const ctx = canvas.getContext('2d');
             ctx.fillStyle = 'white';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
+
             if (currentImgSrc) {
                 totalPreviewSheets = 1;
                 currentPreviewSheet = 0;
@@ -702,36 +882,52 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
                 document.getElementById('btnNextPage').disabled = true;
                 const imgObj = new Image();
                 imgObj.src = currentImgSrc;
-                await new Promise(r => imgObj.onload = r);
+                await new Promise((resolve, reject) => { imgObj.onload = resolve; imgObj.onerror = reject; });
                 const cellW = canvas.width / cols;
                 const cellH = canvas.height / rows;
-                drawImageInCell(ctx, imgObj, 0, 0, cellW, cellH, 40, false);
+                drawImageInCell(ctx, imgObj, 0, 0, cellW, cellH, paddingPx, scaleMode, paperScale);
                 return;
             }
-            const pageArr = Array.from({ length: currentPdfDoc.numPages }, (_, i) => i + 1);
+
+            const pageArr = Array.from({ length: currentPdfDoc.numPages }, (_, idx) => idx + 1);
             totalPreviewSheets = Math.ceil(pageArr.length / safePps);
             document.getElementById('previewPagination').style.display = totalPreviewSheets > 1 ? 'flex' : 'none';
             document.getElementById('previewSheetText').innerText = `${currentPreviewSheet + 1} / ${totalPreviewSheets}`;
             document.getElementById('btnPrevPage').disabled = currentPreviewSheet <= 0;
             document.getElementById('btnNextPage').disabled = currentPreviewSheet >= totalPreviewSheets - 1;
-            const start = currentPreviewSheet * safePps;
-            for (let i = 0; i < Math.min(safePps, pageArr.length - start); i++) {
-                const page = await currentPdfDoc.getPage(pageArr[start + i]);
+
+            const startPage = currentPreviewSheet * safePps;
+            for (let slot = 0; slot < Math.min(safePps, pageArr.length - startPage); slot += 1) {
+                const page = await currentPdfDoc.getPage(pageArr[startPage + slot]);
                 const cellW = canvas.width / cols;
                 const cellH = canvas.height / rows;
+                const cellX = (slot % cols) * cellW;
+                const cellY = Math.floor(slot / cols) * cellH;
                 const baseVp = page.getViewport({ scale: 1 });
-                const isRotated = (cellW > cellH && baseVp.width < baseVp.height) || (cellW < cellH && baseVp.width > baseVp.height);
-                const dW = isRotated ? baseVp.height : baseVp.width;
-                const dH = isRotated ? baseVp.width : baseVp.height;
-                const scale = Math.min((cellW - 40) / dW, (cellH - 40) / dH);
-                const renderVp = page.getViewport({ scale, rotation: isRotated ? 90 : 0 });
+                const placement = computePlacement(
+                    baseVp.width * paperScale,
+                    baseVp.height * paperScale,
+                    cellW,
+                    cellH,
+                    paddingPx,
+                    scaleMode,
+                    true
+                );
+                const renderScale = placement.scale * paperScale;
+                const renderVp = page.getViewport({ scale: renderScale, rotation: placement.rotate ? 90 : 0 });
                 const off = document.createElement('canvas');
-                off.width = renderVp.width;
-                off.height = renderVp.height;
+                off.width = Math.max(1, Math.ceil(renderVp.width));
+                off.height = Math.max(1, Math.ceil(renderVp.height));
                 await page.render({ canvasContext: off.getContext('2d'), viewport: renderVp }).promise;
-                const xPos = (i % cols) * cellW + (cellW - renderVp.width) / 2;
-                const yPos = Math.floor(i / cols) * cellH + (cellH - renderVp.height) / 2;
-                ctx.drawImage(off, xPos, yPos);
+
+                ctx.save();
+                ctx.beginPath();
+                ctx.rect(cellX, cellY, cellW, cellH);
+                ctx.clip();
+                const x = cellX + (cellW - renderVp.width) / 2;
+                const y = cellY + (cellH - renderVp.height) / 2;
+                ctx.drawImage(off, x, y);
+                ctx.restore();
             }
         }
         function changePreviewSheet(dir) { currentPreviewSheet = Math.max(0, Math.min(totalPreviewSheets-1, currentPreviewSheet + dir)); updateDynamicPreview(); }
@@ -769,7 +965,7 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
             }
         }
 
-        ['copies', 'pages', 'pagesPerSheet', 'paperSize', 'orientation'].forEach((id) => {
+        ['copies', 'pages', 'pagesPerSheet', 'paperSize', 'orientation', 'scaleMode'].forEach((id) => {
             const el = document.getElementById(id);
             const eventName = id === 'pages' ? 'blur' : 'change';
             el.addEventListener(eventName, () => {

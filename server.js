@@ -88,14 +88,55 @@ function updateStatus(message, type = 'info') {
 
 const SUPPORTED_PPS = new Set([1, 2, 4, 6, 9, 16]);
 const MAX_COPIES = 50;
-const PREVIEW_PADDING_RATIO = 0.04; // sinkron dengan preview: 40px dari canvas tinggi 1000px
+const PREVIEW_PADDING_RATIO = 0.04;
 const PAPER_DIMENSIONS = {
-  A4: { portrait: { width: 595.28, height: 841.89 }, landscape: { width: 841.89, height: 595.28 } },
-  F4: { portrait: { width: 595.28, height: 935.43 }, landscape: { width: 935.43, height: 595.28 } },
+  A4: { width: 595.28, height: 841.89 },
+  F4: { width: 595.28, height: 935.43 },
+  LETTER: { width: 612, height: 792 },
+  LEGAL: { width: 612, height: 1008 },
 };
-function getPaperSizeConfig(paperSize = 'A4', orientation = 'portrait') {
-  const paper = PAPER_DIMENSIONS[paperSize] || PAPER_DIMENSIONS.A4;
-  return paper[orientation] || paper.portrait;
+
+function normalizeDimensions(width, height) {
+  return width <= height ? { width, height } : { width: height, height: width };
+}
+function detectStandardPaper(width, height) {
+  const n = normalizeDimensions(width, height);
+  let best = 'A4';
+  let bestError = Infinity;
+  Object.entries(PAPER_DIMENSIONS).forEach(([key, dim]) => {
+    const error = Math.abs(n.width - dim.width) + Math.abs(n.height - dim.height);
+    if (error < bestError) { best = key; bestError = error; }
+  });
+  return bestError <= 30 ? best : 'CUSTOM';
+}
+function resolveOrientation(requested, sourceWidth, sourceHeight, pps) {
+  if (requested === 'portrait' || requested === 'landscape') return requested;
+  if (pps === 2 || pps === 6) return 'landscape';
+  return sourceWidth > sourceHeight ? 'landscape' : 'portrait';
+}
+function resolvePaperSize(paperSize, orientation, sourceWidth, sourceHeight, sourceStandard) {
+  let base;
+  let resolvedKey = paperSize;
+  if (paperSize === 'SOURCE') {
+    if (sourceStandard && PAPER_DIMENSIONS[sourceStandard]) {
+      resolvedKey = sourceStandard;
+      base = PAPER_DIMENSIONS[sourceStandard];
+    } else if (sourceWidth && sourceHeight) {
+      const n = normalizeDimensions(sourceWidth, sourceHeight);
+      base = { width: n.width, height: n.height };
+      resolvedKey = 'CUSTOM';
+    } else {
+      resolvedKey = 'A4';
+      base = PAPER_DIMENSIONS.A4;
+    }
+  } else {
+    resolvedKey = PAPER_DIMENSIONS[paperSize] ? paperSize : 'A4';
+    base = PAPER_DIMENSIONS[resolvedKey];
+  }
+  const dimensions = orientation === 'landscape'
+    ? { width: base.height, height: base.width }
+    : { width: base.width, height: base.height };
+  return { ...dimensions, key: resolvedKey };
 }
 function getGrid(pps = 1, orientation = 'portrait') {
   const safePps = SUPPORTED_PPS.has(pps) ? pps : 1;
@@ -105,6 +146,24 @@ function getGrid(pps = 1, orientation = 'portrait') {
   else if (safePps === 6) { cols = orientation === 'landscape' ? 3 : 2; rows = orientation === 'landscape' ? 2 : 3; }
   else if (safePps > 1) { cols = Math.ceil(Math.sqrt(safePps)); rows = Math.ceil(safePps / cols); }
   return { cols, rows, safePps };
+}
+function getEffectiveScaleMode(scaleMode, pps) {
+  if ((scaleMode === 'actual' || scaleMode === 'fill') && pps > 1) return 'shrink';
+  return ['fit', 'shrink', 'actual', 'fill'].includes(scaleMode) ? scaleMode : 'shrink';
+}
+function computePlacement(sourceWidth, sourceHeight, cellWidth, cellHeight, padding, scaleMode, allowRotate = true) {
+  const rotate = allowRotate && ((cellWidth > cellHeight && sourceWidth < sourceHeight) || (cellWidth < cellHeight && sourceWidth > sourceHeight));
+  const placedSourceW = rotate ? sourceHeight : sourceWidth;
+  const placedSourceH = rotate ? sourceWidth : sourceHeight;
+  const availableW = Math.max(1, cellWidth - padding);
+  const availableH = Math.max(1, cellHeight - padding);
+  const fitScale = Math.min(availableW / placedSourceW, availableH / placedSourceH);
+  const fillScale = Math.max(availableW / placedSourceW, availableH / placedSourceH);
+  let scale = fitScale;
+  if (scaleMode === 'shrink') scale = Math.min(1, fitScale);
+  else if (scaleMode === 'actual') scale = 1;
+  else if (scaleMode === 'fill') scale = fillScale;
+  return { rotate, scale, width: placedSourceW * scale, height: placedSourceH * scale };
 }
 function parsePagesInput(pagesInput, total) {
   if (!pagesInput || !String(pagesInput).trim()) return [];
@@ -125,13 +184,23 @@ function parsePagesInput(pagesInput, total) {
   return [...new Set(keep)].sort((a, b) => a - b);
 }
 function sanitizePrintOptions(body) {
-  const orientation = body.orientation === 'landscape' ? 'landscape' : 'portrait';
-  const paperSize = body.paperSize === 'F4' ? 'F4' : 'A4';
+  const orientation = ['auto', 'portrait', 'landscape'].includes(body.orientation) ? body.orientation : 'auto';
+  const paperSize = ['SOURCE', 'A4', 'F4', 'LETTER', 'LEGAL'].includes(body.paperSize) ? body.paperSize : 'SOURCE';
+  const scaleMode = ['fit', 'shrink', 'actual', 'fill'].includes(body.scaleMode) ? body.scaleMode : 'shrink';
   const colorMode = body.colorMode === 'monochrome' ? 'monochrome' : 'color';
   const copies = Math.min(MAX_COPIES, Math.max(1, parseInt(body.copies, 10) || 1));
   const pagesPerSheetRaw = parseInt(body.pagesPerSheet, 10) || 1;
   const pagesPerSheet = SUPPORTED_PPS.has(pagesPerSheetRaw) ? pagesPerSheetRaw : 1;
-  return { orientation, paperSize, colorMode, copies, pagesPerSheet, pages: String(body.pages || '').trim(), printerName: body.printerName || '' };
+  return {
+    orientation,
+    paperSize,
+    scaleMode,
+    colorMode,
+    copies,
+    pagesPerSheet,
+    pages: String(body.pages || '').trim(),
+    printerName: body.printerName || ''
+  };
 }
 
 async function loadEmbeddedImage(pdfDoc, imagePath, mimeType, originalName) {
@@ -151,49 +220,49 @@ function getCellPadding(outputSize, cellW, cellH) {
   return Math.max(6, Math.min(preferred, cellW * 0.35, cellH * 0.35));
 }
 
-function drawImageInPdfCell(page, image, cellX, cellY, cellW, cellH, padding) {
-  const shouldRotate = (cellW > cellH && image.width < image.height) || (cellW < cellH && image.width > image.height);
-  const targetW = shouldRotate ? image.height : image.width;
-  const targetH = shouldRotate ? image.width : image.height;
-  const scale = Math.min((cellW - padding) / targetW, (cellH - padding) / targetH);
-  const drawW = image.width * scale;
-  const drawH = image.height * scale;
+function drawImageInPdfCell(page, image, cellX, cellY, cellW, cellH, padding, scaleMode) {
+  const sourceWPt = image.width * 72 / 96;
+  const sourceHPt = image.height * 72 / 96;
+  const placement = computePlacement(sourceWPt, sourceHPt, cellW, cellH, padding, scaleMode, true);
   const centerX = cellX + cellW / 2;
   const centerY = cellY + cellH / 2;
+  const rawDrawW = image.width * 72 / 96 * placement.scale;
+  const rawDrawH = image.height * 72 / 96 * placement.scale;
   page.drawImage(image, {
-    // Untuk rotasi 90°, pdf-lib memutar dari titik origin kiri-bawah.
-    // Kompensasi ini membuat bounding box hasil rotasi tetap berada di tengah sel,
-    // sama seperti preview canvas di frontend.
-    x: shouldRotate ? centerX + drawH / 2 : centerX - drawW / 2,
-    y: shouldRotate ? centerY - drawW / 2 : centerY - drawH / 2,
-    width: drawW,
-    height: drawH,
-    rotate: shouldRotate ? degrees(90) : degrees(0),
+    x: placement.rotate ? centerX + rawDrawH / 2 : centerX - rawDrawW / 2,
+    y: placement.rotate ? centerY - rawDrawW / 2 : centerY - rawDrawH / 2,
+    width: rawDrawW,
+    height: rawDrawH,
+    rotate: placement.rotate ? degrees(90) : degrees(0),
   });
 }
 
-async function convertImageToPdf(imagePath, mimeType, originalName, paperSize, orientation, pps) {
+async function convertImageToPdf(imagePath, mimeType, originalName, options) {
   const pdfDoc = await PDFDocument.create();
   const image = await loadEmbeddedImage(pdfDoc, imagePath, mimeType, originalName);
-  const outputSize = getPaperSizeConfig(paperSize, orientation);
-  const { cols, rows } = getGrid(pps, orientation);
+  const sourceWPt = image.width * 72 / 96;
+  const sourceHPt = image.height * 72 / 96;
+  const resolvedOrientation = resolveOrientation(options.orientation, sourceWPt, sourceHPt, options.pagesPerSheet);
+  const outputSize = resolvePaperSize(
+    options.paperSize,
+    resolvedOrientation,
+    sourceWPt,
+    sourceHPt,
+    options.paperSize === 'SOURCE' ? 'A4' : options.paperSize
+  );
+  const scaleMode = getEffectiveScaleMode(options.scaleMode, options.pagesPerSheet);
+  const { cols, rows } = getGrid(options.pagesPerSheet, resolvedOrientation);
   const page = pdfDoc.addPage([outputSize.width, outputSize.height]);
   const cellW = outputSize.width / cols;
   const cellH = outputSize.height / rows;
   const padding = getCellPadding(outputSize, cellW, cellH);
-
-  // Gambar tunggal ditempatkan langsung pada layout final.
-  // Ini menghindari bug lama: gambar dibungkus jadi PDF full-page dulu,
-  // lalu full-page PDF itu dikecilkan lagi pada mode Hal/Lembar.
-  const cellX = 0;
-  const cellY = outputSize.height - cellH;
-  drawImageInPdfCell(page, image, cellX, cellY, cellW, cellH, padding);
+  drawImageInPdfCell(page, image, 0, outputSize.height - cellH, cellW, cellH, padding, scaleMode);
 
   const pdfBytes = await pdfDoc.save();
   const newPdfPath = imagePath + '_converted.pdf';
   fs.writeFileSync(newPdfPath, pdfBytes);
   try { fs.unlinkSync(imagePath); } catch (_) {}
-  return newPdfPath;
+  return { filePath: newPdfPath, outputPaperKey: outputSize.key, resolvedOrientation };
 }
 
 app.get('/ping', (req, res) => {
@@ -223,7 +292,7 @@ app.get('/limits', (req, res) => {
     largePdfThresholdMb: LARGE_PDF_THRESHOLD_MB,
     largePdfChunkPages: LARGE_PDF_CHUNK_PAGES,
     supportedFileTypes: ['pdf', 'png', 'jpg', 'jpeg'],
-    version: '4.5.12',
+    version: '4.5.13',
   });
 });
 
@@ -236,50 +305,62 @@ app.get('/printers', async (req, res) => {
 });
 
 function shouldProcessPdf(options) {
-  // Untuk PDF panjang, jangan layout ulang bila pengaturan masih standar.
-  // Ini mengurangi risiko gagal pada file puluhan/ratusan halaman.
-  return Boolean(options.pages) || options.pagesPerSheet !== 1 || options.orientation !== 'portrait';
+  return Boolean(options.pages)
+    || options.pagesPerSheet !== 1
+    || options.orientation !== 'auto'
+    || options.paperSize !== 'SOURCE'
+    || options.scaleMode !== 'shrink';
 }
 
-async function processPdf(filePath, pagesInput, paperSize, orientation, pps) {
+async function processPdf(filePath, options) {
   const bytes = fs.readFileSync(filePath);
-  let pdfDoc = await PDFDocument.load(bytes);
-  const keep = parsePagesInput(pagesInput, pdfDoc.getPageCount());
+  let pdfDoc = await PDFDocument.load(bytes, { ignoreEncryption: true });
+  const keep = parsePagesInput(options.pages, pdfDoc.getPageCount());
   if (keep.length) {
     const newDoc = await PDFDocument.create();
     const copied = await newDoc.copyPages(pdfDoc, keep);
     copied.forEach(pg => newDoc.addPage(pg));
     pdfDoc = newDoc;
   }
-  const { cols, rows, safePps } = getGrid(pps, orientation);
-  const outputSize = getPaperSizeConfig(paperSize, orientation);
+
   const pages = pdfDoc.getPages();
+  if (!pages.length) throw new Error('PDF tidak memiliki halaman.');
+  const first = pages[0];
+  const firstSize = first.getSize();
+  const sourceStandard = detectStandardPaper(firstSize.width, firstSize.height);
+  const resolvedOrientation = resolveOrientation(options.orientation, firstSize.width, firstSize.height, options.pagesPerSheet);
+  const outputSize = resolvePaperSize(options.paperSize, resolvedOrientation, firstSize.width, firstSize.height, sourceStandard);
+  const scaleMode = getEffectiveScaleMode(options.scaleMode, options.pagesPerSheet);
+  const { cols, rows, safePps } = getGrid(options.pagesPerSheet, resolvedOrientation);
+
   const final = await PDFDocument.create();
   const cellW = outputSize.width / cols;
   const cellH = outputSize.height / rows;
   const padding = getCellPadding(outputSize, cellW, cellH);
   let curPage;
+
   for (let i = 0; i < pages.length; i += 1) {
     if (i % safePps === 0) curPage = final.addPage([outputSize.width, outputSize.height]);
     const emb = await final.embedPage(pages[i]);
-    const rot = (cellW > cellH && emb.width < emb.height) || (cellW < cellH && emb.width > emb.height);
-    const dW = rot ? emb.height : emb.width;
-    const dH = rot ? emb.width : emb.height;
-    const scale = Math.min((cellW - padding) / dW, (cellH - padding) / dH);
-    const x = (i % safePps % cols) * cellW + (cellW - dW * scale) / 2;
-    const y = outputSize.height - (Math.floor(i % safePps / cols) + 1) * cellH + (cellH - dH * scale) / 2;
+    const placement = computePlacement(emb.width, emb.height, cellW, cellH, padding, scaleMode, true);
+    const slot = i % safePps;
+    const cellX = (slot % cols) * cellW;
+    const cellY = outputSize.height - (Math.floor(slot / cols) + 1) * cellH;
+    const x = cellX + (cellW - placement.width) / 2;
+    const y = cellY + (cellH - placement.height) / 2;
+
     curPage.drawPage(emb, {
-      x: x + (rot ? dW * scale : 0),
+      x: x + (placement.rotate ? emb.height * placement.scale : 0),
       y,
-      width: emb.width * scale,
-      height: emb.height * scale,
-      rotate: rot ? degrees(90) : degrees(0),
+      width: emb.width * placement.scale,
+      height: emb.height * placement.scale,
+      rotate: placement.rotate ? degrees(90) : degrees(0),
     });
   }
+
   fs.writeFileSync(filePath, await final.save());
+  return { outputPaperKey: outputSize.key, resolvedOrientation };
 }
-
-
 
 async function getPdfPageCount(filePath) {
   const bytes = fs.readFileSync(filePath);
@@ -386,17 +467,26 @@ app.post('/print',
     let pdfPageCount = 0;
     let pdfSizeMb = getFileSizeMb(fPath);
     let shouldChunkPdf = false;
+    let outputPaperKey = options.paperSize === 'SOURCE' ? 'A4' : options.paperSize;
 
     if (isImageFile) {
       updateStatus('Menyesuaikan Gambar ke Kertas...', 'processing');
-      fPath = await convertImageToPdf(fPath, mimeType, originalName, options.paperSize, options.orientation, options.pagesPerSheet);
+      const imageResult = await convertImageToPdf(fPath, mimeType, originalName, options);
+      fPath = imageResult.filePath;
+      outputPaperKey = imageResult.outputPaperKey;
     } else if (isPdfFile && shouldProcessPdf(options)) {
-      await processPdf(fPath, options.pages, options.paperSize, options.orientation, options.pagesPerSheet);
+      const pdfResult = await processPdf(fPath, options);
+      outputPaperKey = pdfResult.outputPaperKey;
       pdfPageCount = await getPdfPageCount(fPath);
       pdfSizeMb = getFileSizeMb(fPath);
       shouldChunkPdf = pdfPageCount >= LARGE_PDF_THRESHOLD_PAGES || pdfSizeMb >= LARGE_PDF_THRESHOLD_MB;
     } else if (isPdfFile) {
-      pdfPageCount = await getPdfPageCount(fPath);
+      const sourceBytes = fs.readFileSync(fPath);
+      const sourcePdf = await PDFDocument.load(sourceBytes, { ignoreEncryption: true });
+      pdfPageCount = sourcePdf.getPageCount();
+      const firstSize = sourcePdf.getPage(0).getSize();
+      const detected = detectStandardPaper(firstSize.width, firstSize.height);
+      outputPaperKey = detected === 'CUSTOM' ? 'A4' : detected;
       pdfSizeMb = getFileSizeMb(fPath);
       shouldChunkPdf = pdfPageCount >= LARGE_PDF_THRESHOLD_PAGES || pdfSizeMb >= LARGE_PDF_THRESHOLD_MB;
       updateStatus(`PDF asli: ${pdfPageCount} halaman, ${pdfSizeMb.toFixed(1)} MB. ${shouldChunkPdf ? 'Akan dicetak per bagian.' : 'Akan dikirim langsung.'}`, 'processing');
@@ -408,7 +498,14 @@ app.post('/print',
       printer: options.printerName,
       monochrome: options.colorMode === 'monochrome',
       copies: options.copies,
-      paperSize: options.paperSize === 'F4' ? '210x330mm' : 'A4',
+      paperSize: outputPaperKey === 'F4'
+        ? '210x330mm'
+        : outputPaperKey === 'LETTER'
+          ? 'Letter'
+          : outputPaperKey === 'LEGAL'
+            ? 'Legal'
+            : 'A4',
+      // Layout/skala sudah dibentuk di PDF final; driver hanya mengecilkan bila area printable lebih sempit.
       scale: 'shrink',
     };
 
@@ -436,4 +533,4 @@ server.requestTimeout = 0;
 server.headersTimeout = 0;
 server.timeout = 0;
 
-server.listen(port, '0.0.0.0', () => console.log(`Print Server V4.5.12 Ready on ${port}`));
+server.listen(port, '0.0.0.0', () => console.log(`Print Server V4.5.13 Ready on ${port}`));
