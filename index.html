@@ -90,7 +90,7 @@
         .cap-badge.warn { background:rgba(245,158,11,.14); color:#a16207; }
 
         .capability-card { margin-top:8px; padding:9px 10px; border:1px solid var(--border); border-radius:9px; font-size:10px; line-height:1.45; color:var(--text-muted); background:rgba(51,65,85,.04); }
-        /* v4.5.29 — Print Settings UX Consolidation */
+        /* v4.5.30 — Print Settings UX Consolidation */
         .ux-settings-root { display:flex; flex-direction:column; gap:10px; margin-top:12px; }
         .ux-basic-card { border:1px solid var(--border-soft); background:#f8fafc; border-radius:12px; padding:12px; }
         .ux-basic-card-title { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px; font-size:11px; font-weight:800; color:#334155; }
@@ -150,7 +150,7 @@
 
     
         /* =========================================================
-           v4.5.29 — Professional UI Refresh
+           v4.5.30 — Professional UI Refresh
            Visual layer only. Print engine and control IDs unchanged.
            ========================================================= */
         :root {
@@ -648,7 +648,7 @@
             #printBtn { min-height:48px; }
         }
 
-        /* v4.5.29 — Professional Print Dialog Layout */
+        /* v4.5.30 — Professional Print Dialog Layout */
         .legacy-section-title,.dialog-hidden-control,.dialog-hidden-toolbar,#uxLegacySettingsGrid,#uxLegacyJobGrid{display:none!important}
         .print-dialog-shell{display:grid;grid-template-columns:168px minmax(0,1fr);margin-top:4px;border:1px solid #d9e1eb;border-radius:14px;background:#fff;min-height:680px;box-shadow:0 5px 18px rgba(15,23,42,.04)}
         .dialog-sidebar{min-width:0;padding:14px 10px;background:linear-gradient(180deg,#f8fafc,#f4f7fb);border-right:1px solid #e1e7ef;border-radius:14px 0 0 14px}
@@ -676,6 +676,120 @@
         .mobile-settings-button,.mobile-print-button{min-height:43px;border-radius:9px;font-family:inherit;font-size:11px;font-weight:750;cursor:pointer}.mobile-settings-button{border:1px solid #dbe3ec;background:#f8fafc;color:#334155;text-align:left;padding:0 12px}.mobile-print-button{border:0;background:#1d4ed8;color:#fff}
         .mobile-sheet-overlay{position:fixed;display:block;inset:0;z-index:8990;background:rgba(15,23,42,.42);opacity:0;visibility:hidden;transition:.18s}.mobile-sheet-overlay.open{opacity:1;visibility:visible}.mobile-settings-sheet{position:fixed;display:block;left:0;right:0;bottom:0;z-index:9000;max-height:78vh;padding:8px 12px 18px;border-radius:20px 20px 0 0;background:#fff;box-shadow:0 -18px 48px rgba(15,23,42,.18);transform:translateY(105%);transition:transform .2s;overflow:auto}.mobile-settings-sheet.open{transform:translateY(0)}
         .mobile-sheet-handle{width:42px;height:4px;border-radius:999px;background:#cbd5e1;margin:2px auto 11px}.mobile-sheet-head{display:flex;align-items:center;justify-content:space-between;padding:0 2px 10px;border-bottom:1px solid #eef2f6}.mobile-sheet-head strong{font-size:13px}.mobile-sheet-head button{border:0;background:#f1f5f9;color:#475569;border-radius:8px;padding:7px 10px;font-weight:700}.mobile-sheet-list{display:flex;flex-direction:column;gap:4px;padding-top:8px}.mobile-sheet-item{display:grid;grid-template-columns:28px 1fr;gap:8px;align-items:center;width:100%;padding:9px 10px;border:0;border-radius:9px;background:#fff;color:#334155;text-align:left;font-family:inherit}.mobile-sheet-item strong{display:block;font-size:10.5px}.mobile-sheet-item small{display:block;margin-top:2px;font-size:8px;color:#94a3b8}.mobile-sheet-item.active{background:#eff6ff;color:#1d4ed8}body.mobile-sheet-open{overflow:hidden}}
+
+        /* v4.5.30 — Readability & Typography Upgrade */
+        body { font-size:14px; }
+        .app-brand-title { font-size:18px; }
+        .app-brand-subtitle { font-size:11px; }
+        .app-version { font-size:10px; }
+
+        .section-title { font-size:11px; letter-spacing:.08em; }
+        .section-kicker { font-size:9px; }
+
+        .input-group label { font-size:12px; line-height:1.4; }
+
+        .input-standard,
+        .input-with-btn input,
+        .input-with-btn select,
+        select#printerSelect { font-size:13px; }
+
+        .capability-card { font-size:11px; }
+        .cap-badge { font-size:10px; }
+        .settings-summary { font-size:11px; line-height:1.5; }
+        .settings-live { font-size:9px; }
+        .estimate-card { font-size:11px; line-height:1.5; }
+        .mini-btn { font-size:10.5px; }
+
+        .print-dialog-shell { grid-template-columns:190px minmax(0,1fr); }
+        .dialog-sidebar-title { font-size:13px; }
+        .dialog-sidebar-sub { font-size:10px; line-height:1.4; }
+        .dialog-nav-item { min-height:50px; padding:9px 10px; gap:9px; }
+        .dialog-nav-icon { width:22px; flex-basis:22px; font-size:15px; }
+        .dialog-nav-copy strong { font-size:11.5px; line-height:1.25; }
+        .dialog-nav-copy small { max-width:125px; font-size:9px; line-height:1.35; }
+        .dialog-nav-badge { min-width:20px; height:20px; font-size:9px; }
+
+        .dialog-preset-slot { flex-basis:230px; }
+        .dialog-preset-slot .dialog-preset-group label { font-size:10px; }
+        .dialog-preset-slot .input-standard { min-height:40px; font-size:12px; }
+        .dialog-preset-slot .mini-btn { min-height:38px; font-size:10px; }
+        .dialog-quick-summary .settings-summary { min-height:40px; font-size:10.5px; }
+
+        .panel-heading { min-height:86px; padding:16px 18px 14px; }
+        .panel-eyebrow { font-size:9px; }
+        .panel-heading h3 { font-size:18px; }
+        .panel-heading p { margin-top:5px; font-size:10.5px; line-height:1.45; }
+        .panel-summary { max-width:220px; padding:6px 10px; font-size:9.5px; }
+
+        .panel-content { gap:12px 14px; padding:17px 18px 20px; }
+        .panel-content .input-group label { font-size:11.5px; margin-bottom:6px; }
+        .panel-content .input-standard,
+        .panel-content .input-with-btn input,
+        .panel-content .input-with-btn select {
+            min-height:42px; padding:9px 11px; font-size:12.5px;
+        }
+        .panel-content .input-with-btn { height:42px; }
+        .panel-content .btn-icon { width:42px; height:42px; }
+        .panel-content .capability-card { font-size:10.5px; line-height:1.5; }
+        .panel-content .driver-note { font-size:10.5px; line-height:1.5; }
+
+        .ux-mode-note,.ux-expert-note { font-size:10px; line-height:1.45; }
+        .ux-priority-badge { font-size:8.5px; }
+
+        .queue-badge { font-size:10.5px; }
+        .queue-job { font-size:11px; }
+        .queue-actions button { font-size:10.5px; padding:6px 9px; }
+        #printerRealtimeStatus { font-size:10.5px !important; line-height:1.45; }
+        .history-card,.history-card li { font-size:11px; line-height:1.5; }
+
+        .preview-header { font-size:10.5px; }
+        #previewSheetText { font-size:11px !important; }
+        #previewBadge { font-size:9.5px; }
+        #emptyPreviewState { font-size:13px !important; }
+        #compatHint { font-size:10.5px !important; line-height:1.45 !important; }
+
+        .modal-content { font-size:13px; }
+        .modal-content p { font-size:12px !important; line-height:1.5; }
+        .toast { font-size:12.5px; }
+
+        @media (min-width:992px) {
+            .app-wrapper {
+                grid-template-columns:minmax(740px,820px) minmax(500px,1fr) !important;
+                max-width:1540px !important;
+            }
+            .print-dialog-shell { grid-template-columns:190px minmax(0,1fr); }
+        }
+
+        @media (min-width:1320px) {
+            .app-wrapper { grid-template-columns:840px minmax(570px,1fr) !important; }
+            .print-dialog-shell { grid-template-columns:200px minmax(0,1fr); }
+        }
+
+        @media (max-width:991px) {
+            .panel-heading h3 { font-size:17px; }
+            .panel-heading p { font-size:10.5px; }
+            .panel-content .input-group label { font-size:12px; }
+            .panel-content .input-standard,
+            .panel-content .input-with-btn input,
+            .panel-content .input-with-btn select {
+                min-height:44px; font-size:13px;
+            }
+            .dialog-preset-slot .input-standard { font-size:12.5px; }
+            .dialog-quick-summary .settings-summary { font-size:10.5px; }
+            .mobile-settings-button,.mobile-print-button { min-height:46px; font-size:12px; }
+            .mobile-sheet-head strong { font-size:14px; }
+            .mobile-sheet-head button { font-size:11px; }
+            .mobile-sheet-item { min-height:54px; padding:10px 11px; }
+            .mobile-sheet-item strong { font-size:12px; }
+            .mobile-sheet-item small { margin-top:3px; font-size:9.5px; line-height:1.35; }
+        }
+
+        @media (max-width:560px) {
+            .app-brand-title { font-size:17px; }
+            .app-brand-subtitle { font-size:10px; }
+            .panel-content { padding:14px; }
+            .panel-heading { padding:14px; }
+        }
 </style>
 </head>
 <body>
@@ -688,7 +802,7 @@
                         <div class="app-brand-title">Print Server Pro</div>
                         <div class="app-brand-subtitle">Network Printing Console</div>
                     </div>
-                    <span class="app-version">v4.5.29</span>
+                    <span class="app-version">v4.5.30</span>
                 </div>
                 <div class="install-row"><button id="installBtn" class="btn-block secondary">Install Aplikasi</button></div>
                 <div class="section-title">
