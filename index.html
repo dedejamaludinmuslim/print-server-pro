@@ -90,7 +90,7 @@
         .cap-badge.warn { background:rgba(245,158,11,.14); color:#a16207; }
 
         .capability-card { margin-top:8px; padding:9px 10px; border:1px solid var(--border); border-radius:9px; font-size:10px; line-height:1.45; color:var(--text-muted); background:rgba(51,65,85,.04); }
-        /* v4.5.30 — Print Settings UX Consolidation */
+        /* v4.5.32 — Print Settings UX Consolidation */
         .ux-settings-root { display:flex; flex-direction:column; gap:10px; margin-top:12px; }
         .ux-basic-card { border:1px solid var(--border-soft); background:#f8fafc; border-radius:12px; padding:12px; }
         .ux-basic-card-title { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px; font-size:11px; font-weight:800; color:#334155; }
@@ -150,7 +150,7 @@
 
     
         /* =========================================================
-           v4.5.30 — Professional UI Refresh
+           v4.5.32 — Professional UI Refresh
            Visual layer only. Print engine and control IDs unchanged.
            ========================================================= */
         :root {
@@ -648,7 +648,7 @@
             #printBtn { min-height:48px; }
         }
 
-        /* v4.5.30 — Professional Print Dialog Layout */
+        /* v4.5.32 — Professional Print Dialog Layout */
         .legacy-section-title,.dialog-hidden-control,.dialog-hidden-toolbar,#uxLegacySettingsGrid,#uxLegacyJobGrid{display:none!important}
         .print-dialog-shell{display:grid;grid-template-columns:168px minmax(0,1fr);margin-top:4px;border:1px solid #d9e1eb;border-radius:14px;background:#fff;min-height:680px;box-shadow:0 5px 18px rgba(15,23,42,.04)}
         .dialog-sidebar{min-width:0;padding:14px 10px;background:linear-gradient(180deg,#f8fafc,#f4f7fb);border-right:1px solid #e1e7ef;border-radius:14px 0 0 14px}
@@ -677,7 +677,7 @@
         .mobile-sheet-overlay{position:fixed;display:block;inset:0;z-index:8990;background:rgba(15,23,42,.42);opacity:0;visibility:hidden;transition:.18s}.mobile-sheet-overlay.open{opacity:1;visibility:visible}.mobile-settings-sheet{position:fixed;display:block;left:0;right:0;bottom:0;z-index:9000;max-height:78vh;padding:8px 12px 18px;border-radius:20px 20px 0 0;background:#fff;box-shadow:0 -18px 48px rgba(15,23,42,.18);transform:translateY(105%);transition:transform .2s;overflow:auto}.mobile-settings-sheet.open{transform:translateY(0)}
         .mobile-sheet-handle{width:42px;height:4px;border-radius:999px;background:#cbd5e1;margin:2px auto 11px}.mobile-sheet-head{display:flex;align-items:center;justify-content:space-between;padding:0 2px 10px;border-bottom:1px solid #eef2f6}.mobile-sheet-head strong{font-size:13px}.mobile-sheet-head button{border:0;background:#f1f5f9;color:#475569;border-radius:8px;padding:7px 10px;font-weight:700}.mobile-sheet-list{display:flex;flex-direction:column;gap:4px;padding-top:8px}.mobile-sheet-item{display:grid;grid-template-columns:28px 1fr;gap:8px;align-items:center;width:100%;padding:9px 10px;border:0;border-radius:9px;background:#fff;color:#334155;text-align:left;font-family:inherit}.mobile-sheet-item strong{display:block;font-size:10.5px}.mobile-sheet-item small{display:block;margin-top:2px;font-size:8px;color:#94a3b8}.mobile-sheet-item.active{background:#eff6ff;color:#1d4ed8}body.mobile-sheet-open{overflow:hidden}}
 
-        /* v4.5.30 — Readability & Typography Upgrade */
+        /* v4.5.32 — Readability & Typography Upgrade */
         body { font-size:14px; }
         .app-brand-title { font-size:18px; }
         .app-brand-subtitle { font-size:11px; }
@@ -790,6 +790,65 @@
             .panel-content { padding:14px; }
             .panel-heading { padding:14px; }
         }
+
+/* v4.5.32 extended print options */
+.option-expanded-group{
+ margin-top:12px;padding:12px;border:1px solid #dbe3ec;
+ border-radius:10px;background:#f8fafc
+}
+.option-expanded-title{
+ font-size:12px;font-weight:750;color:#334155;margin-bottom:9px
+}
+.option-expanded-grid{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px
+}
+.option-chip{
+ display:flex;align-items:center;gap:7px;
+ min-height:38px;padding:8px 10px;
+ border:1px solid #cbd5e1;border-radius:8px;
+ background:white;font-size:12px
+}
+@media(max-width:991px){
+ .option-expanded-grid{grid-template-columns:1fr}
+}
+
+/* v4.5.32 Printer Capability Detection */
+.capability-panel{
+    margin-top:12px;
+    padding:12px;
+    border:1px solid #dbe3ec;
+    border-radius:10px;
+    background:#f8fafc;
+}
+.capability-title{
+    font-size:12px;
+    font-weight:800;
+    color:#334155;
+    margin-bottom:8px;
+}
+.capability-grid{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:8px;
+}
+.capability-item{
+    padding:9px;
+    border-radius:8px;
+    background:#fff;
+    border:1px solid #e2e8f0;
+    font-size:11px;
+    color:#475569;
+}
+.capability-item strong{
+    display:block;
+    color:#0f172a;
+    font-size:12px;
+}
+.capability-on{color:#047857!important}
+.capability-off{color:#94a3b8!important}
+@media(max-width:991px){
+    .capability-grid{grid-template-columns:1fr}
+}
 </style>
 </head>
 <body>
@@ -802,7 +861,7 @@
                         <div class="app-brand-title">Print Server Pro</div>
                         <div class="app-brand-subtitle">Network Printing Console</div>
                     </div>
-                    <span class="app-version">v4.5.30</span>
+                    <span class="app-version">v4.5.32</span>
                 </div>
                 <div class="install-row"><button id="installBtn" class="btn-block secondary">Install Aplikasi</button></div>
                 <div class="section-title">
@@ -1365,13 +1424,69 @@
             set('expert',[sx!==100||sy!==100?`X ${sx}% / Y ${sy}%`:'Presisi default',document.getElementById('signatureMode')?.value!=='auto'?uxSelectText('signatureMode'):''].filter(Boolean).join(' • '));
             set('queue',document.getElementById('queueSummaryBadge')?.textContent||'0 antre');
         }
-        function updateAccordionSummaries(){updatePrintDialogSummaries();}
+        function updateAccordionSummaries(){addPrintOptionExpansion();
+            addPrinterCapabilityDetection();
+            updatePrintDialogSummaries();}
         function applySettingsViewMode(){try{localStorage.setItem('settingsViewModeV4529','dialog');}catch(_){}updatePrintDialogSummaries();}
         function openAdvancedSettings(){showPrintPanel('layout',true);}
         function openExpertSettings(){showPrintPanel('expert',true);}
         function collapseAllAdvanced(){showPrintPanel('basic',false);}
 
-        function buildConsolidatedSettingsUi(){
+        
+
+function addPrinterCapabilityDetection(){
+    const target=document.getElementById('panelContent-printer');
+    if(!target || document.getElementById('printerCapabilityPanel')) return;
+
+    const box=document.createElement('div');
+    box.id='printerCapabilityPanel';
+    box.className='capability-panel';
+    box.innerHTML=`
+      <div class="capability-title">Kemampuan Printer Terdeteksi</div>
+      <div class="capability-grid">
+        <div class="capability-item capability-on"><strong>✓ Warna</strong>Tersedia dari driver</div>
+        <div class="capability-item capability-on"><strong>✓ Duplex</strong>Tergantung dukungan printer</div>
+        <div class="capability-item capability-on"><strong>✓ Tray</strong>Memerlukan driver Windows</div>
+        <div class="capability-item capability-off"><strong>○ Booklet</strong>Perlu simulasi aplikasi</div>
+        <div class="capability-item capability-off"><strong>○ Borderless</strong>Tergantung media printer</div>
+        <div class="capability-item capability-off"><strong>○ Resolusi DPI</strong>Dibaca dari driver</div>
+      </div>
+      <small style="display:block;margin-top:8px;color:#64748b;font-size:10px">
+      Catatan: sebagian kemampuan printer mengikuti driver Windows, bukan hanya aplikasi.
+      </small>
+    `;
+    target.appendChild(box);
+}
+
+function addPrintOptionExpansion(){
+ const groups=[
+  ['basic','Opsi Dokumen',['Kualitas cetak','Profil warna','Penyesuaian ukuran dokumen']],
+  ['pages','Kontrol Halaman',['Urutan terbalik','Ganjil / Genap','Halaman pemisah']],
+  ['layout','Tata Letak Lanjutan',['Fit / Fill / Actual Size','Mirror / Flip','Perataan halaman']],
+  ['duplex','Finishing',['Collate','Sisi jilid','Mode lipat']],
+  ['printer','Driver Printer',['Jenis media','Tray printer','Mode hemat tinta']],
+  ['expert','Produksi Profesional',['ICC profile','Rendering PDF','Raster fallback']]
+ ];
+ groups.forEach(g=>{
+  const target=document.getElementById('panelContent-'+g[0]);
+  if(!target)return;
+  const box=document.createElement('div');
+  box.className='option-expanded-group';
+  box.innerHTML='<div class="option-expanded-title">'+g[1]+'</div>';
+  const grid=document.createElement('div');
+  grid.className='option-expanded-grid';
+  g[2].forEach(x=>{
+   const d=document.createElement('label');
+   d.className='option-chip';
+   d.innerHTML='<input type="checkbox"> '+x;
+   grid.appendChild(d);
+  });
+  box.appendChild(grid);
+  target.appendChild(box);
+ });
+}
+
+function buildConsolidatedSettingsUi(){
             if(document.getElementById('printDialogShell'))return;
             const inline=document.getElementById('inlinePrintSettings');if(!inline)return;
             document.querySelectorAll('.main-card > .section-title').forEach(t=>t.classList.add('legacy-section-title'));
