@@ -23,12 +23,24 @@
         .left-col { display: contents; }
         .main-card { order: 1; }
         .preview-col { order: 2; width: 100%; display: flex; flex-direction: column; gap: 20px;}
-        .history-card { order: 3; }
+        .queue-card { order: 3; }
+        .history-card { order: 4; }
+        .queue-toolbar { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+        .queue-badge { font-size:10px; font-weight:800; padding:5px 8px; border-radius:999px; background:#e2e8f0; color:#334155; }
+        .queue-list { display:flex; flex-direction:column; gap:8px; margin-top:12px; max-height:340px; overflow:auto; }
+        .queue-job { border:1px solid var(--border-soft); border-radius:10px; padding:10px; background:#f8fafc; }
+        .queue-job-head { display:flex; justify-content:space-between; gap:8px; align-items:flex-start; }
+        .queue-actions { display:flex; gap:5px; flex-wrap:wrap; margin-top:8px; }
+        .queue-actions button { border:1px solid #cbd5e1; background:white; border-radius:7px; padding:5px 8px; font-size:10px; font-weight:700; cursor:pointer; }
+        .queue-actions button.danger { color:#b91c1c; }
+        .job-status-success { color:#15803d; } .job-status-failed,.job-status-cancelled { color:#b91c1c; } .job-status-processing { color:#1d4ed8; } .job-status-held { color:#b45309; }
+        .estimate-card { font-size:11px; line-height:1.5; padding:9px 11px; border-radius:9px; background:#eff6ff; color:#1e3a8a; margin-top:8px; }
+
         @media (min-width: 992px) {
             body { padding: 40px 20px; }
             .app-wrapper { display: grid; grid-template-columns: 420px 1fr; gap: 30px; max-width: 1200px; align-items: start; }
             .left-col { display: flex; flex-direction: column; gap: 20px; }
-            .main-card, .history-card { order: unset; }
+            .main-card, .queue-card, .history-card { order: unset; }
             .preview-col { position: sticky; top: 40px; order: unset; height: calc(100vh - 80px); }
             .preview-col .card { height: 100%; display: flex; flex-direction: column; padding: 0; overflow: hidden; }
             .preview-body { flex: 1; padding: 30px; overflow: hidden; display: flex; justify-content: center; align-items: center; min-height: 0; }
@@ -69,13 +81,57 @@
         .settings-live { font-size:10px; font-weight:700; color:var(--success); text-transform:uppercase; letter-spacing:.4px; }
         @media (max-width: 560px) { .settings-grid { grid-template-columns:1fr; gap:0; } }
         .printer-tools { display:grid; grid-template-columns:1fr auto; gap:8px; margin-top:8px; }
+        .driver-cap-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; grid-column:1/-1; padding:12px; border:1px solid var(--border); border-radius:12px; background:rgba(51,65,85,.035); }
+        .driver-cap-grid .input-group { margin:0; }
+        .driver-note { grid-column:1/-1; font-size:10px; line-height:1.45; color:var(--text-muted); padding:8px 10px; border-radius:8px; background:rgba(245,158,11,.08); }
+        .cap-badges { display:flex; flex-wrap:wrap; gap:5px; margin-top:7px; }
+        .cap-badge { font-size:9px; font-weight:700; padding:3px 7px; border-radius:999px; background:rgba(51,65,85,.08); color:var(--text-muted); }
+        .cap-badge.ok { background:rgba(16,185,129,.12); color:#047857; }
+        .cap-badge.warn { background:rgba(245,158,11,.14); color:#a16207; }
+
         .capability-card { margin-top:8px; padding:9px 10px; border:1px solid var(--border); border-radius:9px; font-size:10px; line-height:1.45; color:var(--text-muted); background:rgba(51,65,85,.04); }
+        /* v4.5.26 — Print Settings UX Consolidation */
+        .ux-settings-root { display:flex; flex-direction:column; gap:10px; margin-top:12px; }
+        .ux-basic-card { border:1px solid var(--border-soft); background:#f8fafc; border-radius:12px; padding:12px; }
+        .ux-basic-card-title { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px; font-size:11px; font-weight:800; color:#334155; }
+        .ux-basic-card-title small { color:var(--text-muted); font-weight:600; font-size:9px; }
+        .ux-field-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+        .ux-field-grid > .input-group { margin:0; min-width:0; }
+        .ux-field-grid.one-col { grid-template-columns:1fr; }
+        .ux-advanced-head { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:4px; }
+        .ux-advanced-head .mini-btn { padding:8px 10px; font-size:10px; }
+        .ux-accordion-root { display:flex; flex-direction:column; gap:8px; }
+        .ux-accordion { border:1px solid var(--border-soft); border-radius:11px; background:white; overflow:hidden; }
+        .ux-accordion > summary { list-style:none; cursor:pointer; padding:12px 13px; display:flex; align-items:center; justify-content:space-between; gap:10px; user-select:none; }
+        .ux-accordion > summary::-webkit-details-marker { display:none; }
+        .ux-accordion-title { min-width:0; display:flex; flex-direction:column; gap:3px; }
+        .ux-accordion-title strong { font-size:11px; color:#1f2937; }
+        .ux-accordion-summary { font-size:9px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:230px; }
+        .ux-chevron { font-size:11px; color:#64748b; transition:transform .15s ease; }
+        .ux-accordion[open] .ux-chevron { transform:rotate(180deg); }
+        .ux-accordion-body { padding:0 12px 12px; border-top:1px solid #eef2f7; }
+        .ux-accordion-body .settings-grid,.ux-accordion-body .driver-cap-grid { margin-top:10px; }
+        .ux-accordion-body > .input-group { margin-top:10px; margin-bottom:0; }
+        .ux-accordion-body .input-group { margin-bottom:10px; }
+        .ux-accordion-body .input-group:last-child { margin-bottom:0; }
+        .ux-mode-note { font-size:9px; color:var(--text-muted); line-height:1.45; margin-top:5px; }
+        .ux-preset-manage-toggle { grid-column:1/-1; justify-self:start; }
+        .preset-actions { display:none !important; }
+        .preset-actions.ux-open { display:grid !important; }
+        body.compact-settings-mode #advancedAccordionRoot,
+        body.compact-settings-mode #advancedSettingsHeader { display:none !important; }
+        body:not(.compact-settings-mode) #advancedAccordionRoot,
+        body:not(.compact-settings-mode) #advancedSettingsHeader { display:flex; }
+        body.compact-settings-mode .ux-basic-card .advanced-setting { display:block !important; }
+        #uxLegacySettingsGrid,#uxLegacyJobGrid { display:none !important; }
+        @media (max-width:560px){ .ux-field-grid{grid-template-columns:1fr;} .ux-accordion-summary{max-width:170px;} }
+
         .settings-toolbar { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:8px; margin-bottom:10px; }
         .preset-actions { display:grid; grid-template-columns:minmax(0,1fr) auto auto; gap:6px; grid-column:1/-1; }
-        body.compact-settings-mode .advanced-setting { display:none !important; }
+        body.compact-settings-mode #advancedAccordionRoot { display:none !important; }
         .mini-btn { border:0; border-radius:8px; padding:9px 10px; cursor:pointer; font-weight:700; background:#475569; color:white; white-space:nowrap; }
         .mini-btn.danger { background:#b91c1c; }
-        @media (max-width:560px){ .settings-toolbar{grid-template-columns:1fr;} .preset-actions{grid-template-columns:1fr 1fr;} .preset-actions input{grid-column:1/-1;} .printer-tools{grid-template-columns:1fr;} }
+        @media (max-width:560px){ .settings-toolbar{grid-template-columns:1fr;} .preset-actions{grid-template-columns:1fr 1fr;} .preset-actions input{grid-column:1/-1;} .printer-tools{grid-template-columns:1fr;} .driver-cap-grid{grid-template-columns:1fr;} }
 
     </style>
 </head>
@@ -172,6 +228,31 @@
                         <div class="input-group"><label>Pengelompokan Copy:</label>
                             <select id="collateMode" class="input-standard"><option value="collated">Tersusun / Collate</option><option value="uncollated">Per Halaman / Uncollated</option></select>
                         </div>
+                        <div class="driver-cap-grid advanced-setting" id="driverAdvancedPanel">
+                            <div class="input-group"><label>Sumber Kertas / Tray:</label>
+                                <select id="driverBin" class="input-standard"><option value="">Default Driver</option><option value="auto">Auto sesuai ukuran halaman</option></select>
+                            </div>
+                            <div class="input-group"><label>Paper Kind Driver:</label>
+                                <select id="driverPaperKind" class="input-standard"><option value="0">Ikuti Kertas Printer</option></select>
+                            </div>
+                            <div class="input-group"><label>Media Type:</label>
+                                <select id="driverMediaType" class="input-standard"><option value="default">Default Driver</option></select>
+                            </div>
+                            <div class="input-group"><label>Kualitas / DPI:</label>
+                                <select id="driverQuality" class="input-standard"><option value="default">Default Driver</option></select>
+                            </div>
+                            <div class="input-group"><label>Borderless Driver:</label>
+                                <select id="driverBorderless" class="input-standard"><option value="default">Default Driver</option><option value="off">Off</option><option value="on">On</option></select>
+                            </div>
+                            <div class="input-group"><label>Economy / Toner Save:</label>
+                                <select id="driverEconomy" class="input-standard"><option value="default">Default Driver</option><option value="off">Normal</option><option value="on">Hemat / Economy</option></select>
+                            </div>
+                            <div class="input-group"><label>Mode Eksekusi Driver:</label>
+                                <select id="driverExecutionMode" class="input-standard"><option value="direct">Langsung / Silent</option><option value="dialog">Dialog Printer di PC Server</option></select>
+                            </div>
+                            <div class="input-group" style="display:flex;align-items:end;"><button type="button" class="mini-btn" style="width:100%;" onclick="openPrinterProperties()">⚙️ Atur Driver Sekarang</button></div>
+                            <div id="driverAdvancedNote" class="driver-note">Tray dan Paper Kind dapat diterapkan langsung. Media Type, Quality, Borderless, dan Economy bergantung driver; jika dipilih, gunakan Dialog Printer untuk memastikan opsi vendor diterapkan.</div>
+                        </div>
                         <div class="input-group"><label>Margin Cetak:</label>
                             <select id="marginMode" class="input-standard">
                                 <option value="none">Tanpa Margin Aplikasi</option>
@@ -251,10 +332,165 @@
                                 <span style="font-size:10px;">Mulai dari</span><input type="number" id="pageNumberStart" class="input-standard" value="1" min="1" max="9999" step="1" style="flex:1;">
                             </div>
                         </div>
-                        <div style="font-size:10px; color:var(--text-muted); line-height:1.4; grid-column:1/-1;">Token header/footer: <strong>{file}</strong>, <strong>{date}</strong>, <strong>{time}</strong>, <strong>{page}</strong>, <strong>{pages}</strong>. Poster mengunci 1 hal/lembar dan simplex.</div>
+                        <div class="input-group"><label>Margin Jilid / Gutter:</label>
+                            <select id="bindingMode" class="input-standard">
+                                <option value="off">Nonaktif</option>
+                                <option value="left">Jilid Kiri</option>
+                                <option value="right">Jilid Kanan</option>
+                                <option value="top">Jilid Atas</option>
+                                <option value="mirror">Mirror / Facing Pages</option>
+                            </select>
+                            <div id="bindingSettings" style="display:none; margin-top:7px; align-items:center; gap:7px;">
+                                <input type="number" id="gutterMm" class="input-standard" value="10" min="0" max="50" step="0.5">
+                                <span style="font-size:10px; font-weight:700;">mm</span>
+                            </div>
+                        </div>
+                        <div class="input-group"><label>Halaman Kosong:</label>
+                            <select id="blankPageMode" class="input-standard">
+                                <option value="preserve">Pertahankan</option>
+                                <option value="remove-detected">Hapus yang Terdeteksi Kosong</option>
+                                <option value="pad-even">Tambahkan Blank agar Genap</option>
+                            </select>
+                        </div>
+                        <div class="input-group"><label>Rotasi Per Halaman:</label>
+                            <select id="pageRotationMode" class="input-standard">
+                                <option value="none">Tidak Ada</option>
+                                <option value="90">Semua +90°</option>
+                                <option value="180">Semua +180°</option>
+                                <option value="270">Semua +270°</option>
+                                <option value="custom">Halaman Tertentu</option>
+                            </select>
+                            <div id="pageRotationSettings" style="display:none; margin-top:7px;">
+                                <input type="text" id="pageRotationRules" class="input-standard" maxlength="160" placeholder="Contoh: 1:90,3-5:180,8:270">
+                            </div>
+                        </div>
+                        <div class="input-group"><label>Skala Presisi X / Y:</label>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;">
+                                <label style="font-size:10px;">Horizontal %<input type="number" id="scaleXPercent" class="input-standard" value="100" min="50" max="150" step="0.1"></label>
+                                <label style="font-size:10px;">Vertikal %<input type="number" id="scaleYPercent" class="input-standard" value="100" min="50" max="150" step="0.1"></label>
+                            </div>
+                        </div>
+                        <div class="input-group"><label>Offset Posisi Cetak:</label>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;">
+                                <label style="font-size:10px;">X (mm)<input type="number" id="offsetXmm" class="input-standard" value="0" min="-50" max="50" step="0.1"></label>
+                                <label style="font-size:10px;">Y (mm)<input type="number" id="offsetYmm" class="input-standard" value="0" min="-50" max="50" step="0.1"></label>
+                            </div>
+                            <div style="font-size:9px;color:var(--text-muted);margin-top:4px;">X + ke kanan. Y + ke atas pada hasil cetak.</div>
+                        </div>
+                        <div class="input-group"><label>Cover / Separator Sheet:</label>
+                            <select id="separatorMode" class="input-standard">
+                                <option value="off">Nonaktif</option>
+                                <option value="cover">Cover / Job Ticket di Awal</option>
+                                <option value="between-copies">Separator Antar Copy</option>
+                            </select>
+                        </div>
+                        <div class="input-group"><label>Awal Copy pada Lembar Baru:</label>
+                            <select id="startCopyNewSheet" class="input-standard">
+                                <option value="off">Nonaktif</option>
+                                <option value="on">Aktif</option>
+                            </select>
+                        </div>
+                        <div class="input-group"><label>Batas Aman Lembar:</label>
+                            <div style="display:flex;gap:7px;align-items:center;">
+                                <input type="number" id="safetySheetLimit" class="input-standard" value="100" min="0" max="5000" step="1">
+                                <span style="font-size:10px;font-weight:700;">lembar</span>
+                            </div>
+                            <div style="font-size:9px;color:var(--text-muted);margin-top:4px;">0 = tanpa batas. Aplikasi meminta konfirmasi jika estimasi melebihi batas.</div>
+                        </div>
+                        <div class="input-group"><label>Signature Booklet:</label>
+                            <select id="signatureMode" class="input-standard">
+                                <option value="auto">Otomatis / Seluruh Dokumen</option>
+                                <option value="16">4 lembar / 16 halaman</option>
+                                <option value="32">8 lembar / 32 halaman</option>
+                                <option value="48">12 lembar / 48 halaman</option>
+                                <option value="custom">Custom</option>
+                            </select>
+                            <div id="signatureCustomWrap" style="display:none;margin-top:7px;align-items:center;gap:7px;">
+                                <input type="number" id="signaturePages" class="input-standard" value="16" min="4" max="200" step="4">
+                                <span style="font-size:10px;font-weight:700;">halaman/signature</span>
+                            </div>
+                        </div>
+                        <div class="input-group"><label>Creep Compensation:</label>
+                            <select id="creepMode" class="input-standard">
+                                <option value="off">Nonaktif</option>
+                                <option value="auto">Otomatis</option>
+                                <option value="custom">Custom per lembar</option>
+                            </select>
+                            <div id="creepSettings" style="display:none;margin-top:7px;align-items:center;gap:7px;">
+                                <input type="number" id="creepMm" class="input-standard" value="0.25" min="0" max="3" step="0.05">
+                                <span style="font-size:10px;font-weight:700;">mm/lembar</span>
+                            </div>
+                        </div>
+                        <div class="input-group"><label>PDF Page Box:</label>
+                            <select id="pdfPageBox" class="input-standard">
+                                <option value="crop">CropBox</option>
+                                <option value="media">MediaBox</option>
+                                <option value="trim">TrimBox</option>
+                                <option value="bleed">BleedBox</option>
+                                <option value="art">ArtBox</option>
+                            </select>
+                        </div>
+                        <div class="input-group"><label>Bleed:</label>
+                            <select id="bleedMode" class="input-standard">
+                                <option value="off">0 mm</option>
+                                <option value="3">3 mm</option>
+                                <option value="5">5 mm</option>
+                                <option value="custom">Custom</option>
+                            </select>
+                            <div id="bleedCustomWrap" style="display:none;margin-top:7px;align-items:center;gap:7px;">
+                                <input type="number" id="bleedMm" class="input-standard" value="3" min="0" max="20" step="0.5">
+                                <span style="font-size:10px;font-weight:700;">mm</span>
+                            </div>
+                        </div>
+                        <div class="input-group"><label>Prepress Marks:</label>
+                            <select id="prepressMarks" class="input-standard">
+                                <option value="off">Nonaktif</option>
+                                <option value="crop">Crop Marks</option>
+                                <option value="center">Center Marks</option>
+                                <option value="registration">Registration Marks</option>
+                                <option value="all">Semua Marks</option>
+                            </select>
+                        </div>
+                        <div class="input-group"><label>Imposition / Repeat:</label>
+                            <select id="impositionMode" class="input-standard">
+                                <option value="normal">Normal</option>
+                                <option value="repeat-2">Ulangi 2× / lembar</option>
+                                <option value="repeat-4">Ulangi 4× / lembar</option>
+                                <option value="repeat-custom">Ulangi Custom</option>
+                            </select>
+                            <div id="impositionSettings" style="display:none;margin-top:7px;align-items:center;gap:7px;">
+                                <select id="repeatCount" class="input-standard">
+                                    <option value="2">2×</option><option value="4">4×</option><option value="6">6×</option><option value="9">9×</option><option value="16">16×</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="input-group"><label>Gap N-up:</label>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;">
+                                <label style="font-size:10px;">Horizontal mm<input type="number" id="nupGapXmm" class="input-standard" value="0" min="0" max="30" step="0.5"></label>
+                                <label style="font-size:10px;">Vertikal mm<input type="number" id="nupGapYmm" class="input-standard" value="0" min="0" max="30" step="0.5"></label>
+                            </div>
+                        </div>
+                        <div class="input-group"><label>Kalibrasi Printer:</label>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;">
+                                <label style="font-size:10px;">Koreksi X mm<input type="number" id="calibrationXmm" class="input-standard" value="0" min="-20" max="20" step="0.1"></label>
+                                <label style="font-size:10px;">Koreksi Y mm<input type="number" id="calibrationYmm" class="input-standard" value="0" min="-20" max="20" step="0.1"></label>
+                            </div>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:7px;">
+                                <button type="button" class="mini-btn" onclick="savePrinterCalibration()">💾 Simpan Kalibrasi</button>
+                                <button type="button" class="mini-btn" onclick="loadCalibrationSheet()">📐 Lembar Uji</button>
+                            </div>
+                        </div>
+                        <div style="font-size:10px; color:var(--text-muted); line-height:1.4; grid-column:1/-1;">Token header/footer: <strong>{file}</strong>, <strong>{date}</strong>, <strong>{time}</strong>, <strong>{page}</strong>, <strong>{pages}</strong>. Mirror margin: halaman fisik ganjil menambah gutter kiri, genap menambah gutter kanan.</div>
                     </div>
                     <div class="input-group"><label>Rincian Halaman:</label><input type="text" id="pages" class="input-standard" placeholder="1,3,5-7"></div>
                     <div style="font-size:11px; color:var(--text-muted); line-height:1.5;">Setiap perubahan langsung diterapkan pada preview. Duplex bergantung pada kemampuan printer. Booklet mengunci pengaturan yang diperlukan agar urutan lipatan benar.</div>
+                    <div class="settings-grid" style="margin-top:12px;">
+                        <div class="input-group"><label>Pengiriman Job:</label><select id="jobSubmissionMode" class="input-standard"><option value="direct">Cetak saat giliran tiba</option><option value="hold">Tahan / Hold dulu</option></select></div>
+                        <div class="input-group"><label>Prioritas:</label><select id="jobPriority" class="input-standard"><option value="normal">Normal</option><option value="priority">Prioritas</option><option value="urgent">Urgent</option></select></div>
+                    </div>
+                    <div id="sheetEstimate" class="estimate-card">Estimasi lembar akan tampil setelah file dipilih.</div>
+                    <div id="preflightStatus" class="capability-card" style="margin-top:10px;">Preflight belum dijalankan.</div>
+                    <button type="button" class="btn-block secondary" style="margin-top:8px;" onclick="runPreflight(true)">✓ Jalankan Preflight</button>
                 </div>
 
                 <div id="realtimeStatus" style="display:none; margin-top:20px;">
@@ -263,6 +499,18 @@
                         <div id="progressBar" style="width:0%; height:100%; background: var(--success); transition: width 0.4s;"></div>
                     </div>
                 </div>
+            </div>
+            <div class="card queue-card" id="queueCard" style="padding:20px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+                    <span style="font-size:12px;font-weight:800;color:var(--text-muted);">🗂️ ANTREAN CETAK</span>
+                    <span id="queueSummaryBadge" class="queue-badge">0 antre</span>
+                </div>
+                <div class="queue-toolbar" style="margin-top:10px;">
+                    <button type="button" class="mini-btn" id="queuePauseBtn" onclick="toggleQueuePause()">⏸ Jeda</button>
+                    <button type="button" class="mini-btn" onclick="refreshQueue(true)">↻ Refresh</button>
+                </div>
+                <div id="printerRealtimeStatus" style="font-size:10px;color:var(--text-muted);margin-top:9px;">Status printer: —</div>
+                <div id="queueList" class="queue-list"><div style="font-size:11px;color:var(--text-muted);">Belum ada job.</div></div>
             </div>
             <div class="card history-card" style="padding: 20px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
@@ -364,8 +612,9 @@
 
     <script>
         let currentPdfDoc = null, currentImgSrc = null, currentPreviewSheet = 0, totalPreviewSheets = 1;
-        const PRINT_SETTING_IDS = ['colorMode','paperSize','orientation','scaleMode','customScale','pagesPerSheet','copies','duplexMode','pageSubset','pageOrder','collateMode','marginMode','marginTop','marginRight','marginBottom','marginLeft','autoRotateMode','contentAlign','nupBorder','nupOrder','bookletMode','posterMode','posterCols','posterRows','posterOverlap','posterCutMarks','transformMode','cropMode','cropTop','cropRight','cropBottom','cropLeft','watermarkMode','watermarkText','watermarkOpacity','watermarkAngle','headerText','footerText','pageNumberMode','pageNumberStart','pages'];
-        const ADVANCED_SETTING_IDS = ['pageSubset','pageOrder','collateMode','marginMode','marginTop','marginRight','marginBottom','marginLeft','autoRotateMode','contentAlign','nupBorder','nupOrder','bookletMode','posterMode','posterCols','posterRows','posterOverlap','posterCutMarks','transformMode','cropMode','cropTop','cropRight','cropBottom','cropLeft','watermarkMode','watermarkText','watermarkOpacity','watermarkAngle','headerText','footerText','pageNumberMode','pageNumberStart'];
+        let queuePausedRemote = false, queuePollTimer = null, latestQueueData = null;
+        const PRINT_SETTING_IDS = ['colorMode','paperSize','orientation','scaleMode','customScale','pagesPerSheet','copies','duplexMode','pageSubset','pageOrder','collateMode','driverBin','driverPaperKind','driverMediaType','driverQuality','driverBorderless','driverEconomy','driverExecutionMode','marginMode','marginTop','marginRight','marginBottom','marginLeft','autoRotateMode','contentAlign','nupBorder','nupOrder','bookletMode','posterMode','posterCols','posterRows','posterOverlap','posterCutMarks','transformMode','cropMode','cropTop','cropRight','cropBottom','cropLeft','watermarkMode','watermarkText','watermarkOpacity','watermarkAngle','headerText','footerText','pageNumberMode','pageNumberStart','bindingMode','gutterMm','blankPageMode','pageRotationMode','pageRotationRules','scaleXPercent','scaleYPercent','offsetXmm','offsetYmm','separatorMode','startCopyNewSheet','safetySheetLimit','pages','signatureMode','signaturePages','creepMode','creepMm','pdfPageBox','bleedMode','bleedMm','prepressMarks','impositionMode','repeatCount','nupGapXmm','nupGapYmm','calibrationXmm','calibrationYmm'];
+        const ADVANCED_SETTING_IDS = ['pageSubset','pageOrder','collateMode','driverBin','driverPaperKind','driverMediaType','driverQuality','driverBorderless','driverEconomy','driverExecutionMode','marginMode','marginTop','marginRight','marginBottom','marginLeft','autoRotateMode','contentAlign','nupBorder','nupOrder','bookletMode','posterMode','posterCols','posterRows','posterOverlap','posterCutMarks','transformMode','cropMode','cropTop','cropRight','cropBottom','cropLeft','watermarkMode','watermarkText','watermarkOpacity','watermarkAngle','headerText','footerText','pageNumberMode','pageNumberStart','bindingMode','gutterMm','blankPageMode','pageRotationMode','pageRotationRules','scaleXPercent','scaleYPercent','offsetXmm','offsetYmm','separatorMode','startCopyNewSheet','safetySheetLimit','signatureMode','signaturePages','creepMode','creepMm','pdfPageBox','bleedMode','bleedMm','prepressMarks','impositionMode','repeatCount','nupGapXmm','nupGapYmm','calibrationXmm','calibrationYmm'];
         const BUILTIN_PRESETS = {
             'builtin-a4-color': {label:'A4 • Warna • Simplex', values:{paperSize:'A4',colorMode:'color',orientation:'auto',scaleMode:'shrink',pagesPerSheet:'1',duplexMode:'simplex',copies:'1'}},
             'builtin-f4-mono': {label:'F4 • Hitam Putih', values:{paperSize:'F4',colorMode:'monochrome',orientation:'auto',scaleMode:'shrink',pagesPerSheet:'1',duplexMode:'simplex',copies:'1'}},
@@ -378,17 +627,137 @@
         function getUserPresets(){ try{return JSON.parse(localStorage.getItem('printPresetsV4521')||'{}')||{};}catch(_){return {};} }
         function refreshPresetSelect(selected=''){ const sel=document.getElementById('presetSelect'); if(!sel)return; const users=getUserPresets(); sel.innerHTML='<option value="">— Pilih Preset —</option>'; const g1=document.createElement('optgroup');g1.label='Preset Bawaan';Object.entries(BUILTIN_PRESETS).forEach(([k,p])=>g1.add(new Option(p.label,k)));sel.add(g1);const names=Object.keys(users).sort((a,b)=>a.localeCompare(b));if(names.length){const g2=document.createElement('optgroup');g2.label='Preset Saya';names.forEach(n=>g2.add(new Option(n,'user:'+n)));sel.add(g2);}if(selected)sel.value=selected; }
         function saveCurrentPreset(){ const name=(document.getElementById('presetName').value||'').trim(); if(!name)return showToast('Isi nama preset terlebih dahulu.','error'); const p=getUserPresets();p[name]=capturePrintSettings();localStorage.setItem('printPresetsV4521',JSON.stringify(p));refreshPresetSelect('user:'+name);document.getElementById('presetName').value='';showToast(`Preset “${name}” disimpan.`,'success'); }
-        function deleteSelectedPreset(){ const v=document.getElementById('presetSelect').value;if(!v.startsWith('user:'))return showToast('Preset bawaan tidak dapat dihapus.','info');const name=v.slice(5);const p=getUserPresets();delete p[name];localStorage.setItem('printPresetsV4521',JSON.stringify(p));refreshPresetSelect();showToast(`Preset “${name}” dihapus.`,'success'); }
+        function deleteSelectedPreset(){ const v=document.getElementById('presetSelect').value;if(!v.startsWith('user:'))return showToast('Preset bawaan tidak dapat dihapus.','info');const name=v.slice(5);const p=getUserPresets();delete p[name];localStorage.setItem('printPresetsV4521',JSON.stringify(p));refreshPresetSelect(); installProductionPrecisionListeners(); syncProductionPrecisionControls(); syncPrepressControls(); loadPrinterCalibration();showToast(`Preset “${name}” dihapus.`,'success'); }
         function applySelectedPreset(){ const v=document.getElementById('presetSelect').value;if(!v)return;if(v.startsWith('user:')){const p=getUserPresets()[v.slice(5)];if(p)applyPrintSettings(p);}else if(BUILTIN_PRESETS[v])applyPrintSettings(BUILTIN_PRESETS[v].values);saveSettingsForCurrentPrinter(); }
         function printerSettingsKey(name){ return `printerSettingsV4521:${name||'__default__'}`; }
         function saveSettingsForCurrentPrinter(){ const remember=document.getElementById('rememberPrinterSettings');if(!remember||!remember.checked)return;const name=document.getElementById('printerSelect').value||'__default__';localStorage.setItem(printerSettingsKey(name),JSON.stringify(capturePrintSettings())); }
         function loadSettingsForCurrentPrinter(){ const name=document.getElementById('printerSelect').value||'__default__';try{const v=JSON.parse(localStorage.getItem(printerSettingsKey(name))||'null');if(v)applyPrintSettings(v,true);}catch(_){}syncAdvancedPrintControls();updatePrintSettingsSummary();updateDynamicPreview(); }
-        function applySettingsViewMode(){ const mode=document.getElementById('settingsViewMode').value;document.body.classList.toggle('compact-settings-mode',mode==='compact');localStorage.setItem('settingsViewModeV4521',mode); }
+        function applySettingsViewMode(){ const mode=document.getElementById('settingsViewMode').value;document.body.classList.toggle('compact-settings-mode',mode==='compact');localStorage.setItem('settingsViewModeV4526',mode);if(document.getElementById('advancedAccordionRoot'))updateAccordionSummaries();const hint=document.getElementById('uxModeHint');if(hint)hint.textContent=mode==='compact'?'Menampilkan pengaturan yang paling sering dipakai.':'Klik bagian lanjutan hanya saat diperlukan.'; }
+        
+        function uxGroupForControl(id){const el=document.getElementById(id);return el?el.closest('.input-group'):null;}
+        function uxMoveGroup(id,target){const g=uxGroupForControl(id);if(g&&target&&!target.contains(g))target.appendChild(g);return g;}
+        function uxSelectText(id){const el=document.getElementById(id);if(!el)return '';if(el.tagName==='SELECT')return el.options[el.selectedIndex]?.text||el.value||'';return el.value||'';}
+        function uxShort(value,max=34){const s=String(value||'');return s.length>max?s.slice(0,max-1)+'…':s;}
+        function uxAccordion(key,title,icon){const d=document.createElement('details');d.className='ux-accordion';d.dataset.uxKey=key;try{d.open=localStorage.getItem(`uxAccordionV4526:${key}`)==='open';}catch(_){}d.innerHTML=`<summary><span class="ux-accordion-title"><strong>${icon} ${title}</strong><span class="ux-accordion-summary" id="uxSummary-${key}">Default</span></span><span class="ux-chevron">⌄</span></summary><div class="ux-accordion-body" id="uxBody-${key}"></div>`;d.addEventListener('toggle',()=>{try{localStorage.setItem(`uxAccordionV4526:${key}`,d.open?'open':'closed');}catch(_){}});return d;}
+        function uxBasicCard(title,subtitle,icon){const c=document.createElement('div');c.className='ux-basic-card';c.innerHTML=`<div class="ux-basic-card-title"><span>${icon} ${title}</span><small>${subtitle||''}</small></div><div class="ux-field-grid"></div>`;return c;}
+        function togglePresetManager(){const p=document.querySelector('.preset-actions');if(!p)return;const open=!p.classList.contains('ux-open');p.classList.toggle('ux-open',open);const b=document.getElementById('uxPresetManageBtn');if(b)b.textContent=open?'Tutup Pengelola Preset':'Kelola Preset';}
+        function openAdvancedSettings(){const s=document.getElementById('settingsViewMode');if(!s)return;s.value='advanced';applySettingsViewMode();updateAccordionSummaries();}
+        function collapseAllAdvanced(){document.querySelectorAll('#advancedAccordionRoot details').forEach(d=>d.open=false);}
+        function buildConsolidatedSettingsUi(){
+            if(document.getElementById('uxSettingsRoot'))return;
+            const inline=document.getElementById('inlinePrintSettings');if(!inline)return;
+            const grids=[...inline.querySelectorAll(':scope > .settings-grid')],legacyGrid=grids[0];if(!legacyGrid)return;legacyGrid.id='uxLegacySettingsGrid';
+            if(grids[1])grids[1].id='uxLegacyJobGrid';
+            const sourceGroup=uxGroupForControl('sourceSizeInfo'),root=document.createElement('div');root.id='uxSettingsRoot';root.className='ux-settings-root';sourceGroup.insertAdjacentElement('afterend',root);
+            const docCard=uxBasicCard('Dokumen','pengaturan inti','📄'),paperCard=uxBasicCard('Kertas & Layout','pengaturan inti','📐'),duplexCard=uxBasicCard('Duplex','pengaturan inti','↔'),printerCard=uxBasicCard('Printer','pengaturan inti','🖨️');
+            [docCard,paperCard,duplexCard,printerCard].forEach(c=>root.appendChild(c));
+            ['colorMode','pages','copies'].forEach(id=>uxMoveGroup(id,docCard.querySelector('.ux-field-grid')));
+            ['paperSize','orientation','scaleMode','pagesPerSheet'].forEach(id=>uxMoveGroup(id,paperCard.querySelector('.ux-field-grid')));
+            duplexCard.querySelector('.ux-field-grid').classList.add('one-col');uxMoveGroup('duplexMode',duplexCard.querySelector('.ux-field-grid'));
+            ['driverBin','driverQuality','driverExecutionMode'].forEach(id=>uxMoveGroup(id,printerCard.querySelector('.ux-field-grid')));
+            const head=document.createElement('div');head.id='advancedSettingsHeader';head.className='ux-advanced-head';head.innerHTML=`<div><strong style="font-size:11px;">Pengaturan Lanjutan</strong><div class="ux-mode-note" id="uxModeHint">Klik bagian yang diperlukan.</div></div><button type="button" class="mini-btn" onclick="collapseAllAdvanced()">Tutup Semua</button>`;root.appendChild(head);
+            const adv=document.createElement('div');adv.id='advancedAccordionRoot';adv.className='ux-accordion-root';root.appendChild(adv);
+            [['precision','Skala, Posisi & Transformasi','⌖'],['pages','Halaman & Urutan','☷'],['layout','Layout / N-up','▦'],['booklet','Booklet & Jilid','📖'],['prepress','Poster & Prepress','✂'],['marks','Tanda Dokumen','✎'],['driver','Driver Printer','⚙'],['system','Kalibrasi, Safety & Job','🛠']].forEach(([k,t,i])=>adv.appendChild(uxAccordion(k,t,i)));
+            ['autoRotateMode','contentAlign','scaleXPercent','offsetXmm','transformMode','pageRotationMode'].forEach(id=>uxMoveGroup(id,document.getElementById('uxBody-precision')));
+            ['pageSubset','pageOrder','collateMode','blankPageMode'].forEach(id=>uxMoveGroup(id,document.getElementById('uxBody-pages')));
+            ['nupBorder','nupOrder','impositionMode','nupGapXmm'].forEach(id=>uxMoveGroup(id,document.getElementById('uxBody-layout')));
+            ['marginMode','bindingMode','bookletMode','signatureMode','creepMode','startCopyNewSheet'].forEach(id=>uxMoveGroup(id,document.getElementById('uxBody-booklet')));
+            ['posterMode','cropMode','pdfPageBox','bleedMode','prepressMarks'].forEach(id=>uxMoveGroup(id,document.getElementById('uxBody-prepress')));
+            ['watermarkMode','headerText','footerText','pageNumberMode','separatorMode'].forEach(id=>uxMoveGroup(id,document.getElementById('uxBody-marks')));
+            const driverPanel=document.getElementById('driverAdvancedPanel');if(driverPanel)document.getElementById('uxBody-driver').appendChild(driverPanel);
+            ['calibrationXmm','safetySheetLimit','jobSubmissionMode','jobPriority'].forEach(id=>uxMoveGroup(id,document.getElementById('uxBody-system')));
+            const presetActions=document.querySelector('.preset-actions'),toolbar=document.querySelector('.settings-toolbar');
+            if(presetActions&&toolbar&&!document.getElementById('uxPresetManageBtn')){const b=document.createElement('button');b.type='button';b.id='uxPresetManageBtn';b.className='mini-btn ux-preset-manage-toggle';b.textContent='Kelola Preset';b.onclick=togglePresetManager;toolbar.appendChild(b);}
+            const modeGroup=uxGroupForControl('settingsViewMode');if(modeGroup&&!document.getElementById('uxAdvancedQuickBtn')){const b=document.createElement('button');b.type='button';b.className='mini-btn';b.id='uxAdvancedQuickBtn';b.style.marginTop='7px';b.textContent='Buka Pengaturan Lanjutan';b.onclick=openAdvancedSettings;modeGroup.appendChild(b);}
+            updateAccordionSummaries();
+        }
+        function updateAccordionSummaries(){
+            if(!document.getElementById('advancedAccordionRoot'))return;
+            const set=(k,parts)=>{const el=document.getElementById(`uxSummary-${k}`);if(el)el.textContent=parts.filter(Boolean).join(' • ')||'Default';};
+            const sx=Number(document.getElementById('scaleXPercent')?.value||100),sy=Number(document.getElementById('scaleYPercent')?.value||100),ox=Number(document.getElementById('offsetXmm')?.value||0)+Number(document.getElementById('calibrationXmm')?.value||0),oy=Number(document.getElementById('offsetYmm')?.value||0)+Number(document.getElementById('calibrationYmm')?.value||0);
+            set('precision',[uxSelectText('autoRotateMode'),sx!==100||sy!==100?`X ${sx}% / Y ${sy}%`:'',ox||oy?`Offset ${ox}/${oy} mm`:'',document.getElementById('transformMode')?.value!=='none'?uxSelectText('transformMode'):'',document.getElementById('pageRotationMode')?.value!=='none'?`Rotasi ${uxSelectText('pageRotationMode')}`:'']);
+            set('pages',[uxSelectText('pageSubset'),uxSelectText('pageOrder'),uxSelectText('collateMode'),document.getElementById('blankPageMode')?.value!=='preserve'?uxSelectText('blankPageMode'):'']);
+            set('layout',[document.getElementById('nupBorder')?.value!=='none'?uxSelectText('nupBorder'):'',uxSelectText('nupOrder'),document.getElementById('impositionMode')?.value!=='normal'?uxSelectText('impositionMode'):'',(Number(document.getElementById('nupGapXmm')?.value||0)||Number(document.getElementById('nupGapYmm')?.value||0))?'Gap aktif':'']);
+            set('booklet',[document.getElementById('bookletMode')?.value==='on'?'Booklet aktif':'Booklet off',document.getElementById('marginMode')?.value!=='none'?`Margin ${uxSelectText('marginMode')}`:'',document.getElementById('bindingMode')?.value!=='off'?`${uxSelectText('bindingMode')} ${document.getElementById('gutterMm')?.value||0} mm`:'',document.getElementById('creepMode')?.value!=='off'?`Creep ${uxSelectText('creepMode')}`:'']);
+            set('prepress',[document.getElementById('posterMode')?.value==='on'?`Poster ${document.getElementById('posterCols')?.value}×${document.getElementById('posterRows')?.value}`:'Poster off',document.getElementById('cropMode')?.value!=='off'?'Crop aktif':'',document.getElementById('bleedMode')?.value!=='off'?`Bleed ${uxSelectText('bleedMode')}`:'',document.getElementById('prepressMarks')?.value!=='off'?uxSelectText('prepressMarks'):'']);
+            set('marks',[document.getElementById('watermarkMode')?.value==='on'?`Watermark: ${uxShort(document.getElementById('watermarkText')?.value||'DRAFT',18)}`:'',document.getElementById('headerText')?.value?'Header':'',document.getElementById('footerText')?.value?'Footer':'',document.getElementById('pageNumberMode')?.value!=='off'?'Nomor halaman':'',document.getElementById('separatorMode')?.value!=='off'?uxSelectText('separatorMode'):'']);
+            set('driver',[uxSelectText('driverPaperKind'),document.getElementById('driverMediaType')?.value!=='default'?uxSelectText('driverMediaType'):'',document.getElementById('driverBorderless')?.value!=='default'?`Borderless ${uxSelectText('driverBorderless')}`:'',document.getElementById('driverEconomy')?.value!=='default'?uxSelectText('driverEconomy'):'']);
+            set('system',[(Number(document.getElementById('calibrationXmm')?.value||0)||Number(document.getElementById('calibrationYmm')?.value||0))?`Kal ${document.getElementById('calibrationXmm').value}/${document.getElementById('calibrationYmm').value} mm`:'Kalibrasi 0',`Limit ${document.getElementById('safetySheetLimit')?.value||0}`,uxSelectText('jobSubmissionMode'),uxSelectText('jobPriority')]);
+            const quick=document.getElementById('uxAdvancedQuickBtn');if(quick)quick.style.display=document.body.classList.contains('compact-settings-mode')?'inline-flex':'none';
+        }
+
         function markAdvancedSettingGroups(){ ADVANCED_SETTING_IDS.forEach(id=>{const el=document.getElementById(id);if(!el)return;const group=el.closest('.input-group');if(group)group.classList.add('advanced-setting');}); }
-        function capabilityText(data){ if(!data)return 'Kemampuan printer tidak tersedia.';const bits=[];if(data.driverName)bits.push(`Driver: ${data.driverName}`);if(data.portName)bits.push(`Port: ${data.portName}`);if(data.color!==null&&data.color!==undefined)bits.push(data.color?'Warna':'Monokrom');if(data.duplexingMode)bits.push(`Duplex: ${data.duplexingMode}`);if(data.paperSize)bits.push(`Kertas: ${data.paperSize}`);if(data.status)bits.push(`Status: ${data.status}`);return bits.join(' • ')||'Printer terdeteksi.'; }
-        async function refreshPrinterCapabilities(){ const ip=document.getElementById('ipAddress').value.trim(),name=document.getElementById('printerSelect').value,info=document.getElementById('printerCapabilityInfo');if(!ip){info.textContent='Hubungkan ke server printer terlebih dahulu.';return;}info.textContent='Memeriksa kemampuan printer…';try{const q=name?`?name=${encodeURIComponent(name)}`:'';const r=await fetchWithRetry(`http://${ip}:3000/printer-capabilities${q}`,{cache:'no-store'},0,200);if(!r.ok)throw new Error(await r.text());const d=await r.json();info.textContent=capabilityText(d);if(d.duplexSupported===false){const ds=document.getElementById('duplexMode');['duplexlong','duplexshort'].forEach(v=>{const o=ds.querySelector(`option[value="${v}"]`);if(o)o.disabled=true;});}else{const ds=document.getElementById('duplexMode');['duplexlong','duplexshort'].forEach(v=>{const o=ds.querySelector(`option[value="${v}"]`);if(o)o.disabled=false;});}}catch(e){info.textContent='Kemampuan driver tidak dapat dibaca. Pengaturan cetak dasar tetap bisa digunakan.';} }
+        let currentPrinterCapabilities = null;
+        function capabilityText(data){
+            if(!data)return 'Kemampuan printer tidak tersedia.';
+            const bits=[];
+            if(data.driverName)bits.push(`Driver: ${data.driverName}`);
+            if(data.portName)bits.push(`Port: ${data.portName}`);
+            if(data.supportsColor!==null&&data.supportsColor!==undefined)bits.push(data.supportsColor?'Warna':'Monokrom');
+            if(data.canDuplex!==null&&data.canDuplex!==undefined)bits.push(data.canDuplex?'Duplex tersedia':'Tanpa duplex otomatis');
+            if(data.maxCopies)bits.push(`Max copy driver: ${data.maxCopies}`);
+            if(data.paperSize)bits.push(`Aktif: ${data.paperSize}`);
+            if(data.status)bits.push(`Status: ${data.status}`);
+            return bits.join(' • ')||'Printer terdeteksi.';
+        }
+        function replaceSelectOptions(id, base, items, mapper){
+            const el=document.getElementById(id); if(!el)return;
+            const previous=el.value; el.innerHTML='';
+            base.forEach(o=>el.add(new Option(o.label,o.value)));
+            (items||[]).forEach(item=>{const m=mapper(item); if(m&&m.value!==undefined)el.add(new Option(m.label,String(m.value)));});
+            if([...el.options].some(o=>o.value===previous))el.value=previous;
+        }
+        function populateDriverControls(data){
+            currentPrinterCapabilities=data||null;
+            replaceSelectOptions('driverBin',[{label:'Default Driver',value:''},{label:'Auto sesuai ukuran halaman',value:'auto'}],data?.trays||[],x=>({label:x.name||`Tray ${x.rawKind}`,value:x.name||String(x.rawKind)}));
+            replaceSelectOptions('driverPaperKind',[{label:'Ikuti Kertas Printer',value:'0'}],data?.paperSizes||[],x=>({label:`${x.name}${x.widthMm&&x.heightMm?` • ${x.widthMm}×${x.heightMm} mm`:''}`,value:x.rawKind||0}));
+            replaceSelectOptions('driverMediaType',[{label:'Default Driver',value:'default'}],data?.mediaTypes||[],x=>({label:String(x),value:String(x)}));
+            replaceSelectOptions('driverQuality',[{label:'Default Driver',value:'default'}],data?.resolutions||[],x=>({label:x.label||`${x.x||'?'}×${x.y||'?'} DPI`,value:x.value||`${x.x||0}x${x.y||0}`}));
+            const border=document.getElementById('driverBorderless');
+            const borderCaps=(data?.borderless||[]).map(v=>String(v).toLowerCase());
+            border.querySelector('option[value="on"]').disabled=borderCaps.length>0&&!borderCaps.some(v=>v.includes('borderless'));
+            const ds=document.getElementById('duplexMode');
+            ['duplexlong','duplexshort'].forEach(v=>{const o=ds.querySelector(`option[value="${v}"]`);if(o)o.disabled=data?.canDuplex===false;});
+            const color=document.getElementById('colorMode');
+            const colorOpt=color.querySelector('option[value="color"]'); if(colorOpt)colorOpt.disabled=data?.supportsColor===false;
+            updateDriverExecutionHint();
+        }
+        function driverVendorOptionsSelected(){
+            return document.getElementById('driverMediaType').value!=='default' || document.getElementById('driverQuality').value!=='default' || document.getElementById('driverBorderless').value!=='default' || document.getElementById('driverEconomy').value!=='default';
+        }
+        function updateDriverExecutionHint(){
+            const note=document.getElementById('driverAdvancedNote'); if(!note)return;
+            const needs=driverVendorOptionsSelected(), mode=document.getElementById('driverExecutionMode').value;
+            if(needs&&mode==='direct'){
+                note.textContent='Media Type / Quality / Borderless / Economy tidak memiliki parameter universal pada engine silent-print. Ubah Mode Eksekusi menjadi Dialog Printer agar opsi vendor dapat dikonfirmasi di PC server.';
+                note.style.background='rgba(245,158,11,.12)';
+            }else if(mode==='dialog'){
+                note.textContent='Dialog printer akan muncul di PC server. Konfirmasi Media Type, Quality, Borderless atau Economy di dialog driver sebelum menekan Print.';
+                note.style.background='rgba(59,130,246,.10)';
+            }else{
+                note.textContent='Tray dan Paper Kind diterapkan langsung. Pengaturan vendor lain tetap memakai default driver.';
+                note.style.background='rgba(16,185,129,.08)';
+            }
+        }
+        async function refreshPrinterCapabilities(){
+            const ip=document.getElementById('ipAddress').value.trim(),name=document.getElementById('printerSelect').value,info=document.getElementById('printerCapabilityInfo');
+            if(!ip){info.textContent='Hubungkan ke server printer terlebih dahulu.';return;}
+            info.textContent='Memeriksa tray, kertas, DPI dan kemampuan driver…';
+            try{
+                const q=name?`?name=${encodeURIComponent(name)}`:'';
+                const r=await fetchWithRetry(`http://${ip}:3000/printer-capabilities${q}`,{cache:'no-store'},0,200);
+                if(!r.ok)throw new Error(await r.text());
+                const d=await r.json(); info.textContent=capabilityText(d); populateDriverControls(d);
+                const badges=[];
+                badges.push(`<span class="cap-badge ${d.trays?.length?'ok':'warn'}">${d.trays?.length||0} tray</span>`);
+                badges.push(`<span class="cap-badge ${d.paperSizes?.length?'ok':'warn'}">${d.paperSizes?.length||0} ukuran kertas</span>`);
+                badges.push(`<span class="cap-badge ${d.resolutions?.length?'ok':'warn'}">${d.resolutions?.length||0} kualitas/DPI</span>`);
+                badges.push(`<span class="cap-badge ${d.mediaTypes?.length?'ok':'warn'}">${d.mediaTypes?.length||0} media type</span>`);
+                info.insertAdjacentHTML('beforeend',`<div class="cap-badges">${badges.join('')}</div>`);
+            }catch(e){currentPrinterCapabilities=null;info.textContent='Kemampuan driver tidak dapat dibaca. Pengaturan cetak dasar tetap bisa digunakan.';}
+        }
         async function openPrinterProperties(){ const ip=document.getElementById('ipAddress').value.trim(),name=document.getElementById('printerSelect').value;if(!ip)return showToast('Hubungkan ke server printer terlebih dahulu.','error');try{const r=await fetchWithRetry(`http://${ip}:3000/printer-properties?name=${encodeURIComponent(name)}`,{method:'POST'},0,200);if(!r.ok)throw new Error(await r.text());showToast('Dialog properti printer dibuka di PC server.','success');}catch(e){showToast(e.message||'Gagal membuka properti printer.','error');} }
-        async function handlePrinterChanged(){ loadSettingsForCurrentPrinter(); await refreshPrinterCapabilities(); }
+        async function handlePrinterChanged(){ loadSettingsForCurrentPrinter(); loadPrinterCalibration(); await refreshPrinterCapabilities(); runPreflight(false); }
 
         let currentSourceInfo = { kind: 'none', width: 595.28, height: 841.89, label: 'Belum ada file', standard: 'A4' };
         let currentPrintableFile = null;
@@ -683,6 +1052,31 @@
                 const el=document.getElementById(id),v=Number(el.value); if(!Number.isFinite(v)||v<0||v>100){el.setCustomValidity('Nilai harus 0 sampai 100 mm.'); if(showFeedback){el.reportValidity();showToast('Nilai poster/crop tidak valid.','error');} return false;} el.setCustomValidity('');
             }
             const wmOp=Number(document.getElementById('watermarkOpacity').value); if(wmOp<5||wmOp>80){if(showFeedback)showToast('Opacity watermark harus 5%–80%.','error');return false;}
+            for (const id of ['scaleXPercent','scaleYPercent']) {
+                const el=document.getElementById(id),v=Number(el.value);
+                if(!Number.isFinite(v)||v<50||v>150){el.setCustomValidity('Skala X/Y harus 50% sampai 150%.');if(showFeedback){el.reportValidity();showToast('Skala presisi X/Y harus 50%–150%.','error');}return false;} el.setCustomValidity('');
+            }
+            for (const id of ['offsetXmm','offsetYmm']) {
+                const el=document.getElementById(id),v=Number(el.value);
+                if(!Number.isFinite(v)||v<-50||v>50){el.setCustomValidity('Offset harus -50 sampai 50 mm.');if(showFeedback){el.reportValidity();showToast('Offset X/Y harus -50 sampai 50 mm.','error');}return false;} el.setCustomValidity('');
+            }
+            const gutter=Number(document.getElementById('gutterMm').value);
+            if(!Number.isFinite(gutter)||gutter<0||gutter>50){if(showFeedback)showToast('Gutter harus 0–50 mm.','error');return false;}
+            const safeLimit=Number(document.getElementById('safetySheetLimit').value);
+            if(!Number.isFinite(safeLimit)||safeLimit<0||safeLimit>5000){if(showFeedback)showToast('Batas aman lembar harus 0–5000.','error');return false;}
+            if(document.getElementById('pageRotationMode').value==='custom' && document.getElementById('pageRotationRules').value.trim()) {
+                const parts=document.getElementById('pageRotationRules').value.split(',').map(v=>v.trim()).filter(Boolean);
+                if(parts.some(p=>!/^\d+(?:\s*-\s*\d+)?\s*:\s*(90|180|270)$/.test(p))){
+                    if(showFeedback)showToast('Format rotasi halaman: 1:90,3-5:180,8:270','error'); return false;
+                }
+            }
+            const sigPages=Number(document.getElementById('signaturePages').value||16);
+            if(sigPages<4||sigPages>200||sigPages%4!==0){if(showFeedback)showToast('Signature custom harus 4–200 halaman dan kelipatan 4.','error');return false;}
+            const creep=Number(document.getElementById('creepMm').value||0);if(creep<0||creep>3){if(showFeedback)showToast('Creep harus 0–3 mm per lembar.','error');return false;}
+            for(const id of ['bleedMm','nupGapXmm','nupGapYmm']){const v=Number(document.getElementById(id).value||0);if(v<0||v>30){if(showFeedback)showToast('Bleed/gap harus 0–30 mm.','error');return false;}}
+            for(const id of ['calibrationXmm','calibrationYmm']){const v=Number(document.getElementById(id).value||0);if(v<-20||v>20){if(showFeedback)showToast('Kalibrasi X/Y harus -20 sampai 20 mm.','error');return false;}}
+            syncPrepressControls();
+            syncProductionPrecisionControls();
             syncDocumentAdvancedControls();
             syncLayoutFinishingControls();
             if (document.getElementById('bookletMode').value === 'on' && currentImgSrc) {
@@ -743,6 +1137,99 @@
         function showDeleteHistoryModal() { document.getElementById('deleteHistoryModal').style.display='flex'; }
         function closeDeleteHistoryModal() { document.getElementById('deleteHistoryModal').style.display='none'; }
         function executeClearHistory() { localStorage.removeItem('h_v45'); loadHistory(); closeDeleteHistoryModal(); showToast('Dibersihkan', 'success'); }
+        function escapeHtmlQueue(value){return String(value??'').replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]));}
+        function activeServerIp(){return document.getElementById('ipAddress').value.trim();}
+        function priorityLabel(p){return p==='urgent'?'URGENT':p==='priority'?'PRIORITAS':'Normal';}
+        function statusLabel(s){return ({queued:'Menunggu',held:'Ditahan',processing:'Diproses',success:'Selesai',failed:'Gagal',cancelled:'Dibatalkan'})[s]||s;}
+
+        function parseRotationRulesClient(text) {
+            const out = new Map();
+            String(text || '').split(',').map(v => v.trim()).filter(Boolean).forEach(part => {
+                const m = part.match(/^(\d+)(?:\s*-\s*(\d+))?\s*:\s*(90|180|270)$/);
+                if (!m) return;
+                let a = Number(m[1]), b = Number(m[2] || m[1]), deg = Number(m[3]);
+                if (a > b) [a,b] = [b,a];
+                for (let n=a; n<=b && n<=5000; n++) out.set(n,deg);
+            });
+            return out;
+        }
+        function rotationForPageClient(pageNumber) {
+            const mode = document.getElementById('pageRotationMode').value;
+            if (['90','180','270'].includes(mode)) return Number(mode);
+            if (mode === 'custom') return parseRotationRulesClient(document.getElementById('pageRotationRules').value).get(pageNumber) || 0;
+            return 0;
+        }
+        function productionMarginMmForSheet(sheetNumber) {
+            const base = getMarginMm();
+            const mode = document.getElementById('bindingMode').value;
+            const g = Math.max(0, Number(document.getElementById('gutterMm').value || 0));
+            const m = {...base};
+            if (mode === 'left') m.left += g;
+            else if (mode === 'right') m.right += g;
+            else if (mode === 'top') m.top += g;
+            else if (mode === 'mirror') {
+                if (sheetNumber % 2 === 1) m.left += g;
+                else m.right += g;
+            }
+            return m;
+        }
+        function calculateEstimatedSheets() {
+            if(!currentPdfDoc&&!currentImgSrc) return {logical:0,sides:0,copies:Math.max(1,Number(document.getElementById('copies').value||1)),sheets:0,isDuplex:false};
+            let logical=currentPdfDoc?getSelectedPdfPages(currentPdfDoc.numPages).filter(Boolean).length:1;
+            const poster=document.getElementById('posterMode').value==='on';
+            if(poster) logical*=Number(document.getElementById('posterCols').value||2)*Number(document.getElementById('posterRows').value||2);
+            const booklet=document.getElementById('bookletMode').value==='on';
+            let sides;
+            if(booklet){const padded=Math.ceil(logical/4)*4;sides=padded/2;}
+            else sides=Math.ceil(logical/Math.max(1,Number(document.getElementById('pagesPerSheet').value||1)));
+            if(document.getElementById('separatorMode').value==='cover') sides += 1;
+            const duplex=document.getElementById('duplexMode').value;
+            const isDuplex=duplex!=='simplex';
+            if(isDuplex && (document.getElementById('blankPageMode').value==='pad-even' || document.getElementById('startCopyNewSheet').value==='on') && sides % 2 === 1) sides += 1;
+            const copies=Math.max(1,Number(document.getElementById('copies').value||1));
+            let sheets=(isDuplex?Math.ceil(sides/2):sides)*copies;
+            if(document.getElementById('separatorMode').value==='between-copies' && copies>1) sheets += copies-1;
+            return {logical,sides,copies,sheets,isDuplex};
+        }
+        function confirmSafetyLimitIfNeeded() {
+            const est=calculateEstimatedSheets();
+            const limit=Math.max(0,Number(document.getElementById('safetySheetLimit').value||0));
+            if(limit>0 && est.sheets>limit) {
+                return confirm(`PERINGATAN JUMLAH KERTAS\n\nEstimasi job ini sekitar ${est.sheets} lembar, melewati batas aman ${limit} lembar.\n\nTetap kirim ke antrean cetak?`);
+            }
+            return true;
+        }
+        function syncProductionPrecisionControls() {
+            const binding=document.getElementById('bindingMode').value!=='off';
+            document.getElementById('bindingSettings').style.display=binding?'flex':'none';
+            document.getElementById('pageRotationSettings').style.display=document.getElementById('pageRotationMode').value==='custom'?'block':'none';
+            if(document.getElementById('startCopyNewSheet').value==='on' && document.getElementById('duplexMode').value!=='simplex') {
+                document.getElementById('collateMode').value='collated';
+            }
+        }
+
+        function estimateCurrentPrint(){
+            const el=document.getElementById('sheetEstimate'); if(!el)return;
+            const e=calculateEstimatedSheets();
+            if(!currentPdfDoc&&!currentImgSrc){el.textContent='Estimasi lembar akan tampil setelah file dipilih.';return;}
+            const limit=Math.max(0,Number(document.getElementById('safetySheetLimit').value||0));
+            const warning=limit>0&&e.sheets>limit?` • ⚠ melewati batas ${limit}`:'';
+            el.textContent=`Estimasi: ${e.logical} halaman konten • ${e.sides} sisi cetak/copy • ${e.copies} copy → sekitar ${e.sheets} lembar kertas${e.isDuplex?' (duplex)':''}${warning}.`;
+        }
+        async function queuePost(path,body={}){const ip=activeServerIp();if(!ip)throw new Error('Server belum dipilih.');const r=await fetchWithRetry(`http://${ip}:3000${path}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)},0,250);if(!r.ok)throw new Error(await r.text());return r.json().catch(()=>({ok:true}));}
+        async function refreshPrinterRealtimeStatus(){const ip=activeServerIp(),name=document.getElementById('printerSelect').value;if(!ip||!name)return;try{const r=await fetchWithRetry(`http://${ip}:3000/printer-status?name=${encodeURIComponent(name)}&_t=${Date.now()}`,{cache:'no-store'},0,200);if(!r.ok)return;const d=await r.json();document.getElementById('printerRealtimeStatus').textContent=`Status printer: ${d.status||'Unknown'} • ${d.printing||0} aktif • ${d.queued||0} antre • ${d.held||0} hold${d.paused?' • QUEUE DIJEDA':''}`;}catch(_){}}
+        function renderQueue(data){
+            latestQueueData=data;queuePausedRemote=Boolean(data.paused);const jobs=data.jobs||[],list=document.getElementById('queueList'),badge=document.getElementById('queueSummaryBadge'),pause=document.getElementById('queuePauseBtn');
+            badge.textContent=`${data.waiting||0} antre • ${data.active||0} aktif • ${data.held||0} hold`;pause.textContent=queuePausedRemote?'▶ Lanjutkan':'⏸ Jeda';
+            if(!jobs.length){list.innerHTML='<div style="font-size:11px;color:var(--text-muted);">Belum ada job.</div>';return;}
+            list.innerHTML=jobs.slice(0,20).map(j=>{const actions=[];if(j.status==='held')actions.push(`<button onclick="queueAction('${j.id}','release')">▶ Cetak</button>`);if(['queued','held','processing'].includes(j.status))actions.push(`<button class="danger" onclick="queueAction('${j.id}','cancel')">✕ Batal</button>`);if(['failed','cancelled','success'].includes(j.status)&&j.sourceRetained)actions.push(`<button onclick="queueAction('${j.id}','retry')">↻ Cetak Ulang</button>`);if(j.status==='queued')actions.push(`<button onclick="cycleJobPriority('${j.id}','${j.priority}')">↑ Prioritas</button>`);const meta=[j.printerName,j.pages?`${j.pages} hlm`:null,j.sheets?`±${j.sheets} lembar`:null,`${j.copies||1} copy`].filter(Boolean).join(' • ');return `<div class="queue-job"><div class="queue-job-head"><div style="min-width:0;"><div style="font-size:11px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtmlQueue(j.name)}</div><div style="font-size:9px;color:var(--text-muted);margin-top:3px;">${escapeHtmlQueue(meta)}</div></div><div style="font-size:9px;font-weight:800;text-align:right;" class="job-status-${j.status}">${statusLabel(j.status)}<br><span style="color:var(--text-muted);">${priorityLabel(j.priority)}</span></div></div>${j.error?`<div style="font-size:9px;color:#b91c1c;margin-top:5px;">${escapeHtmlQueue(j.error)}</div>`:''}<div class="queue-actions">${actions.join('')}</div></div>`;}).join('');
+        }
+        async function refreshQueue(showError=false){const ip=activeServerIp();if(!ip)return;try{const r=await fetchWithRetry(`http://${ip}:3000/queue?_t=${Date.now()}`,{cache:'no-store'},0,200);if(!r.ok)throw new Error(await r.text());renderQueue(await r.json());await refreshPrinterRealtimeStatus();}catch(e){if(showError)showToast(e.message||'Gagal membaca antrean.','error');}}
+        function startQueuePolling(){if(queuePollTimer)clearInterval(queuePollTimer);refreshQueue();queuePollTimer=setInterval(()=>refreshQueue(false),3000);}
+        async function toggleQueuePause(){try{await queuePost(queuePausedRemote?'/queue/resume':'/queue/pause');await refreshQueue();showToast(queuePausedRemote?'Antrean dijeda.':'Antrean dilanjutkan.','info');}catch(e){showToast(e.message,'error');}}
+        async function queueAction(id,action){try{const result=await queuePost(`/queue/${encodeURIComponent(id)}/${action}`);await refreshQueue();showToast(action==='release'?'Job dilepas ke antrean.':action==='cancel'?'Permintaan pembatalan dikirim.':'Job cetak ulang dibuat.','success');return result;}catch(e){showToast(e.message,'error');}}
+        async function cycleJobPriority(id,current){const next=current==='normal'?'priority':current==='priority'?'urgent':'normal';try{await queuePost(`/queue/${encodeURIComponent(id)}/priority`,{priority:next});await refreshQueue();}catch(e){showToast(e.message,'error');}}
+
         function saveHistory(name) {
             const ip = document.getElementById('ipAddress').value.trim();
             let h = JSON.parse(localStorage.getItem('h_v45')) || [];
@@ -760,9 +1247,10 @@
             if (socket) socket.disconnect();
             currentSocketIp = ip;
             socket = io(`http://${ip}:3000`, { transports: ['websocket', 'polling'] });
-            socket.on('connect', () => setConnectionStatus('connected', `Server terhubung: ${ip}`));
+            socket.on('connect', () => { setConnectionStatus('connected', `Server terhubung: ${ip}`); startQueuePolling(); });
             socket.on('disconnect', () => setConnectionStatus('disconnected', `Koneksi server terputus: ${ip}`));
             socket.on('connect_error', () => setConnectionStatus('failed', `Socket gagal ke ${ip}`));
+            socket.on('queue-update', () => refreshQueue(false));
             socket.on('print-status', data => {
                 document.getElementById('realtimeStatus').style.display='block';
                 document.getElementById('statusMessage').innerText = data.message;
@@ -892,17 +1380,25 @@
         }
 
 async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false, overrides = {}) {
+            if(driverVendorOptionsSelected() && document.getElementById('driverExecutionMode').value==='direct') {
+                throw new Error('Media Type / Quality / Borderless / Economy membutuhkan Mode Eksekusi: Dialog Printer.');
+            }
             let uploadFile=fileObj;
             if(!useCompatibilityMode && currentInputKind==='image') uploadFile=await prepareImageFileForUpload(fileObj);
             const fd=new FormData(); fd.append('document',uploadFile); fd.append('pin',pin);
             const val=id => Object.prototype.hasOwnProperty.call(overrides,id) ? overrides[id] : document.getElementById(id).value;
             fd.append('printerName',document.getElementById('printerSelect').value);
-            ['colorMode','paperSize','orientation','scaleMode','customScale','pagesPerSheet','copies','duplexMode','collateMode','marginMode','marginTop','marginRight','marginBottom','marginLeft','autoRotateMode','contentAlign','nupBorder','nupOrder','posterMode','posterCols','posterRows','posterOverlap','posterCutMarks','transformMode','cropMode','cropTop','cropRight','cropBottom','cropLeft','watermarkMode','watermarkText','watermarkOpacity','watermarkAngle','headerText','footerText','pageNumberMode','pageNumberStart'].forEach(id=>fd.append(id,val(id)));
+            ['colorMode','paperSize','orientation','scaleMode','customScale','pagesPerSheet','copies','duplexMode','collateMode','driverBin','driverPaperKind','driverMediaType','driverQuality','driverBorderless','driverEconomy','driverExecutionMode','marginMode','marginTop','marginRight','marginBottom','marginLeft','autoRotateMode','contentAlign','nupBorder','nupOrder','posterMode','posterCols','posterRows','posterOverlap','posterCutMarks','transformMode','cropMode','cropTop','cropRight','cropBottom','cropLeft','watermarkMode','watermarkText','watermarkOpacity','watermarkAngle','headerText','footerText','pageNumberMode','pageNumberStart','bindingMode','gutterMm','blankPageMode','pageRotationMode','pageRotationRules','scaleXPercent','scaleYPercent','offsetXmm','offsetYmm','separatorMode','startCopyNewSheet','safetySheetLimit','signatureMode','signaturePages','creepMode','creepMm','pdfPageBox','bleedMode','bleedMm','prepressMarks','impositionMode','repeatCount','nupGapXmm','nupGapYmm','calibrationXmm','calibrationYmm'].forEach(id=>fd.append(id,val(id)));
             fd.append('pageSubset',Object.prototype.hasOwnProperty.call(overrides,'pageSubset')?overrides.pageSubset:(useCompatibilityMode?'all':document.getElementById('pageSubset').value));
             fd.append('pageOrder',Object.prototype.hasOwnProperty.call(overrides,'pageOrder')?overrides.pageOrder:(useCompatibilityMode?'normal':document.getElementById('pageOrder').value));
             fd.append('bookletMode',Object.prototype.hasOwnProperty.call(overrides,'bookletMode')?overrides.bookletMode:(useCompatibilityMode?'off':document.getElementById('bookletMode').value));
             fd.append('pages',Object.prototype.hasOwnProperty.call(overrides,'pages')?overrides.pages:(useCompatibilityMode?'':document.getElementById('pages').value));
             fd.append('transformsBaked',useCompatibilityMode||currentInputKind==='image'?'true':'false');
+            const holdValue=Object.prototype.hasOwnProperty.call(overrides,'holdJob')?overrides.holdJob:(document.getElementById('jobSubmissionMode').value==='hold');
+            fd.append('holdJob',holdValue?'true':'false');
+            fd.append('jobPriority',Object.prototype.hasOwnProperty.call(overrides,'jobPriority')?overrides.jobPriority:document.getElementById('jobPriority').value);
+            fd.append('allowDuplicate',Object.prototype.hasOwnProperty.call(overrides,'allowDuplicate')&&overrides.allowDuplicate?'true':'false');
+            fd.append('safetyConfirmed',Object.prototype.hasOwnProperty.call(overrides,'safetyConfirmed') ? (overrides.safetyConfirmed?'true':'false') : 'true');
             return await fetchWithRetry(`http://${ip}:3000/print`,{method:'POST',body:fd},1,400);
         }
 
@@ -931,17 +1427,22 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
         }
 
         async function printManualDuplex(ip,pin,fileToPrint,useCompatibilityMode,historyName,mode){
+            if(queuePausedRemote) throw new Error('Antrean sedang dijeda. Lanjutkan antrean sebelum memakai Duplex Manual.');
             if(!currentPdfDoc || currentPdfDoc.numPages < 2){showToast('Duplex manual hanya diperlukan untuk dokumen multi-halaman. Mencetak satu sisi.','info');return null;}
-            const first=await submitPrintRequest(ip,pin,fileToPrint,useCompatibilityMode,{duplexMode:'simplex',pageSubset:'odd',pageOrder:'normal',collateMode:'collated'});
+            const first=await submitPrintRequest(ip,pin,fileToPrint,useCompatibilityMode,{duplexMode:'simplex',pageSubset:'odd',pageOrder:'normal',collateMode:'collated',holdJob:false});
             if(!first.ok) throw new Error(await first.text()||'Cetak sisi pertama gagal.');
             const edge=mode==='manual-short'?'sisi pendek':'sisi panjang';
             const go=confirm(`SISI PERTAMA SELESAI.\n\nAmbil tumpukan kertas tanpa mengubah urutannya. Balik/reinsert kertas untuk penjilidan ${edge}, sesuai arah masuk printer Anda.\n\nKlik OK setelah kertas siap untuk mencetak sisi kedua.`);
             if(!go){showToast('Duplex manual dihentikan setelah sisi pertama.','info');return false;}
-            const second=await submitPrintRequest(ip,pin,fileToPrint,useCompatibilityMode,{duplexMode:'simplex',pageSubset:'even',pageOrder:'reverse',collateMode:'collated'});
+            const second=await submitPrintRequest(ip,pin,fileToPrint,useCompatibilityMode,{duplexMode:'simplex',pageSubset:'even',pageOrder:'reverse',collateMode:'collated',holdJob:false});
             if(!second.ok) throw new Error(await second.text()||'Cetak sisi kedua gagal.');
             resetAfterSuccessfulPrint(ip,historyName+' (Duplex Manual)');
             return true;
         }
+
+        function clearSelectedDocumentAfterQueue(){document.getElementById('fileInput').value='';currentPdfDoc=null;currentImgSrc=null;currentPreviewSheet=0;currentPrintableFile=null;currentOriginalFileName='';currentInputKind='none';document.getElementById('docxConversionPanel').style.display='none';currentSourceInfo={kind:'none',width:595.28,height:841.89,label:'Belum ada file',standard:'A4'};document.getElementById('sourceSizeInfo').value='Belum ada file';document.getElementById('compatPrintBtn').style.display='none';document.getElementById('compatHint').style.display='none';updateDynamicPreview();}
+        async function handleQueueAcceptedResponse(r,ip,historyName){if(r.status!==202)return false;let d={};try{d=await r.json();}catch(_){};const id=d.job?.id||'';showToast(d.held?`Job ${id} ditahan. Lepaskan dari Antrean Cetak saat siap.`:`Job ${id} masuk antrean${d.paused?' (queue sedang dijeda)':''}.`,'success');sessionStorage.setItem('activePrintServerIp',ip);saveHistory(historyName+(d.held?' (Hold)':' (Queued)'));clearSelectedDocumentAfterQueue();refreshQueue();return true;}
+        async function resolveDuplicateAndRetry(r,ip,pin,fileToPrint,useCompatibilityMode,overrides={}){if(r.status!==409)return r;let d=null;try{d=await r.clone().json();}catch(_){};if(d?.code!=='DUPLICATE_JOB')return r;const ok=confirm(`Dokumen yang sama baru saja dikirim${d.existingJob?.id?' (Job '+d.existingJob.id+')':''}.\n\nTetap kirim cetakan duplikat?`);if(!ok)return null;return submitPrintRequest(ip,pin,fileToPrint,useCompatibilityMode,{...overrides,allowDuplicate:true});}
 
         async function confirmAndPrint(useCompatibilityMode = false) {
             const pin = document.getElementById('modalPinInput').value;
@@ -952,6 +1453,9 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
             const historyName = currentOriginalFileName || (inputFile ? inputFile.name : originalFile?.name);
             if (!originalFile || !ip) return;
             if (!validatePrintSettings(true)) return;
+            const preflight=await runPreflight(false);
+            if(!confirmPreflightWarnings(preflight)) return;
+            if (!confirmSafetyLimitIfNeeded()) return;
 
             try {
                 let fileToPrint = originalFile;
@@ -967,15 +1471,20 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
                     const manualResult = await printManualDuplex(ip,pin,fileToPrint,effectiveCompatibility,historyName,selectedDuplex);
                     if (manualResult !== null) return;
                 }
-                const r = await submitPrintRequest(ip, pin, fileToPrint, effectiveCompatibility, selectedDuplex.startsWith('manual-') ? {duplexMode:'simplex'} : {});
-
+                const baseOverrides = selectedDuplex.startsWith('manual-') ? {duplexMode:'simplex'} : {};
+                let r = await submitPrintRequest(ip, pin, fileToPrint, effectiveCompatibility, baseOverrides);
+                r = await resolveDuplicateAndRetry(r,ip,pin,fileToPrint,effectiveCompatibility,baseOverrides);
+                if(!r){showToast('Cetakan duplikat dibatalkan.','info');return;}
+                if(await handleQueueAcceptedResponse(r,ip,historyName)) return;
                 if (r.ok) {
                     resetAfterSuccessfulPrint(ip, historyName);
+                    refreshQueue();
                     return;
                 }
 
                 const errText = await r.text();
                 console.error('Print failed:', r.status, errText);
+                if(String(errText||'').includes('JOB_CANCELLED')) { showToast('Job cetak dibatalkan dari antrean.', 'info'); refreshQueue(); return; }
 
                 const canAutoFallback = !useCompatibilityMode && currentPdfDoc;
                 if (canAutoFallback) {
@@ -985,10 +1494,12 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
                     document.getElementById('progressBar').style.width = '5%';
 
                     const compatibilityFile = await buildCompatibilityFileOrThrow();
-                    const retry = await submitPrintRequest(ip, pin, compatibilityFile, true);
+                    const retry = await submitPrintRequest(ip, pin, compatibilityFile, true, {holdJob:false});
 
+                    if(await handleQueueAcceptedResponse(retry,ip,historyName + ' (Mode Kompatibilitas)')) return;
                     if (retry.ok) {
                         resetAfterSuccessfulPrint(ip, historyName + ' (Mode Kompatibilitas)');
+                        refreshQueue();
                         return;
                     }
 
@@ -1006,9 +1517,11 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
                     try {
                         showToast('Koneksi cetak normal gagal. Mencoba Mode Kompatibilitas PDF...', 'info');
                         const compatibilityFile = await buildCompatibilityFileOrThrow();
-                        const retry = await submitPrintRequest(ip, pin, compatibilityFile, true);
+                        const retry = await submitPrintRequest(ip, pin, compatibilityFile, true, {holdJob:false});
+                        if(await handleQueueAcceptedResponse(retry,ip,historyName + ' (Mode Kompatibilitas)')) return;
                         if (retry.ok) {
                             resetAfterSuccessfulPrint(ip, historyName + ' (Mode Kompatibilitas)');
+                            refreshQueue();
                             return;
                         }
                         const retryErr = await retry.text();
@@ -1246,46 +1759,221 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
             const p=[]; p.push(document.getElementById('paperSize').value,document.getElementById('orientation').value,document.getElementById('scaleMode').value,`${document.getElementById('pagesPerSheet').value} hal/lembar`,`${document.getElementById('copies').value} copy`); const dx=document.getElementById('duplexMode').value; if(dx!=='simplex')p.push(dx.startsWith('manual-')?'Duplex Manual':'Duplex Otomatis');
             if(document.getElementById('bookletMode').value==='on')p.push('BOOKLET');
             if(document.getElementById('posterMode').value==='on')p.push(`POSTER ${document.getElementById('posterCols').value}×${document.getElementById('posterRows').value}`);
+            if(document.getElementById('driverBin').value)p.push(`Tray: ${document.getElementById('driverBin').selectedOptions[0]?.textContent||document.getElementById('driverBin').value}`);
+            if(document.getElementById('driverExecutionMode').value==='dialog')p.push('Dialog Driver');
             if(document.getElementById('transformMode').value!=='none')p.push(document.getElementById('transformMode').value);
             if(document.getElementById('cropMode').value==='custom')p.push('Crop');
             if(document.getElementById('watermarkMode').value==='on')p.push('Watermark');
             if(document.getElementById('headerText').value)p.push('Header'); if(document.getElementById('footerText').value)p.push('Footer'); if(document.getElementById('pageNumberMode').value!=='off')p.push('Nomor hlm');
             el.textContent=p.filter(Boolean).join(' • ');
-        }
+        
+            if(document.getElementById('advancedAccordionRoot'))updateAccordionSummaries();}
 
         async function updateDynamicPreview() {
-            syncAdvancedPrintControls(); updatePrintSettingsSummary();
+            syncAdvancedPrintControls(); syncProductionPrecisionControls(); updatePrintSettingsSummary(); estimateCurrentPrint();
             const canvas=document.getElementById('mainPreviewCanvas'), empty=document.getElementById('emptyPreviewState');
             if(!currentPdfDoc&&!currentImgSrc){canvas.style.display='none';empty.style.display='block';document.getElementById('previewPagination').style.display='none';return;}
             validatePrintSettings(false);empty.style.display='none';canvas.style.display='block';
-            const poster=document.getElementById('posterMode').value==='on', pCols=Number(document.getElementById('posterCols').value||2), pRows=Number(document.getElementById('posterRows').value||2);
-            const requestedOrientation=document.getElementById('orientation').value,paperSize=document.getElementById('paperSize').value,pps=poster?1:(parseInt(document.getElementById('pagesPerSheet').value,10)||1);
-            const autoRotate=document.getElementById('autoRotateMode').value==='auto',align=document.getElementById('contentAlign').value,scaleMode=getEffectiveScaleMode(document.getElementById('scaleMode').value,pps),customScale=Number(document.getElementById('customScale').value||100);
-            const orient=resolveOrientation(requestedOrientation,currentSourceInfo.width,currentSourceInfo.height,pps),paper=resolvePaperViewport(paperSize,orient,currentSourceInfo.width,currentSourceInfo.height,currentSourceInfo.standard),grid=getGrid(pps,orient),margin=getMarginMm();
-            const baseH=1000;canvas.height=baseH;canvas.width=Math.max(650,Math.round(baseH*paper.width/paper.height));const ps=canvas.width/paper.width,mmPt=72/25.4;
-            const m={top:margin.top*mmPt*ps,right:margin.right*mmPt*ps,bottom:margin.bottom*mmPt*ps,left:margin.left*mmPt*ps},cx=m.left,cy=m.top,cw=Math.max(1,canvas.width-m.left-m.right),ch=Math.max(1,canvas.height-m.top-m.bottom);
-            const ctx=canvas.getContext('2d');ctx.fillStyle='white';ctx.fillRect(0,0,canvas.width,canvas.height);canvas.style.filter=document.getElementById('colorMode').value==='monochrome'?'grayscale(100%)':'none';
-            document.getElementById('previewBadge').textContent=`${paperSize} • ${orient}${poster?` • Poster ${pCols}×${pRows}`:''}`;
-            const drawSourceCanvas=(src,cellX,cellY,cellW,cellH)=>{ctx.save();ctx.beginPath();ctx.rect(cellX,cellY,cellW,cellH);ctx.clip();const fit=Math.min(cellW/src.width,cellH/src.height),w=src.width*fit,h=src.height*fit,x=align==='top-left'?cellX:cellX+(cellW-w)/2,y=align==='top-left'?cellY:cellY+(cellH-h)/2;ctx.drawImage(src,x,y,w,h);ctx.restore();};
+
+            const poster=document.getElementById('posterMode').value==='on',
+                  pCols=Number(document.getElementById('posterCols').value||2),
+                  pRows=Number(document.getElementById('posterRows').value||2);
+            const requestedOrientation=document.getElementById('orientation').value,
+                  paperSize=document.getElementById('paperSize').value,
+                  pps=poster?1:(getEffectiveRepeatCount()>1?getEffectiveRepeatCount():(parseInt(document.getElementById('pagesPerSheet').value,10)||1));
+            const autoRotate=document.getElementById('autoRotateMode').value==='auto',
+                  align=document.getElementById('contentAlign').value,
+                  scaleMode=getEffectiveScaleMode(document.getElementById('scaleMode').value,pps),
+                  customScale=Number(document.getElementById('customScale').value||100),
+                  scaleX=Number(document.getElementById('scaleXPercent').value||100)/100,
+                  scaleY=Number(document.getElementById('scaleYPercent').value||100)/100,
+                  offsetX=Number(document.getElementById('offsetXmm').value||0)+Number(document.getElementById('calibrationXmm').value||0),
+                  offsetY=Number(document.getElementById('offsetYmm').value||0)+Number(document.getElementById('calibrationYmm').value||0);
+
+            const orient=resolveOrientation(requestedOrientation,currentSourceInfo.width,currentSourceInfo.height,pps),
+                  paper=resolvePaperViewport(paperSize,orient,currentSourceInfo.width,currentSourceInfo.height,currentSourceInfo.standard),
+                  grid=getGrid(pps,orient);
+            const baseH=1000; canvas.height=baseH; canvas.width=Math.max(650,Math.round(baseH*paper.width/paper.height));
+            const ps=canvas.width/paper.width, mmPt=72/25.4, offsetXPx=offsetX*mmPt*ps, offsetYPx=-offsetY*mmPt*ps;
+            const ctx=canvas.getContext('2d');ctx.fillStyle='white';ctx.fillRect(0,0,canvas.width,canvas.height);
+            canvas.style.filter=document.getElementById('colorMode').value==='monochrome'?'grayscale(100%)':'none';
+
             let pages=[]; if(currentPdfDoc)pages=getSelectedPdfPages(currentPdfDoc.numPages); else pages=[1];
-            const tileCount=poster?pCols*pRows:1,totalLogical=pages.length*tileCount; totalPreviewSheets=poster?totalLogical:Math.ceil(pages.length/grid.safePps); if(currentPreviewSheet>=totalPreviewSheets)currentPreviewSheet=Math.max(0,totalPreviewSheets-1);
-            document.getElementById('previewPagination').style.display=totalPreviewSheets>1?'flex':'none';document.getElementById('previewSheetText').innerText=`${currentPreviewSheet+1} / ${Math.max(1,totalPreviewSheets)}`;document.getElementById('btnPrevPage').disabled=currentPreviewSheet<=0;document.getElementById('btnNextPage').disabled=currentPreviewSheet>=totalPreviewSheets-1;
+            const repeatCount=getEffectiveRepeatCount(); if(repeatCount>1){pages=pages.flatMap(p=>Array(repeatCount).fill(p));}
+            const tileCount=poster?pCols*pRows:1,totalLogical=pages.length*tileCount;
+            totalPreviewSheets=poster?totalLogical:Math.ceil(pages.length/grid.safePps);
+            if(document.getElementById('separatorMode').value==='cover') totalPreviewSheets += 1;
+            if(currentPreviewSheet>=totalPreviewSheets)currentPreviewSheet=Math.max(0,totalPreviewSheets-1);
+            document.getElementById('previewPagination').style.display=totalPreviewSheets>1?'flex':'none';
+            document.getElementById('previewSheetText').innerText=`${currentPreviewSheet+1} / ${Math.max(1,totalPreviewSheets)}`;
+            document.getElementById('btnPrevPage').disabled=currentPreviewSheet<=0;
+            document.getElementById('btnNextPage').disabled=currentPreviewSheet>=totalPreviewSheets-1;
+
+            const coverOn=document.getElementById('separatorMode').value==='cover';
+            if(coverOn && currentPreviewSheet===0){
+                ctx.fillStyle='#111827';ctx.font='bold 30px Inter, sans-serif';ctx.fillText('JOB TICKET',50,90);
+                ctx.font='18px Inter, sans-serif';ctx.fillText(currentOriginalFileName||'Dokumen',50,140);
+                ctx.font='14px Inter, sans-serif';ctx.fillStyle='#475569';
+                ctx.fillText(`Printer: ${document.getElementById('printerSelect').value||'Default'}`,50,180);
+                ctx.fillText(`Copy: ${document.getElementById('copies').value}`,50,210);
+                ctx.fillText(`Mode: ${document.getElementById('duplexMode').value}`,50,240);
+                document.getElementById('previewBadge').textContent='Cover / Job Ticket';
+                return;
+            }
+            const visualSheet=Math.max(0,currentPreviewSheet-(coverOn?1:0));
+            const margin=productionMarginMmForSheet(visualSheet+1);
+            const m={top:margin.top*mmPt*ps,right:margin.right*mmPt*ps,bottom:margin.bottom*mmPt*ps,left:margin.left*mmPt*ps},
+                  cx=m.left,cy=m.top,cw=Math.max(1,canvas.width-m.left-m.right),ch=Math.max(1,canvas.height-m.top-m.bottom);
+            document.getElementById('previewBadge').textContent=`${paperSize} • ${orient}${poster?` • Poster ${pCols}×${pRows}`:''}${document.getElementById('bindingMode').value!=='off'?' • Gutter':''}`;
+
+            const drawCanvasPrecise=(src,cellX,cellY,cellW,cellH,rotationDeg=0)=>{
+                ctx.save();ctx.beginPath();ctx.rect(cellX,cellY,cellW,cellH);ctx.clip();
+                const quarter=rotationDeg===90||rotationDeg===270;
+                const sourceW=quarter?src.height:src.width,sourceH=quarter?src.width:src.height;
+                const fit=Math.min(cellW/sourceW,cellH/sourceH);
+                let s=fit;
+                if(scaleMode==='shrink')s=Math.min(1,fit);
+                else if(scaleMode==='actual')s=1;
+                else if(scaleMode==='custom')s=Math.max(.1,Math.min(4,customScale/100));
+                else if(scaleMode==='fill')s=Math.max(cellW/sourceW,cellH/sourceH);
+                let finalW=sourceW*s*scaleX, finalH=sourceH*s*scaleY;
+                let x=align==='top-left'?cellX:cellX+(cellW-finalW)/2;
+                let y=align==='top-left'?cellY:cellY+(cellH-finalH)/2;
+                x+=offsetXPx;y+=offsetYPx;
+                ctx.translate(x+finalW/2,y+finalH/2);
+                ctx.rotate(rotationDeg*Math.PI/180);
+                const drawW=(quarter?finalH:finalW),drawH=(quarter?finalW:finalH);
+                ctx.drawImage(src,-drawW/2,-drawH/2,drawW,drawH);ctx.restore();
+            };
+
             if(poster){
-                const sourcePos=Math.floor(currentPreviewSheet/tileCount),tile=currentPreviewSheet%tileCount,row=Math.floor(tile/pCols),col=tile%pCols;
+                const sourcePos=Math.floor(visualSheet/tileCount),tile=visualSheet%tileCount,row=Math.floor(tile/pCols),col=tile%pCols;
                 let srcCanvas;
                 if(currentPdfDoc){const pn=pages[sourcePos];if(!pn)return;const page=await currentPdfDoc.getPage(pn),vp=page.getViewport({scale:1.5});srcCanvas=document.createElement('canvas');srcCanvas.width=Math.ceil(vp.width);srcCanvas.height=Math.ceil(vp.height);await page.render({canvasContext:srcCanvas.getContext('2d'),viewport:vp}).promise;}
                 else {const img=new Image();img.src=currentImgSrc;await new Promise((r,j)=>{img.onload=r;img.onerror=j;});srcCanvas=document.createElement('canvas');srcCanvas.width=img.width;srcCanvas.height=img.height;srcCanvas.getContext('2d').drawImage(img,0,0);}
-                const crop=getCropMm(),mx=96/25.4,sx=crop.left*mx,sy=crop.top*mx,sw=Math.max(1,srcCanvas.width-(crop.left+crop.right)*mx),sh=Math.max(1,srcCanvas.height-(crop.top+crop.bottom)*mx);const tw=sw/pCols,th=sh/pRows;
-                const tileCanvas=document.createElement('canvas');tileCanvas.width=Math.max(1,Math.round(tw));tileCanvas.height=Math.max(1,Math.round(th));const tx=tileCanvas.getContext('2d');tx.save();applyCanvasMirrorFlip(tx,tileCanvas.width,tileCanvas.height);tx.drawImage(srcCanvas,sx+col*tw,sy+row*th,tw,th,0,0,tileCanvas.width,tileCanvas.height);tx.restore();drawSourceCanvas(tileCanvas,cx,cy,cw,ch);
-                if(document.getElementById('posterCutMarks').value==='on'){ctx.save();ctx.strokeStyle='#555';ctx.lineWidth=1;const L=20;ctx.beginPath();ctx.moveTo(cx,cy+L);ctx.lineTo(cx,cy);ctx.lineTo(cx+L,cy);ctx.moveTo(cx+cw-L,cy);ctx.lineTo(cx+cw,cy);ctx.lineTo(cx+cw,cy+L);ctx.moveTo(cx,cy+ch-L);ctx.lineTo(cx,cy+ch);ctx.lineTo(cx+L,cy+ch);ctx.moveTo(cx+cw-L,cy+ch);ctx.lineTo(cx+cw,cy+ch);ctx.lineTo(cx+cw,cy+ch-L);ctx.stroke();ctx.restore();}
-                drawPreviewOverlays(ctx,canvas.width,canvas.height,currentPreviewSheet+1,totalPreviewSheets);return;
+                const crop=getCropMm(),mx=96/25.4,sx=crop.left*mx,sy=crop.top*mx,sw=Math.max(1,srcCanvas.width-(crop.left+crop.right)*mx),sh=Math.max(1,srcCanvas.height-(crop.top+crop.bottom)*mx),tw=sw/pCols,th=sh/pRows;
+                const tileCanvas=document.createElement('canvas');tileCanvas.width=Math.max(1,Math.round(tw));tileCanvas.height=Math.max(1,Math.round(th));const tx=tileCanvas.getContext('2d');tx.save();applyCanvasMirrorFlip(tx,tileCanvas.width,tileCanvas.height);tx.drawImage(srcCanvas,sx+col*tw,sy+row*th,tw,th,0,0,tileCanvas.width,tileCanvas.height);tx.restore();drawCanvasPrecise(tileCanvas,cx,cy,cw,ch,0);drawPreviewOverlays(ctx,canvas.width,canvas.height,visualSheet+1,totalPreviewSheets-(coverOn?1:0));return;
             }
-            if(currentImgSrc){const img=new Image();img.src=currentImgSrc;await new Promise((r,j)=>{img.onload=r;img.onerror=j;});const crop=getCropMm(),mx=96/25.4,sx=crop.left*mx,sy=crop.top*mx,sw=Math.max(1,img.width-(crop.left+crop.right)*mx),sh=Math.max(1,img.height-(crop.top+crop.bottom)*mx);const c=document.createElement('canvas');c.width=Math.round(sw);c.height=Math.round(sh);const cc=c.getContext('2d');cc.save();applyCanvasMirrorFlip(cc,c.width,c.height);cc.drawImage(img,sx,sy,sw,sh,0,0,c.width,c.height);cc.restore();drawSourceCanvas(c,cx,cy,cw,ch);drawPreviewOverlays(ctx,canvas.width,canvas.height,1,1);return;}
-            const start=currentPreviewSheet*grid.safePps,cellW=cw/grid.cols,cellH=ch/grid.rows;for(let slot=0;slot<Math.min(grid.safePps,pages.length-start);slot++){const pn=pages[start+slot];if(!pn)continue;const pos=getSlotPosition(slot,grid.cols,grid.rows,document.getElementById('nupOrder').value),x=cx+pos.col*cellW,y=cy+pos.row*cellH;const page=await currentPdfDoc.getPage(pn),base=page.getViewport({scale:1}),placement=computePlacement(base.width*ps,base.height*ps,cellW,cellH,0,scaleMode,autoRotate,customScale),vp=page.getViewport({scale:placement.scale*ps,rotation:placement.rotate?90:0});const off=document.createElement('canvas');off.width=Math.ceil(vp.width);off.height=Math.ceil(vp.height);await page.render({canvasContext:off.getContext('2d'),viewport:vp}).promise;const temp=document.createElement('canvas');temp.width=off.width;temp.height=off.height;const tc=temp.getContext('2d');tc.save();applyCanvasMirrorFlip(tc,temp.width,temp.height);tc.drawImage(off,0,0);tc.restore();drawSourceCanvas(temp,x,y,cellW,cellH);if(document.getElementById('nupBorder').value!=='none'&&pps>1){ctx.save();ctx.strokeStyle='#999';ctx.lineWidth=document.getElementById('nupBorder').value==='medium'?2:1;ctx.strokeRect(x,y,cellW,cellH);ctx.restore();}}
-            drawPreviewOverlays(ctx,canvas.width,canvas.height,currentPreviewSheet+1,totalPreviewSheets);
+
+            if(currentImgSrc){
+                const img=new Image();img.src=currentImgSrc;await new Promise((r,j)=>{img.onload=r;img.onerror=j;});
+                const crop=getCropMm(),mx=96/25.4,sx=crop.left*mx,sy=crop.top*mx,sw=Math.max(1,img.width-(crop.left+crop.right)*mx),sh=Math.max(1,img.height-(crop.top+crop.bottom)*mx);
+                const c=document.createElement('canvas');c.width=Math.round(sw);c.height=Math.round(sh);const cc=c.getContext('2d');cc.save();applyCanvasMirrorFlip(cc,c.width,c.height);cc.drawImage(img,sx,sy,sw,sh,0,0,c.width,c.height);cc.restore();
+                drawCanvasPrecise(c,cx,cy,cw,ch,rotationForPageClient(1));drawPreviewOverlays(ctx,canvas.width,canvas.height,1,1);return;
+            }
+
+            const gapX=Number(document.getElementById('nupGapXmm').value||0)*mmPt*ps,gapY=Number(document.getElementById('nupGapYmm').value||0)*mmPt*ps;const start=visualSheet*grid.safePps,cellW=Math.max(1,(cw-gapX*(grid.cols-1))/grid.cols),cellH=Math.max(1,(ch-gapY*(grid.rows-1))/grid.rows);
+            for(let slot=0;slot<Math.min(grid.safePps,pages.length-start);slot++){
+                const pn=pages[start+slot];if(!pn)continue;
+                const pos=getSlotPosition(slot,grid.cols,grid.rows,document.getElementById('nupOrder').value),
+                      x=cx+pos.col*(cellW+gapX),y=cy+pos.row*(cellH+gapY);
+                const page=await currentPdfDoc.getPage(pn),vp=page.getViewport({scale:1.25});
+                const off=document.createElement('canvas');off.width=Math.ceil(vp.width);off.height=Math.ceil(vp.height);await page.render({canvasContext:off.getContext('2d'),viewport:vp}).promise;
+                const temp=document.createElement('canvas');temp.width=off.width;temp.height=off.height;const tc=temp.getContext('2d');tc.save();applyCanvasMirrorFlip(tc,temp.width,temp.height);tc.drawImage(off,0,0);tc.restore();
+                let rot=rotationForPageClient(pn);
+                if(autoRotate){
+                    const rw=(rot===90||rot===270)?temp.height:temp.width,rh=(rot===90||rot===270)?temp.width:temp.height;
+                    if((cellW>cellH&&rw<rh)||(cellW<cellH&&rw>rh))rot=(rot+90)%360;
+                }
+                drawCanvasPrecise(temp,x,y,cellW,cellH,rot);
+                if(document.getElementById('nupBorder').value!=='none'&&pps>1){ctx.save();ctx.strokeStyle='#999';ctx.lineWidth=document.getElementById('nupBorder').value==='medium'?2:1;ctx.strokeRect(x,y,cellW,cellH);ctx.restore();}
+            }
+            drawPreviewOverlays(ctx,canvas.width,canvas.height,visualSheet+1,totalPreviewSheets-(coverOn?1:0));
         }
 
         function changePreviewSheet(dir) { currentPreviewSheet = Math.max(0, Math.min(totalPreviewSheets-1, currentPreviewSheet + dir)); updateDynamicPreview(); }
+
+
+        function calibrationKey(name){return `printerCalibrationV4525:${name||'__default__'}`;}
+        function loadPrinterCalibration(){
+            const name=document.getElementById('printerSelect').value||'__default__';
+            let d={x:0,y:0};try{d=JSON.parse(localStorage.getItem(calibrationKey(name))||'{"x":0,"y":0}');}catch(_){}
+            document.getElementById('calibrationXmm').value=Number(d.x||0);
+            document.getElementById('calibrationYmm').value=Number(d.y||0);
+        }
+        function savePrinterCalibration(){
+            const name=document.getElementById('printerSelect').value||'__default__';
+            const x=Number(document.getElementById('calibrationXmm').value||0),y=Number(document.getElementById('calibrationYmm').value||0);
+            localStorage.setItem(calibrationKey(name),JSON.stringify({x,y}));
+            showToast(`Kalibrasi printer disimpan: X ${x} mm, Y ${y} mm.`,'success');updateDynamicPreview();
+        }
+        async function loadCalibrationSheet(){
+            const ip=document.getElementById('ipAddress').value.trim();if(!ip)return showToast('Hubungkan ke server printer terlebih dahulu.','error');
+            const paper=document.getElementById('paperSize').value==='SOURCE'?'A4':document.getElementById('paperSize').value;
+            const orient=document.getElementById('orientation').value==='landscape'?'landscape':'portrait';
+            try{
+                const r=await fetchWithRetry(`http://${ip}:3000/calibration-sheet?paperSize=${encodeURIComponent(paper)}&orientation=${encodeURIComponent(orient)}`,{cache:'no-store'},0,250);
+                if(!r.ok)throw new Error(await r.text());
+                const blob=await r.blob(),f=new File([blob],`Calibration_${paper}_${orient}.pdf`,{type:'application/pdf'});
+                currentOriginalFileName=f.name;currentInputKind='pdf';await loadPdfFileIntoPreview(f,'Lembar Kalibrasi');
+                showToast('Lembar kalibrasi dimuat. Cetak 100% lalu ukur pergeseran garis referensi.','success');
+            }catch(e){showToast(e.message||'Gagal membuat lembar kalibrasi.','error');}
+        }
+        function getEffectiveRepeatCount(){
+            const mode=document.getElementById('impositionMode').value;
+            if(mode==='repeat-2')return 2;if(mode==='repeat-4')return 4;
+            if(mode==='repeat-custom')return Number(document.getElementById('repeatCount').value||2);
+            return 1;
+        }
+        function getSignaturePagesClient(total){
+            const mode=document.getElementById('signatureMode').value;
+            if(mode==='auto')return Math.ceil(total/4)*4;
+            if(mode==='custom')return Math.max(4,Math.ceil(Number(document.getElementById('signaturePages').value||16)/4)*4);
+            return Number(mode)||16;
+        }
+        function syncPrepressControls(){
+            document.getElementById('signatureCustomWrap').style.display=document.getElementById('signatureMode').value==='custom'?'flex':'none';
+            document.getElementById('creepSettings').style.display=document.getElementById('creepMode').value==='custom'?'flex':'none';
+            document.getElementById('bleedCustomWrap').style.display=document.getElementById('bleedMode').value==='custom'?'flex':'none';
+            document.getElementById('impositionSettings').style.display=document.getElementById('impositionMode').value==='repeat-custom'?'flex':'none';
+            const repeat=getEffectiveRepeatCount();
+            if(repeat>1 && document.getElementById('bookletMode').value==='on'){
+                document.getElementById('impositionMode').value='normal';
+                showToast('Imposition repeat dinonaktifkan karena Booklet sedang aktif.','info');
+            }
+        }
+        async function runPreflight(showToastResult=false){
+            const box=document.getElementById('preflightStatus'),warnings=[],errors=[];
+            if(!currentPdfDoc&&!currentImgSrc)errors.push('Belum ada dokumen.');
+            if(!document.getElementById('printerSelect').value)warnings.push('Printer spesifik belum dipilih.');
+            if(currentSourceInfo?.mixed)warnings.push('PDF memiliki ukuran/orientasi halaman campuran.');
+            const duplex=document.getElementById('duplexMode').value;
+            if(duplex.startsWith('duplex')&&currentPrinterCapabilities?.canDuplex===false)warnings.push('Printer terdeteksi tidak mendukung duplex otomatis.');
+            if(document.getElementById('scaleMode').value==='fill')warnings.push('Mode Fill dapat memotong tepi dokumen.');
+            if(document.getElementById('scaleMode').value==='custom'&&Number(document.getElementById('customScale').value)>100)warnings.push('Skala kustom >100% berisiko keluar dari printable area.');
+            if(document.getElementById('cropMode').value==='custom'&&['cropTop','cropRight','cropBottom','cropLeft'].some(id=>Number(document.getElementById(id).value)>20))warnings.push('Crop lebih dari 20 mm pada salah satu sisi.');
+            if(document.getElementById('bookletMode').value==='on'){
+                const total=currentPdfDoc?getSelectedPdfPages(currentPdfDoc.numPages).filter(Boolean).length:0;
+                const sig=getSignaturePagesClient(total||4);
+                if(sig%4!==0)errors.push('Signature booklet harus kelipatan 4 halaman.');
+                if(document.getElementById('duplexMode').value==='simplex')warnings.push('Booklet membutuhkan duplex atau proses duplex manual.');
+            }
+            if(document.getElementById('prepressMarks').value!=='off'&&document.getElementById('marginMode').value==='none')warnings.push('Prepress marks dapat masuk ke non-printable area jika margin aplikasi 0.');
+            const est=calculateEstimatedSheets(),limit=Number(document.getElementById('safetySheetLimit').value||0);
+            if(limit>0&&est.sheets>limit)warnings.push(`Estimasi ${est.sheets} lembar melewati batas aman ${limit}.`);
+            const bx=Number(document.getElementById('bleedMm').value||0);
+            if(document.getElementById('bleedMode').value!=='off'&&bx>10)warnings.push('Bleed >10 mm tidak umum; periksa kembali.');
+            let title=errors.length?'✕ Belum siap cetak':warnings.length?'⚠ Siap dengan catatan':'✓ Siap cetak';
+            box.innerHTML=`<strong>${title}</strong>${errors.length?'<br>'+errors.map(x=>'• '+escapeHtmlQueue(x)).join('<br>'):''}${warnings.length?'<br>'+warnings.map(x=>'• '+escapeHtmlQueue(x)).join('<br>'):''}`;
+            box.style.background=errors.length?'rgba(239,68,68,.10)':warnings.length?'rgba(245,158,11,.10)':'rgba(16,185,129,.10)';
+            if(showToastResult)showToast(title,errors.length?'error':warnings.length?'info':'success');
+            return {errors,warnings};
+        }
+        function confirmPreflightWarnings(result){
+            if(result.errors.length){showToast('Perbaiki error preflight sebelum mencetak.','error');return false;}
+            if(result.warnings.length)return confirm(`PREFLIGHT: ${result.warnings.length} catatan ditemukan.\n\n${result.warnings.map(x=>'• '+x).join('\n')}\n\nTetap lanjut mencetak?`);
+            return true;
+        }
+
+        function installProductionPrecisionListeners() {
+            ['bindingMode','gutterMm','blankPageMode','pageRotationMode','pageRotationRules','scaleXPercent','scaleYPercent','offsetXmm','offsetYmm','separatorMode','startCopyNewSheet','safetySheetLimit','signatureMode','signaturePages','creepMode','creepMm','pdfPageBox','bleedMode','bleedMm','prepressMarks','impositionMode','repeatCount','nupGapXmm','nupGapYmm','calibrationXmm','calibrationYmm'].forEach(id=>{
+                const el=document.getElementById(id); if(!el || el.dataset.productionListener==='1') return;
+                el.dataset.productionListener='1';
+                const fn=()=>{syncProductionPrecisionControls();syncPrepressControls();runPreflight(false);currentPreviewSheet=0;updatePrintSettingsSummary();updateDynamicPreview();saveSettingsForCurrentPrinter();};
+                el.addEventListener('change',fn); if(el.tagName==='INPUT')el.addEventListener('input',fn);
+            });
+        }
+
         function setupPwaInstall() {
             const installBtn = document.getElementById('installBtn');
             window.addEventListener('beforeinstallprompt', (e) => {
@@ -1328,11 +2016,12 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
             collate.querySelector('option[value="uncollated"]').disabled=duplex!=='simplex';
         }
 
-        ['copies','pages','pagesPerSheet','paperSize','orientation','scaleMode','customScale','colorMode','duplexMode','pageSubset','pageOrder','collateMode','marginMode','marginTop','marginRight','marginBottom','marginLeft','autoRotateMode','contentAlign','nupBorder','nupOrder','bookletMode','posterMode','posterCols','posterRows','posterOverlap','posterCutMarks','transformMode','cropMode','cropTop','cropRight','cropBottom','cropLeft','watermarkMode','watermarkText','watermarkOpacity','watermarkAngle','headerText','footerText','pageNumberMode','pageNumberStart'].forEach((id) => {
+        ['copies','pages','pagesPerSheet','paperSize','orientation','scaleMode','customScale','colorMode','duplexMode','pageSubset','pageOrder','collateMode','driverBin','driverPaperKind','driverMediaType','driverQuality','driverBorderless','driverEconomy','driverExecutionMode','marginMode','marginTop','marginRight','marginBottom','marginLeft','autoRotateMode','contentAlign','nupBorder','nupOrder','bookletMode','posterMode','posterCols','posterRows','posterOverlap','posterCutMarks','transformMode','cropMode','cropTop','cropRight','cropBottom','cropLeft','watermarkMode','watermarkText','watermarkOpacity','watermarkAngle','headerText','footerText','pageNumberMode','pageNumberStart','bindingMode','gutterMm','blankPageMode','pageRotationMode','pageRotationRules','scaleXPercent','scaleYPercent','offsetXmm','offsetYmm','separatorMode','startCopyNewSheet','safetySheetLimit'].forEach((id) => {
             const el = document.getElementById(id);
             const eventName = ['pages','copies','customScale','posterCols','posterRows','posterOverlap','cropTop','cropRight','cropBottom','cropLeft','watermarkText','watermarkOpacity','headerText','footerText','pageNumberStart'].includes(id) ? 'input' : 'change';
             el.addEventListener(eventName, () => {
                 syncAdvancedPrintControls();
+                if (['driverMediaType','driverQuality','driverBorderless','driverEconomy','driverExecutionMode'].includes(id)) updateDriverExecutionHint();
                 if (['copies','pagesPerSheet','customScale','duplexMode','marginMode','marginTop','marginRight','marginBottom','marginLeft','bookletMode'].includes(id)) validatePrintSettings(false);
                 currentPreviewSheet = 0;
                 updatePrintSettingsSummary();
@@ -1340,16 +2029,18 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
                 saveSettingsForCurrentPrinter();
             });
         });
+        ['jobSubmissionMode','jobPriority'].forEach(id=>document.getElementById(id).addEventListener('change',()=>{estimateCurrentPrint();updatePrintSettingsSummary();}));
         document.getElementById('printerSelect').addEventListener('change', handlePrinterChanged);
+        ['copies','pagesPerSheet','duplexMode','pageSubset','pageOrder','bookletMode','posterMode','posterCols','posterRows','pages'].forEach(id=>document.getElementById(id)?.addEventListener('change',estimateCurrentPrint));
         document.getElementById('presetSelect').addEventListener('change', applySelectedPreset);
-        document.getElementById('settingsViewMode').addEventListener('change', ()=>{applySettingsViewMode();updateDynamicPreview();});
+        document.getElementById('settingsViewMode').addEventListener('change', ()=>{applySettingsViewMode();updateAccordionSummaries();updateDynamicPreview();});
         document.getElementById('rememberPrinterSettings').addEventListener('change', ()=>{if(document.getElementById('rememberPrinterSettings').checked)saveSettingsForCurrentPrinter();});
         document.getElementById('pages').addEventListener('blur', () => {
             validatePrintSettings(false);
             currentPreviewSheet = 0;
             updateDynamicPreview();
         });
-        window.addEventListener('load', () => { loadHistory(); setupPwaInstall(); markAdvancedSettingGroups(); refreshPresetSelect(); const savedView=localStorage.getItem('settingsViewModeV4521')||'compact'; document.getElementById('settingsViewMode').value=savedView; applySettingsViewMode(); syncAdvancedPrintControls(); validatePrintSettings(false); updatePrintSettingsSummary(); restoreActiveServerFromSession(); });
+        window.addEventListener('load', () => { loadHistory(); setupPwaInstall(); startQueuePolling(); buildConsolidatedSettingsUi(); markAdvancedSettingGroups(); refreshPresetSelect(); const savedView=localStorage.getItem('settingsViewModeV4526')||localStorage.getItem('settingsViewModeV4521')||'compact'; document.getElementById('settingsViewMode').value=savedView; applySettingsViewMode(); syncAdvancedPrintControls(); validatePrintSettings(false); updatePrintSettingsSummary(); updateAccordionSummaries(); restoreActiveServerFromSession(); });
     </script>
 </body>
 </html>

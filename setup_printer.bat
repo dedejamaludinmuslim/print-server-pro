@@ -1,9 +1,9 @@
 @echo off
-title Installer - Print Server Pro V4.5.5.5
+title Installer - Print Server Pro V4.5.23
 color 0B
 
 echo ===================================================
-echo      INSTALLER OFFLINE PRINT SERVER PRO V4.5.5
+echo      INSTALLER OFFLINE PRINT SERVER PRO V4.5.23
 echo ===================================================
 echo.
 

@@ -70,6 +70,8 @@ app.use((req, res, next) => {
   next();
 });
 app.use(cors(corsOptions));
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: false }));
 app.use(express.static(__dirname));
 
 const uploadDir = path.join(__dirname, 'uploads');
@@ -223,6 +225,40 @@ function sanitizePrintOptions(body) {
   const headerText=String(body.headerText||'').slice(0,120),footerText=String(body.footerText||'').slice(0,120);
   const pageNumberMode=['off','bottom-center','bottom-right','top-right'].includes(body.pageNumberMode)?body.pageNumberMode:'off',pageNumberStart=Math.min(9999,Math.max(1,parseInt(body.pageNumberStart,10)||1));
   const transformsBaked=String(body.transformsBaked||'false')==='true';
+  const driverBin=String(body.driverBin||'').trim().slice(0,160);
+  const driverPaperKind=Math.min(65535,Math.max(0,parseInt(body.driverPaperKind,10)||0));
+  const driverMediaType=String(body.driverMediaType||'default').slice(0,100);
+  const driverQuality=String(body.driverQuality||'default').slice(0,100);
+  const driverBorderless=['default','off','on'].includes(body.driverBorderless)?body.driverBorderless:'default';
+  const driverEconomy=['default','off','on'].includes(body.driverEconomy)?body.driverEconomy:'default';
+  const driverExecutionMode=body.driverExecutionMode==='dialog'?'dialog':'direct';
+  const bindingMode=['off','left','right','top','mirror'].includes(body.bindingMode)?body.bindingMode:'off';
+  const gutterMm=Math.min(50,Math.max(0,parseFloat(body.gutterMm)||0));
+  const blankPageMode=['preserve','remove-detected','pad-even'].includes(body.blankPageMode)?body.blankPageMode:'preserve';
+  const pageRotationMode=['none','90','180','270','custom'].includes(body.pageRotationMode)?body.pageRotationMode:'none';
+  const pageRotationRules=String(body.pageRotationRules||'').slice(0,200);
+  const scaleXPercent=Math.min(150,Math.max(50,parseFloat(body.scaleXPercent)||100));
+  const scaleYPercent=Math.min(150,Math.max(50,parseFloat(body.scaleYPercent)||100));
+  const offsetXmm=Math.min(50,Math.max(-50,parseFloat(body.offsetXmm)||0));
+  const offsetYmm=Math.min(50,Math.max(-50,parseFloat(body.offsetYmm)||0));
+  const separatorMode=['off','cover','between-copies'].includes(body.separatorMode)?body.separatorMode:'off';
+  const startCopyNewSheet=body.startCopyNewSheet==='on';
+  const safetySheetLimit=Math.min(5000,Math.max(0,parseInt(body.safetySheetLimit,10)||0));
+  const safetyConfirmed=String(body.safetyConfirmed||'false')==='true';
+  const signatureMode=['auto','16','32','48','custom'].includes(body.signatureMode)?body.signatureMode:'auto';
+  const signaturePages=Math.min(200,Math.max(4,Math.ceil((parseInt(body.signaturePages,10)||16)/4)*4));
+  const creepMode=['off','auto','custom'].includes(body.creepMode)?body.creepMode:'off';
+  const creepMm=Math.min(3,Math.max(0,parseFloat(body.creepMm)||0.25));
+  const pdfPageBox=['media','crop','trim','bleed','art'].includes(body.pdfPageBox)?body.pdfPageBox:'crop';
+  const bleedMode=['off','3','5','custom'].includes(body.bleedMode)?body.bleedMode:'off';
+  const bleedMm=Math.min(20,Math.max(0,bleedMode==='custom'?(parseFloat(body.bleedMm)||0):(parseFloat(bleedMode)||0)));
+  const prepressMarks=['off','crop','center','registration','all'].includes(body.prepressMarks)?body.prepressMarks:'off';
+  const impositionMode=['normal','repeat-2','repeat-4','repeat-custom'].includes(body.impositionMode)?body.impositionMode:'normal';
+  const repeatCount=[2,4,6,9,16].includes(parseInt(body.repeatCount,10))?parseInt(body.repeatCount,10):2;
+  const nupGapXmm=Math.min(30,Math.max(0,parseFloat(body.nupGapXmm)||0));
+  const nupGapYmm=Math.min(30,Math.max(0,parseFloat(body.nupGapYmm)||0));
+  const calibrationXmm=Math.min(20,Math.max(-20,parseFloat(body.calibrationXmm)||0));
+  const calibrationYmm=Math.min(20,Math.max(-20,parseFloat(body.calibrationYmm)||0));
   return {
     orientation,
     paperSize,
@@ -237,6 +273,9 @@ function sanitizePrintOptions(body) {
     collate,
     marginMode, marginTop, marginRight, marginBottom, marginLeft,
     autoRotate, contentAlign, nupBorder, nupOrder, booklet, poster,posterCols,posterRows,posterOverlap,posterCutMarks,transformMode,cropMode,cropTop,cropRight,cropBottom,cropLeft,watermarkMode,watermarkText,watermarkOpacity,watermarkAngle,headerText,footerText,pageNumberMode,pageNumberStart,transformsBaked,
+    driverBin,driverPaperKind,driverMediaType,driverQuality,driverBorderless,driverEconomy,driverExecutionMode,
+    bindingMode,gutterMm,blankPageMode,pageRotationMode,pageRotationRules,scaleXPercent,scaleYPercent,offsetXmm,offsetYmm,separatorMode,startCopyNewSheet,safetySheetLimit,safetyConfirmed,
+    signatureMode,signaturePages,creepMode,creepMm,pdfPageBox,bleedMode,bleedMm,prepressMarks,impositionMode,repeatCount,nupGapXmm,nupGapYmm,calibrationXmm,calibrationYmm,
     pages: String(body.pages || '').trim(),
     printerName: body.printerName || ''
   };
@@ -279,7 +318,7 @@ app.get('/ping', (req, res) => {
     hostname: os.hostname(),
     ipHint: localIps[0] || '',
     localIps,
-    version: '4.5.7-syncfix',
+    version: '4.5.26',
   });
 });
 
@@ -310,7 +349,7 @@ app.get('/docx-converter-status', async (req, res) => {
       executable: libreOfficeExecutable || null,
       timeoutSeconds: Math.round(DOCX_CONVERT_TIMEOUT_MS / 1000),
     },
-    version: '4.5.21',
+    version: '4.5.26',
   });
 });
 
@@ -321,7 +360,7 @@ app.get('/limits', (req, res) => {
     largePdfThresholdMb: LARGE_PDF_THRESHOLD_MB,
     largePdfChunkPages: LARGE_PDF_CHUNK_PAGES,
     supportedFileTypes: ['pdf', 'png', 'jpg', 'jpeg', 'docx'],
-    version: '4.5.21',
+    version: '4.5.26',
   });
 });
 
@@ -334,22 +373,71 @@ app.get('/printers', async (req, res) => {
 });
 
 async function getWindowsPrinterCapabilities(printerName) {
-  if (process.platform !== 'win32') return { name: printerName || '', platform: process.platform, duplexSupported: null };
+  if (process.platform !== 'win32') return { name: printerName || '', platform: process.platform, canDuplex: null, supportsColor: null, trays: [], paperSizes: [], resolutions: [], mediaTypes: [], borderless: [], outputQualities: [] };
   const ps = findPowerShellExecutable();
   if (!ps) throw new Error('PowerShell tidak ditemukan.');
   const safeName = String(printerName || '').replace(/'/g, "''");
-  const script = printerName
-    ? `$n='${safeName}'; $p=Get-Printer -Name $n -ErrorAction Stop; $c=$null; try{$c=Get-PrintConfiguration -PrinterName $n -ErrorAction Stop}catch{}; [pscustomobject]@{name=$p.Name;driverName=$p.DriverName;portName=$p.PortName;status=[string]$p.PrinterStatus;shared=[bool]$p.Shared;color=if($c){[bool]$c.Color}else{$null};duplexingMode=if($c){[string]$c.DuplexingMode}else{$null};paperSize=if($c){[string]$c.PaperSize}else{$null}} | ConvertTo-Json -Compress`
-    : `$p=Get-Printer | Where-Object {$_.Default -eq $true} | Select-Object -First 1; if(-not $p){$p=Get-Printer | Select-Object -First 1}; if(-not $p){throw 'Printer tidak ditemukan'}; $c=$null; try{$c=Get-PrintConfiguration -PrinterName $p.Name -ErrorAction Stop}catch{}; [pscustomobject]@{name=$p.Name;driverName=$p.DriverName;portName=$p.PortName;status=[string]$p.PrinterStatus;shared=[bool]$p.Shared;color=if($c){[bool]$c.Color}else{$null};duplexingMode=if($c){[string]$c.DuplexingMode}else{$null};paperSize=if($c){[string]$c.PaperSize}else{$null}} | ConvertTo-Json -Compress`;
-  const result = await runProcess(ps, ['-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-Command', script], 20000);
-  const line = String(result.stdout || '').trim().split(/\r?\n/).filter(Boolean).pop();
-  if (!line) throw new Error(result.stderr || 'Tidak ada data kemampuan printer.');
-  const data = JSON.parse(line);
-  // DuplexingMode dari Get-PrintConfiguration adalah konfigurasi aktif, bukan bukti kemampuan hardware.
-  // Karena itu jangan menonaktifkan duplex hanya karena konfigurasi saat ini OneSided.
-  data.duplexSupported = null;
-  return data;
+  const script = `
+$ErrorActionPreference='Stop'
+$n='${safeName}'
+if([string]::IsNullOrWhiteSpace($n)){
+  $p=Get-Printer | Where-Object {$_.Default -eq $true} | Select-Object -First 1
+  if(-not $p){$p=Get-Printer | Select-Object -First 1}
+}else{$p=Get-Printer -Name $n -ErrorAction Stop}
+if(-not $p){throw 'Printer tidak ditemukan'}
+$n=$p.Name
+$c=$null; try{$c=Get-PrintConfiguration -PrinterName $n -ErrorAction Stop}catch{}
+Add-Type -AssemblyName System.Drawing
+$settings=New-Object System.Drawing.Printing.PrinterSettings
+$settings.PrinterName=$n
+if(-not $settings.IsValid){throw 'PrinterSettings tidak valid untuk printer ini'}
+$trays=@(); foreach($x in $settings.PaperSources){$trays += [pscustomobject]@{name=[string]$x.SourceName;rawKind=[int]$x.RawKind}}
+$papers=@(); foreach($x in $settings.PaperSizes){$papers += [pscustomobject]@{name=[string]$x.PaperName;rawKind=[int]$x.RawKind;widthMm=[math]::Round($x.Width*0.254,1);heightMm=[math]::Round($x.Height*0.254,1)}}
+$res=@(); foreach($x in $settings.PrinterResolutions){$label=[string]$x.Kind; if($x.X -gt 0 -and $x.Y -gt 0){$label += (' • '+$x.X+'×'+$x.Y+' DPI')}; $res += [pscustomobject]@{kind=[string]$x.Kind;x=[int]$x.X;y=[int]$x.Y;label=$label;value=([string]$x.Kind+'|'+$x.X+'x'+$x.Y)}}
+$media=@();$border=@();$quality=@();$sysDuplex=@();$sysColors=@()
+try{
+  Add-Type -AssemblyName ReachFramework
+  $lps=New-Object System.Printing.LocalPrintServer
+  $q=$lps.GetPrintQueue($n)
+  $caps=$q.GetPrintCapabilities()
+  if($caps.PageMediaTypeCapability){$media=@($caps.PageMediaTypeCapability | ForEach-Object {[string]$_})}
+  if($caps.PageBorderlessCapability){$border=@($caps.PageBorderlessCapability | ForEach-Object {[string]$_})}
+  if($caps.OutputQualityCapability){$quality=@($caps.OutputQualityCapability | ForEach-Object {[string]$_})}
+  if($caps.DuplexingCapability){$sysDuplex=@($caps.DuplexingCapability | ForEach-Object {[string]$_})}
+  if($caps.OutputColorCapability){$sysColors=@($caps.OutputColorCapability | ForEach-Object {[string]$_})}
+}catch{}
+[pscustomobject]@{
+  name=$p.Name;driverName=$p.DriverName;portName=$p.PortName;status=[string]$p.PrinterStatus;shared=[bool]$p.Shared;
+  color=if($c){[bool]$c.Color}else{$null};duplexingMode=if($c){[string]$c.DuplexingMode}else{$null};paperSize=if($c){[string]$c.PaperSize}else{$null};
+  supportsColor=[bool]$settings.SupportsColor;canDuplex=[bool]$settings.CanDuplex;maxCopies=[int]$settings.MaximumCopies;
+  trays=$trays;paperSizes=$papers;resolutions=$res;mediaTypes=$media;borderless=$border;outputQualities=$quality;duplexCapabilities=$sysDuplex;colorCapabilities=$sysColors;economySupported=$null
+} | ConvertTo-Json -Depth 6 -Compress`;
+  const result = await runProcess(ps, ['-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-Command', script], 30000);
+  const raw = String(result.stdout || '').trim();
+  if (!raw) throw new Error(result.stderr || 'Tidak ada data kemampuan printer.');
+  const start = raw.indexOf('{');
+  if (start < 0) throw new Error(raw);
+  return JSON.parse(raw.slice(start));
 }
+
+
+app.get('/calibration-sheet', async (req,res) => {
+  try{
+    const key=['A4','F4','LETTER','LEGAL'].includes(String(req.query.paperSize||'').toUpperCase())?String(req.query.paperSize).toUpperCase():'A4';
+    const base=PAPER_DIMENSIONS[key]||PAPER_DIMENSIONS.A4,landscape=String(req.query.orientation||'portrait')==='landscape';
+    const size=landscape?{width:base.height,height:base.width}:base,doc=await PDFDocument.create(),p=doc.addPage([size.width,size.height]),font=await doc.embedFont(StandardFonts.Helvetica),bold=await doc.embedFont(StandardFonts.HelveticaBold),c=rgb(.08,.08,.08),mm=72/25.4;
+    p.drawText('LEMBAR KALIBRASI PRINT SERVER',{x:30,y:size.height-35,size:14,font:bold,color:c});
+    p.drawText('Cetak pada skala 100%. Ukur posisi garis 10 mm dari tepi dan kotak 100 × 100 mm.',{x:30,y:size.height-55,size:8,font,color:c});
+    const line=(x1,y1,x2,y2,t=.45)=>p.drawLine({start:{x:x1,y:y1},end:{x:x2,y:y2},thickness:t,color:c});
+    for(let x=10;x*mm<size.width-10*mm;x+=10){const X=x*mm;line(X,10*mm,X,(x%50===0?20:15)*mm);p.drawText(String(x),{x:X-5,y:6*mm,size:6,font,color:c});}
+    for(let y=10;y*mm<size.height-10*mm;y+=10){const Y=y*mm;line(10*mm,Y,(y%50===0?20:15)*mm,Y);p.drawText(String(y),{x:4*mm,y:Y-2,size:6,font,color:c});}
+    p.drawRectangle({x:30*mm,y:30*mm,width:100*mm,height:100*mm,borderWidth:.8,borderColor:c});
+    line(size.width/2-12*mm,size.height/2,size.width/2+12*mm,size.height/2,.8);line(size.width/2,size.height/2-12*mm,size.width/2,size.height/2+12*mm,.8);
+    p.drawCircle({x:size.width/2,y:size.height/2,size:4*mm,borderWidth:.8,borderColor:c});
+    p.drawText('100 mm',{x:70*mm,y:132*mm,size:7,font,color:c});p.drawText('Pusat Kertas',{x:size.width/2-18*mm,y:size.height/2+15*mm,size:7,font,color:c});
+    const bytes=await doc.save();res.setHeader('Content-Type','application/pdf');res.setHeader('Content-Disposition',`inline; filename="calibration-${key}.pdf"`);res.send(Buffer.from(bytes));
+  }catch(e){res.status(500).send(`CALIBRATION_FAILED: ${e.message}`);}
+});
 
 app.get('/printer-capabilities', async (req,res) => {
   try { res.json(await getWindowsPrinterCapabilities(String(req.query.name || ''))); }
@@ -367,11 +455,145 @@ app.post('/printer-properties', async (req,res) => {
   } catch(e) { res.status(500).send(`DRIVER_PROPERTIES_FAILED: ${e.message}`); }
 });
 
-function getCropBoxForPage(page,options){
-  const size=page.getSize(),mm=72/25.4; const l=options.cropMode==='custom'?options.cropLeft*mm:0,r=options.cropMode==='custom'?options.cropRight*mm:0,t=options.cropMode==='custom'?options.cropTop*mm:0,b=options.cropMode==='custom'?options.cropBottom*mm:0;
-  const left=Math.min(size.width-1,l),bottom=Math.min(size.height-1,b),right=Math.max(left+1,size.width-r),top=Math.max(bottom+1,size.height-t); return {left,bottom,right,top,width:right-left,height:top-bottom};
-}
+function getCropBoxForPage(page,options){return getPrepressSourceBox(page,options);}
 function formatOverlayText(text,options,pageNo,totalPages){const d=new Date();return String(text||'').replaceAll('{file}',options.sourceName||'').replaceAll('{date}',d.toLocaleDateString()).replaceAll('{time}',d.toLocaleTimeString()).replaceAll('{page}',String(pageNo)).replaceAll('{pages}',String(totalPages));}
+
+
+function safePageBox(page,kind){
+  try{
+    if(kind==='media'&&page.getMediaBox)return page.getMediaBox();
+    if(kind==='trim'&&page.getTrimBox)return page.getTrimBox();
+    if(kind==='bleed'&&page.getBleedBox)return page.getBleedBox();
+    if(kind==='art'&&page.getArtBox)return page.getArtBox();
+    if(page.getCropBox)return page.getCropBox();
+  }catch(_){}
+  const s=page.getSize();return {x:0,y:0,width:s.width,height:s.height};
+}
+function getPrepressSourceBox(page,options){
+  const media=safePageBox(page,'media'),base=safePageBox(page,options.pdfPageBox||'crop'),mm=72/25.4,bleed=(options.bleedMm||0)*mm;
+  let left=base.x-bleed,bottom=base.y-bleed,right=base.x+base.width+bleed,top=base.y+base.height+bleed;
+  left=Math.max(media.x,left);bottom=Math.max(media.y,bottom);right=Math.min(media.x+media.width,right);top=Math.min(media.y+media.height,top);
+  if(options.cropMode==='custom'){
+    left+=options.cropLeft*mm;right-=options.cropRight*mm;bottom+=options.cropBottom*mm;top-=options.cropTop*mm;
+  }
+  if(right<=left+1)right=left+1;if(top<=bottom+1)top=bottom+1;
+  return {left,bottom,right,top,width:right-left,height:top-bottom};
+}
+function signaturePageCount(options,total){
+  if(options.signatureMode==='auto')return Math.max(4,Math.ceil(total/4)*4);
+  if(options.signatureMode==='custom')return options.signaturePages||16;
+  return Number(options.signatureMode)||16;
+}
+function makeSignatureBookletSequence(indices,options){
+  const sigSize=signaturePageCount(options,indices.length),out=[];
+  for(let start=0;start<indices.length;start+=sigSize){
+    const chunk=indices.slice(start,start+sigSize);while(chunk.length%4!==0)chunk.push(null);
+    const seq=makeBookletSequence(chunk);
+    seq.forEach((idx,pos)=>out.push({idx,posInSignature:pos,signatureSize:chunk.length,signatureNo:Math.floor(start/sigSize)+1}));
+  }
+  return out;
+}
+function creepOffsetPt(record,slot,options){
+  if(!record||options.creepMode==='off')return 0;
+  const per=options.creepMode==='auto'?0.25:(options.creepMm||0);
+  const sheetDepth=Math.floor(record.posInSignature/4),pt=sheetDepth*per*72/25.4;
+  return slot%2===0?-pt:pt;
+}
+function drawPrepressMarks(page,x,y,w,h,mode){
+  if(!mode||mode==='off')return;
+  const c=rgb(.15,.15,.15),L=12,g=7;
+  const line=(x1,y1,x2,y2)=>page.drawLine({start:{x:x1,y:y1},end:{x:x2,y:y2},thickness:.55,color:c});
+  if(mode==='crop'||mode==='all'){
+    line(x-g-L,y,x-g,y);line(x,y-g-L,x,y-g);line(x+w+g,y,x+w+g+L,y);line(x+w,y-g-L,x+w,y-g);
+    line(x-g-L,y+h,x-g,y+h);line(x,y+h+g,x,y+h+g+L);line(x+w+g,y+h,x+w+g+L,y+h);line(x+w,y+h+g,x+w,y+h+g+L);
+  }
+  if(mode==='center'||mode==='all'){
+    line(x+w/2-10,y-g-8,x+w/2+10,y-g-8);line(x-g-8,y+h/2-10,x-g-8,y+h/2+10);
+    line(x+w/2-10,y+h+g+8,x+w/2+10,y+h+g+8);line(x+w+g+8,y+h/2-10,x+w+g+8,y+h/2+10);
+  }
+  if(mode==='registration'||mode==='all'){
+    const pts=[[x-g-14,y-g-14],[x+w+g+14,y-g-14],[x-g-14,y+h+g+14],[x+w+g+14,y+h+g+14]];
+    pts.forEach(([cx,cy])=>{page.drawCircle({x:cx,y:cy,size:4,borderWidth:.6,borderColor:c});line(cx-7,cy,cx+7,cy);line(cx,cy-7,cx,cy+7);});
+  }
+}
+function parseRotationRules(text){
+  const map=new Map();
+  String(text||'').split(',').map(v=>v.trim()).filter(Boolean).forEach(part=>{
+    const m=part.match(/^(\d+)(?:\s*-\s*(\d+))?\s*:\s*(90|180|270)$/);
+    if(!m)return;let a=Number(m[1]),b=Number(m[2]||m[1]),deg=Number(m[3]);if(a>b)[a,b]=[b,a];
+    for(let n=a;n<=b&&n<=10000;n++)map.set(n,deg);
+  });
+  return map;
+}
+function pageRotationFor(originalPageNumber,options,ruleMap){
+  if(['90','180','270'].includes(options.pageRotationMode))return Number(options.pageRotationMode);
+  if(options.pageRotationMode==='custom')return ruleMap.get(originalPageNumber)||0;
+  return 0;
+}
+function isProbablyBlankPdfPage(page){
+  try{
+    const contents=page.node.Contents();
+    if(!contents)return true;
+    const s=String(contents).replace(/\s+/g,'');
+    return !s || s==='[]';
+  }catch(_){return false;}
+}
+function productionMarginsForSheet(base,options,sheetNumber){
+  const m={...base},g=(options.gutterMm||0)*72/25.4;
+  if(options.bindingMode==='left')m.left+=g;
+  else if(options.bindingMode==='right')m.right+=g;
+  else if(options.bindingMode==='top')m.top+=g;
+  else if(options.bindingMode==='mirror'){if(sheetNumber%2===1)m.left+=g;else m.right+=g;}
+  return m;
+}
+function drawEmbeddedWithRotation(out,emb,cellX,cellY,cellW,cellH,options,rotationDeg){
+  let rot=((rotationDeg%360)+360)%360;
+  let srcW=(rot===90||rot===270)?emb.height:emb.width,srcH=(rot===90||rot===270)?emb.width:emb.height;
+  if(options.autoRotate&&((cellW>cellH&&srcW<srcH)||(cellW<cellH&&srcW>srcH))){
+    rot=(rot+90)%360;srcW=(rot===90||rot===270)?emb.height:emb.width;srcH=(rot===90||rot===270)?emb.width:emb.height;
+  }
+  const placement=computePlacement(srcW,srcH,cellW,cellH,0,options.scaleMode,false,options.customScale);
+  const sx=(options.scaleXPercent||100)/100,sy=(options.scaleYPercent||100)/100;
+  const finalW=placement.width*sx,finalH=placement.height*sy;
+  let left=options.contentAlign==='top-left'?cellX:cellX+(cellW-finalW)/2;
+  let bottom=options.contentAlign==='top-left'?cellY+cellH-finalH:cellY+(cellH-finalH)/2;
+  left+=((options.offsetXmm||0)+(options.calibrationXmm||0))*72/25.4;bottom+=((options.offsetYmm||0)+(options.calibrationYmm||0))*72/25.4;
+  let widthParam=finalW,heightParam=finalH,x=left,y=bottom;
+  if(rot===90){widthParam=finalH;heightParam=finalW;x=left+finalW;y=bottom;}
+  else if(rot===180){x=left+finalW;y=bottom+finalH;}
+  else if(rot===270){widthParam=finalH;heightParam=finalW;x=left;y=bottom+finalH;}
+  out.drawPage(emb,{x,y,width:widthParam,height:heightParam,rotate:degrees(rot)});
+}
+async function addJobTicketPage(doc,options,size,title='JOB TICKET'){
+  const p=doc.insertPage(0,[size.width,size.height]),font=await doc.embedFont(StandardFonts.Helvetica),bold=await doc.embedFont(StandardFonts.HelveticaBold);
+  const lines=[
+    title,
+    `Dokumen: ${options.sourceName||'Dokumen'}`,
+    `Printer: ${options.printerName||'Default Printer'}`,
+    `Copy: ${options.copies||1}`,
+    `Duplex: ${options.duplexMode||'simplex'}`,
+    `Kertas: ${options.paperSize||'SOURCE'}`,
+    `Waktu: ${new Date().toLocaleString()}`
+  ];
+  p.drawText(lines[0],{x:42,y:size.height-70,size:24,font:bold,color:rgb(.1,.1,.1)});
+  let y=size.height-115;for(const line of lines.slice(1)){p.drawText(line,{x:42,y,size:11,font,color:rgb(.25,.25,.25),maxWidth:size.width-84});y-=23;}
+}
+async function ensureEvenPdfPages(filePath){
+  const bytes=fs.readFileSync(filePath),doc=await PDFDocument.load(bytes,{ignoreEncryption:true});
+  if(doc.getPageCount()%2===1){const p=doc.getPage(doc.getPageCount()-1),sz=p.getSize();doc.addPage([sz.width,sz.height]);fs.writeFileSync(filePath,await doc.save());return true;}
+  return false;
+}
+async function createSeparatorPdf(filePath,options,outputPaperKey){
+  const base=PAPER_DIMENSIONS[outputPaperKey]||PAPER_DIMENSIONS.A4;
+  const landscape=options.orientation==='landscape';
+  const size=landscape?{width:base.height,height:base.width}:base;
+  const doc=await PDFDocument.create(),p=doc.addPage([size.width,size.height]),font=await doc.embedFont(StandardFonts.Helvetica),bold=await doc.embedFont(StandardFonts.HelveticaBold);
+  p.drawText('SEPARATOR COPY',{x:42,y:size.height-75,size:24,font:bold,color:rgb(.1,.1,.1)});
+  p.drawText(options.sourceName||'Dokumen',{x:42,y:size.height-120,size:12,font,color:rgb(.25,.25,.25),maxWidth:size.width-84});
+  p.drawText(`Printer: ${options.printerName||'Default'} • ${new Date().toLocaleString()}`,{x:42,y:size.height-148,size:10,font,color:rgb(.35,.35,.35),maxWidth:size.width-84});
+  fs.writeFileSync(filePath,await doc.save());
+}
+
 async function applyDocumentOverlays(doc,options){
   const pages=doc.getPages(); if(!pages.length)return; const font=await doc.embedFont(StandardFonts.Helvetica),bold=await doc.embedFont(StandardFonts.HelveticaBold);
   for(let i=0;i<pages.length;i++){const p=pages[i],{width,height}=p.getSize(),num=i+1,total=pages.length;
@@ -387,17 +609,57 @@ async function processPdfPoster(filePath,options){
   const bytes=fs.readFileSync(filePath),src=await PDFDocument.load(bytes,{ignoreEncryption:true}),total=src.getPageCount();let indices=parsePagesInput(options.pages,total);if(!indices.length)indices=Array.from({length:total},(_,i)=>i);if(options.pageSubset==='odd')indices=indices.filter(i=>(i+1)%2===1);else if(options.pageSubset==='even')indices=indices.filter(i=>(i+1)%2===0);if(options.pageOrder==='reverse')indices.reverse();
   const first=src.getPage(indices[0]||0),fsz=first.getSize(),std=detectStandardPaper(fsz.width,fsz.height),orient=resolveOrientation(options.orientation,fsz.width,fsz.height,1),outSize=resolvePaperSize(options.paperSize,orient,fsz.width,fsz.height,std),m=marginModeToPoints(options),cw=Math.max(1,outSize.width-m.left-m.right),ch=Math.max(1,outSize.height-m.top-m.bottom),doc=await PDFDocument.create(),ovPt=options.posterOverlap*72/25.4;
   for(const idx of indices){const pg=src.getPage(idx),box=getCropBoxForPage(pg,options),tileW=box.width/options.posterCols,tileH=box.height/options.posterRows;for(let row=0;row<options.posterRows;row++){for(let col=0;col<options.posterCols;col++){const ovX=(ovPt*tileW/cw)/2,ovY=(ovPt*tileH/ch)/2;let left=box.left+col*tileW-(col>0?ovX:0),right=box.left+(col+1)*tileW+(col<options.posterCols-1?ovX:0),bottom=box.bottom+(options.posterRows-1-row)*tileH-(row<options.posterRows-1?ovY:0),top=box.bottom+(options.posterRows-row)*tileH+(row>0?ovY:0);left=Math.max(box.left,left);right=Math.min(box.right,right);bottom=Math.max(box.bottom,bottom);top=Math.min(box.top,top);const emb=await doc.embedPage(pg,{left,bottom,right,top});const out=doc.addPage([outSize.width,outSize.height]),scale=Math.min(cw/emb.width,ch/emb.height),w=emb.width*scale,h=emb.height*scale,x=m.left+(cw-w)/2,y=m.bottom+(ch-h)/2;out.drawPage(emb,{x,y,width:w,height:h});if(options.posterCutMarks)drawCutMarks(out,m.left,m.bottom,cw,ch);}}}
+  if(options.separatorMode==='cover')await addJobTicketPage(doc,options,outSize,'JOB TICKET / COVER');
+  if((options.blankPageMode==='pad-even'||options.startCopyNewSheet)&&options.duplexMode!=='simplex'&&doc.getPageCount()%2===1)doc.addPage([outSize.width,outSize.height]);
   await applyDocumentOverlays(doc,options);fs.writeFileSync(filePath,await doc.save());return {outputPaperKey:outSize.key,resolvedOrientation:orient};
 }
 function shouldProcessPdf(options){return true;}
 
 async function processPdf(filePath,options){
   if(options.poster)return await processPdfPoster(filePath,options);
-  const bytes=fs.readFileSync(filePath),sourceDoc=await PDFDocument.load(bytes,{ignoreEncryption:true}),totalPages=sourceDoc.getPageCount();let indices=parsePagesInput(options.pages,totalPages);if(!indices.length)indices=Array.from({length:totalPages},(_,i)=>i);
-  if(options.booklet)indices=makeBookletSequence(indices);else{if(options.pageSubset==='odd')indices=indices.filter(i=>(i+1)%2===1);else if(options.pageSubset==='even')indices=indices.filter(i=>(i+1)%2===0);if(options.pageOrder==='reverse')indices.reverse();}if(!indices.length)throw new Error('Tidak ada halaman yang sesuai.');
-  const firstIndex=indices.find(i=>i!==null)??0,firstSize=sourceDoc.getPage(firstIndex).getSize(),std=detectStandardPaper(firstSize.width,firstSize.height),orient=resolveOrientation(options.orientation,firstSize.width,firstSize.height,options.pagesPerSheet),outSize=resolvePaperSize(options.paperSize,orient,firstSize.width,firstSize.height,std),scaleMode=getEffectiveScaleMode(options.scaleMode,options.pagesPerSheet),grid=getGrid(options.pagesPerSheet,orient),m=marginModeToPoints(options),cw=Math.max(1,outSize.width-m.left-m.right),ch=Math.max(1,outSize.height-m.top-m.bottom),cellW=cw/grid.cols,cellH=ch/grid.rows,doc=await PDFDocument.create();let out;
-  for(let i=0;i<indices.length;i++){if(i%grid.safePps===0)out=doc.addPage([outSize.width,outSize.height]);const slot=i%grid.safePps,pos=getSlotPosition(slot,grid.cols,grid.rows,options.nupOrder),cellX=m.left+pos.col*cellW,cellY=m.bottom+(grid.rows-1-pos.row)*cellH;if(options.nupBorder!=='none'&&options.pagesPerSheet>1)out.drawRectangle({x:cellX,y:cellY,width:cellW,height:cellH,borderWidth:options.nupBorder==='medium'?1.5:.7,borderColor:rgb(.6,.6,.6)});const idx=indices[i];if(idx===null)continue;const pg=sourceDoc.getPage(idx),box=getCropBoxForPage(pg,options),emb=await doc.embedPage(pg,box),placement=computePlacement(emb.width,emb.height,cellW,cellH,0,scaleMode,options.autoRotate,options.customScale);let x=options.contentAlign==='top-left'?cellX:cellX+(cellW-placement.width)/2,y=options.contentAlign==='top-left'?cellY+cellH-placement.height:cellY+(cellH-placement.height)/2;out.drawPage(emb,{x:x+(placement.rotate?emb.height*placement.scale:0),y,width:emb.width*placement.scale,height:emb.height*placement.scale,rotate:placement.rotate?degrees(90):degrees(0)});}
-  await applyDocumentOverlays(doc,options);fs.writeFileSync(filePath,await doc.save());return {outputPaperKey:outSize.key,resolvedOrientation:orient};
+  const bytes=fs.readFileSync(filePath),sourceDoc=await PDFDocument.load(bytes,{ignoreEncryption:true}),totalPages=sourceDoc.getPageCount();
+  let baseIndices=parsePagesInput(options.pages,totalPages);if(!baseIndices.length)baseIndices=Array.from({length:totalPages},(_,i)=>i);
+  if(options.blankPageMode==='remove-detected')baseIndices=baseIndices.filter(i=>!isProbablyBlankPdfPage(sourceDoc.getPage(i)));
+  if(options.pageSubset==='odd')baseIndices=baseIndices.filter(i=>(i+1)%2===1);else if(options.pageSubset==='even')baseIndices=baseIndices.filter(i=>(i+1)%2===0);
+  if(options.pageOrder==='reverse')baseIndices.reverse();
+  if(!baseIndices.length)throw new Error('Tidak ada halaman yang sesuai.');
+
+  let records;
+  if(options.booklet){
+    records=makeSignatureBookletSequence(baseIndices,options);
+    options.pagesPerSheet=2;options.orientation='landscape';options.duplexMode='duplexshort';options.nupOrder='row-ltr';
+  }else{
+    let repeat=1;if(options.impositionMode==='repeat-2')repeat=2;else if(options.impositionMode==='repeat-4')repeat=4;else if(options.impositionMode==='repeat-custom')repeat=options.repeatCount||2;
+    if(repeat>1)options.pagesPerSheet=repeat;
+    records=[];for(const idx of baseIndices)for(let r=0;r<repeat;r++)records.push({idx,posInSignature:0,signatureSize:0});
+  }
+
+  const firstIndex=(records.find(r=>r.idx!==null)||{idx:0}).idx,firstSize=sourceDoc.getPage(firstIndex).getSize(),std=detectStandardPaper(firstSize.width,firstSize.height),
+        orient=resolveOrientation(options.orientation,firstSize.width,firstSize.height,options.pagesPerSheet),
+        outSize=resolvePaperSize(options.paperSize,orient,firstSize.width,firstSize.height,std),
+        grid=getGrid(options.pagesPerSheet,orient),baseMargins=marginModeToPoints(options),
+        ruleMap=parseRotationRules(options.pageRotationRules),doc=await PDFDocument.create(),
+        gapX=(options.nupGapXmm||0)*72/25.4,gapY=(options.nupGapYmm||0)*72/25.4;
+  let out=null,physicalSide=0;
+  for(let i=0;i<records.length;i++){
+    if(i%grid.safePps===0){out=doc.addPage([outSize.width,outSize.height]);physicalSide++;}
+    const margins=productionMarginsForSheet(baseMargins,options,physicalSide),
+          contentW=Math.max(1,outSize.width-margins.left-margins.right),
+          contentH=Math.max(1,outSize.height-margins.top-margins.bottom),
+          cellW=Math.max(1,(contentW-gapX*(grid.cols-1))/grid.cols),cellH=Math.max(1,(contentH-gapY*(grid.rows-1))/grid.rows),
+          slot=i%grid.safePps,pos=getSlotPosition(slot,grid.cols,grid.rows,options.nupOrder),
+          creep=options.booklet?creepOffsetPt(records[i],slot,options):0,
+          cellX=margins.left+pos.col*(cellW+gapX)+creep,cellY=margins.bottom+(grid.rows-1-pos.row)*(cellH+gapY);
+    if(options.nupBorder!=='none'&&options.pagesPerSheet>1)out.drawRectangle({x:cellX,y:cellY,width:cellW,height:cellH,borderWidth:options.nupBorder==='medium'?1.5:.7,borderColor:rgb(.6,.6,.6)});
+    drawPrepressMarks(out,cellX,cellY,cellW,cellH,options.prepressMarks);
+    const idx=records[i].idx;if(idx===null)continue;
+    const pg=sourceDoc.getPage(idx),box=getPrepressSourceBox(pg,options),emb=await doc.embedPage(pg,box),manualRot=pageRotationFor(idx+1,options,ruleMap);
+    drawEmbeddedWithRotation(out,emb,cellX,cellY,cellW,cellH,{...options,scaleMode:getEffectiveScaleMode(options.scaleMode,options.pagesPerSheet)},manualRot);
+  }
+  if(options.separatorMode==='cover')await addJobTicketPage(doc,options,outSize,'JOB TICKET / COVER');
+  if((options.blankPageMode==='pad-even'||options.startCopyNewSheet)&&options.duplexMode!=='simplex'&&doc.getPageCount()%2===1)doc.addPage([outSize.width,outSize.height]);
+  await applyDocumentOverlays(doc,options);fs.writeFileSync(filePath,await doc.save());
+  return {outputPaperKey:outSize.key,resolvedOrientation:orient};
 }
 
 async function getPdfPageCount(filePath) {
@@ -447,6 +709,10 @@ async function printOneDocument(filePath, baseOpts, options) {
     for (let c = 1; c <= copies; c += 1) {
       updateStatus(`Mencetak copy ${c}/${copies} (Collate)...`, 'printing');
       await ptp.print(filePath, { ...baseOpts, copies: 1 });
+      if(options.separatorMode==='between-copies'&&options.separatorFilePath&&c<copies){
+        updateStatus(`Mencetak separator copy ${c}/${copies}...`,'printing');
+        await ptp.print(options.separatorFilePath,{...baseOpts,copies:1,side:'simplex'});
+      }
     }
     return;
   }
@@ -468,6 +734,10 @@ async function printPdfInChunks(filePath, baseOpts, chunkSize, options) {
           const chunk = chunks[i];
           updateStatus(`Copy ${c}/${options.copies} • bagian ${i + 1}/${chunks.length} • halaman ${chunk.start}-${chunk.end}...`, 'printing');
           await ptp.print(chunk.path, { ...baseOpts, copies: 1 });
+        }
+        if(options.separatorMode==='between-copies'&&options.separatorFilePath&&c<options.copies){
+          updateStatus(`Mencetak separator copy ${c}/${options.copies}...`,'printing');
+          await ptp.print(options.separatorFilePath,{...baseOpts,copies:1,side:'simplex'});
         }
       }
     } else if (!options.collate && options.copies > 1) {
@@ -848,104 +1118,267 @@ app.post('/convert-docx',
   }
 );
 
-app.post('/print',
-  (req, res, next) => {
-    uploadDocument(req, res, (err) => {
-      if (!err) return next();
-      const message = err.code === 'LIMIT_FILE_SIZE'
-        ? `Ukuran file melebihi batas ${MAX_UPLOAD_MB} MB. Kompres file atau naikkan MAX_UPLOAD_MB di environment.`
-        : `Upload gagal: ${err.message}`;
-      updateStatus(`Gagal: ${message}`, 'error');
-      return res.status(err.code === 'LIMIT_FILE_SIZE' ? 413 : 400).send(message);
-    });
-  },
-  async (req, res) => {
-  if (req.body.pin !== APP_PIN) return res.status(401).send('PIN Salah!');
 
-  let fPath = req.file ? req.file.path : '';
-  const mimeType = req.file ? req.file.mimetype : '';
-  const originalName = req.file ? req.file.originalname : '';
-  const options = sanitizePrintOptions(req.body);
-  options.sourceName = originalName;
-  if (options.poster) { options.booklet=false; options.pagesPerSheet=1; options.duplexMode='simplex'; }
-  if (options.booklet) {
-    options.pagesPerSheet=2; options.orientation='landscape'; options.duplexMode='duplexshort'; options.collate=true; options.pageSubset='all'; options.pageOrder='normal'; options.nupOrder='row-ltr';
-  }
-  fPath = preserveUploadedExtension(fPath, originalName);
+// ===== v4.5.26 Central Print Queue & Job Management =====
+const JOB_RETENTION_MS = Math.max(60 * 60 * 1000, parseInt(process.env.JOB_RETENTION_MS || String(24 * 60 * 60 * 1000), 10));
+const DUPLICATE_WINDOW_MS = Math.max(3000, parseInt(process.env.DUPLICATE_WINDOW_MS || '15000', 10));
+const MAX_JOB_HISTORY = Math.max(20, parseInt(process.env.MAX_JOB_HISTORY || '100', 10));
+const jobStoreDir = path.join(os.tmpdir(), 'print-server-pro-job-cache');
+if (!fs.existsSync(jobStoreDir)) fs.mkdirSync(jobStoreDir, { recursive: true });
+const printJobs = new Map();
+const printerWorkers = new Map();
+let queuePaused = false;
 
+const PRIORITY_WEIGHT = { normal: 0, priority: 1, urgent: 2 };
+function makeJobId() { return `J${Date.now().toString(36).toUpperCase()}${crypto.randomBytes(3).toString('hex').toUpperCase()}`; }
+function printerQueueKey(job) { return String(job.options.printerName || '__DEFAULT__'); }
+function publicJob(job) {
+  return {
+    id: job.id, name: job.originalName, printerName: job.options.printerName || 'Default Printer',
+    status: job.status, stage: job.stage || '', priority: job.priority, hold: job.status === 'held',
+    createdAt: job.createdAt, startedAt: job.startedAt || null, finishedAt: job.finishedAt || null,
+    attempts: job.attempts || 0, error: job.error || '', cancelRequested: Boolean(job.cancelRequested),
+    pages: job.metrics?.pages || null, outputPages: job.metrics?.outputPages || null,
+    sheets: job.metrics?.sheets || null, copies: job.options.copies || 1,
+    duplex: job.options.duplexMode || 'simplex', colorMode: job.options.colorMode || 'color',
+    pagesPerSheet: job.options.pagesPerSheet || 1, fileSizeMb: job.fileSizeMb || 0,
+    device: job.device || '', sourceRetained: Boolean(job.sourcePath && fs.existsSync(job.sourcePath)),
+    spoolerCancel: job.spoolerCancel || null,
+  };
+}
+function emitQueueUpdate(job) {
+  io.emit('queue-update', { job: job ? publicJob(job) : null, paused: queuePaused, timestamp: Date.now() });
+}
+function setJobStatus(job, status, stage = '', error = '') {
+  job.status = status; job.stage = stage || status; job.error = error || '';
+  if (status === 'processing' && !job.startedAt) job.startedAt = Date.now();
+  if (['success','failed','cancelled'].includes(status)) job.finishedAt = Date.now();
+  emitQueueUpdate(job);
+}
+function createCompletion(job) {
+  job.completion = new Promise((resolve, reject) => { job._resolve = resolve; job._reject = reject; });
+  job.completion.catch(() => {});
+}
+function settleCompletion(job, error = null) {
+  if (error && job._reject) job._reject(error); else if (!error && job._resolve) job._resolve(publicJob(job));
+  job._resolve = null; job._reject = null;
+}
+function copyToJobStore(uploadedPath, originalName, jobId) {
+  const ext = path.extname(originalName || '') || path.extname(uploadedPath || '') || '.bin';
+  const target = path.join(jobStoreDir, `${jobId}-source${ext.toLowerCase()}`);
+  fs.copyFileSync(uploadedPath, target);
+  try { fs.unlinkSync(uploadedPath); } catch (_) {}
+  return target;
+}
+function jobFingerprint(originalName, size, options) {
+  const stable = {
+    name: String(originalName || '').toLowerCase(), size, printer: options.printerName || '', copies: options.copies,
+    color: options.colorMode, paper: options.paperSize, orientation: options.orientation, pps: options.pagesPerSheet,
+    duplex: options.duplexMode, pages: options.pages, scale: options.scaleMode, customScale: options.customScale,
+  };
+  return crypto.createHash('sha1').update(JSON.stringify(stable)).digest('hex');
+}
+function findRecentDuplicate(fingerprint) {
+  const cutoff = Date.now() - DUPLICATE_WINDOW_MS;
+  return [...printJobs.values()].find(j => j.fingerprint === fingerprint && j.createdAt >= cutoff && !['cancelled','failed'].includes(j.status));
+}
+function nextQueuedJobForPrinter(key) {
+  return [...printJobs.values()]
+    .filter(j => printerQueueKey(j) === key && j.status === 'queued')
+    .sort((a,b) => (PRIORITY_WEIGHT[b.priority] - PRIORITY_WEIGHT[a.priority]) || (a.createdAt - b.createdAt))[0] || null;
+}
+function enqueueJob(job) {
+  if (!job.completion) createCompletion(job);
+  printJobs.set(job.id, job);
+  emitQueueUpdate(job);
+  startPrinterWorker(printerQueueKey(job));
+}
+function startPrinterWorker(key) {
+  if (printerWorkers.get(key)) return;
+  printerWorkers.set(key, true);
+  (async () => {
+    try {
+      while (true) {
+        if (queuePaused) { await new Promise(r => setTimeout(r, 500)); continue; }
+        const job = nextQueuedJobForPrinter(key);
+        if (!job) break;
+        if (job.cancelRequested) { setJobStatus(job, 'cancelled', 'cancelled'); settleCompletion(job, new Error('JOB_CANCELLED')); continue; }
+        try {
+          job.attempts = (job.attempts || 0) + 1;
+          setJobStatus(job, 'processing', 'preparing');
+          await executePrintJob(job);
+          if (job.cancelRequested) {
+            setJobStatus(job, 'cancelled', 'cancelled');
+            settleCompletion(job, new Error('JOB_CANCELLED'));
+          } else {
+            setJobStatus(job, 'success', 'completed');
+            settleCompletion(job);
+          }
+        } catch (err) {
+          console.error(`[QUEUE JOB ${job.id}]`, err);
+          setJobStatus(job, job.cancelRequested ? 'cancelled' : 'failed', job.cancelRequested ? 'cancelled' : 'failed', err.message);
+          settleCompletion(job, err);
+        }
+      }
+    } finally {
+      printerWorkers.delete(key);
+      if (!queuePaused && nextQueuedJobForPrinter(key)) startPrinterWorker(key);
+    }
+  })();
+}
+function resumeAllWorkers() {
+  const keys = new Set([...printJobs.values()].filter(j => j.status === 'queued').map(printerQueueKey));
+  keys.forEach(startPrinterWorker);
+}
+function estimateSheets(outputPages, copies, duplexMode) {
+  const sides = Math.max(0, Number(outputPages || 0));
+  const perCopy = duplexMode !== 'simplex' ? Math.ceil(sides / 2) : sides;
+  return perCopy * Math.max(1, Number(copies || 1));
+}
+async function safeOriginalPageCount(filePath, mimeType, originalName) {
   try {
-    if (!fPath || !fs.existsSync(fPath)) throw new Error('File dokumen tidak ditemukan.');
-    updateStatus('Memproses dokumen...', 'processing');
+    if ((mimeType && mimeType.includes('image')) || /\.(jpg|jpeg|png)$/i.test(originalName || '')) return 1;
+    if ((mimeType && mimeType.includes('pdf')) || /\.pdf$/i.test(originalName || '') || /\.pdf$/i.test(filePath || '')) return await getPdfPageCount(filePath);
+  } catch (_) {}
+  return null;
+}
+async function tryCancelSpoolerJob(job) {
+  if (process.platform !== 'win32' || !job.options.printerName) return { attempted:false, cancelled:0, reason:'Spooler cancel only available on Windows with a named printer.' };
+  const ps = findPowerShellExecutable(); if (!ps) return { attempted:false, cancelled:0, reason:'PowerShell not found.' };
+  const printer = String(job.options.printerName).replace(/'/g,"''");
+  const base = path.basename(job.originalName || '', path.extname(job.originalName || '')).replace(/'/g,"''").slice(0,80);
+  const jid = String(job.id || '').replace(/'/g,"''");
+  const cutoff = new Date((job.startedAt || job.createdAt || Date.now()) - 15000).toISOString();
+  const script = `$ErrorActionPreference='Stop';$n='${printer}';$needle='${base}';$jid='${jid}';$cut=[datetime]'${cutoff}';$jobs=@(Get-PrintJob -PrinterName $n -ErrorAction Stop | Where-Object { $_.SubmittedTime -ge $cut -and (([string]$_.DocumentName -like ('*'+$needle+'*')) -or ([string]$_.DocumentName -like ('*'+$jid+'*'))) });$count=0;foreach($j in $jobs){try{Remove-PrintJob -PrinterName $n -ID $j.ID -ErrorAction Stop;$count++}catch{}};Write-Output $count`;
+  try { const r=await runProcess(ps,['-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-Command',script],15000); const count=parseInt(String(r.stdout||'').trim(),10)||0; return {attempted:true,cancelled:count}; }
+  catch(e){ return {attempted:true,cancelled:0,reason:e.message}; }
+}
+async function executePrintJob(job) {
+  const options = { ...job.options };
+  let fPath = '';
+  try {
+    if (!job.sourcePath || !fs.existsSync(job.sourcePath)) throw new Error('File sumber job tidak tersedia lagi.');
+    const ext = path.extname(job.sourcePath) || path.extname(job.originalName || '') || '.bin';
+    const safeBase = path.basename(job.originalName || 'document', path.extname(job.originalName || '')).replace(/[^a-zA-Z0-9._-]+/g,'_').slice(0,60) || 'document';
+    fPath = path.join(jobStoreDir, `${job.id}-work-${safeBase}-${Date.now()}${ext}`);
+    fs.copyFileSync(job.sourcePath, fPath);
+    updateStatus(`[${job.id}] Memproses ${job.originalName}...`, 'processing');
+    job.stage='processing'; emitQueueUpdate(job);
 
-    const isImageFile = (mimeType && mimeType.includes('image')) || /\.(jpg|jpeg|png)$/i.test(originalName);
-    const isPdfFile = (mimeType && mimeType.includes('pdf')) || /\.pdf$/i.test(originalName) || /\.pdf$/i.test(fPath);
-    let pdfPageCount = 0;
-    let pdfSizeMb = getFileSizeMb(fPath);
-    let shouldChunkPdf = false;
-    let outputPaperKey = options.paperSize === 'SOURCE' ? 'A4' : options.paperSize;
+    const mimeType=job.mimeType||'', originalName=job.originalName||'';
+    const isImageFile=(mimeType&&mimeType.includes('image'))||/\.(jpg|jpeg|png)$/i.test(originalName);
+    const isPdfFile=(mimeType&&mimeType.includes('pdf'))||/\.pdf$/i.test(originalName)||/\.pdf$/i.test(fPath);
+    job.metrics = job.metrics || {};
+    job.metrics.pages = await safeOriginalPageCount(fPath,mimeType,originalName);
+    let pdfPageCount=0, pdfSizeMb=getFileSizeMb(fPath), shouldChunkPdf=false;
+    let outputPaperKey=options.paperSize==='SOURCE'?'A4':options.paperSize;
 
+    if (job.cancelRequested) throw new Error('JOB_CANCELLED');
     if (isImageFile) {
-      updateStatus('Menyesuaikan Gambar ke Kertas...', 'processing');
-      const imageResult = await convertImageToPdf(fPath, mimeType, originalName, options);
-      fPath = imageResult.filePath;
-      outputPaperKey = imageResult.outputPaperKey;
+      const result=await convertImageToPdf(fPath,mimeType,originalName,options); fPath=result.filePath; outputPaperKey=result.outputPaperKey;
+      pdfPageCount=await getPdfPageCount(fPath);
     } else if (isPdfFile && shouldProcessPdf(options)) {
-      const pdfResult = await processPdf(fPath, options);
-      outputPaperKey = pdfResult.outputPaperKey;
-      pdfPageCount = await getPdfPageCount(fPath);
-      pdfSizeMb = getFileSizeMb(fPath);
-      shouldChunkPdf = pdfPageCount >= LARGE_PDF_THRESHOLD_PAGES || pdfSizeMb >= LARGE_PDF_THRESHOLD_MB;
+      const result=await processPdf(fPath,options); outputPaperKey=result.outputPaperKey;
+      pdfPageCount=await getPdfPageCount(fPath); pdfSizeMb=getFileSizeMb(fPath);
+      shouldChunkPdf=pdfPageCount>=LARGE_PDF_THRESHOLD_PAGES||pdfSizeMb>=LARGE_PDF_THRESHOLD_MB;
     } else if (isPdfFile) {
-      const sourceBytes = fs.readFileSync(fPath);
-      const sourcePdf = await PDFDocument.load(sourceBytes, { ignoreEncryption: true });
-      pdfPageCount = sourcePdf.getPageCount();
-      const firstSize = sourcePdf.getPage(0).getSize();
-      const detected = detectStandardPaper(firstSize.width, firstSize.height);
-      outputPaperKey = detected === 'CUSTOM' ? 'A4' : detected;
-      pdfSizeMb = getFileSizeMb(fPath);
-      shouldChunkPdf = pdfPageCount >= LARGE_PDF_THRESHOLD_PAGES || pdfSizeMb >= LARGE_PDF_THRESHOLD_MB;
-      updateStatus(`PDF asli: ${pdfPageCount} halaman, ${pdfSizeMb.toFixed(1)} MB. ${shouldChunkPdf ? 'Akan dicetak per bagian.' : 'Akan dikirim langsung.'}`, 'processing');
-    } else {
-      throw new Error('Format file tidak didukung. Gunakan PDF, JPG, JPEG, atau PNG.');
-    }
+      const sourcePdf=await PDFDocument.load(fs.readFileSync(fPath),{ignoreEncryption:true}); pdfPageCount=sourcePdf.getPageCount();
+      const firstSize=sourcePdf.getPage(0).getSize(),detected=detectStandardPaper(firstSize.width,firstSize.height);outputPaperKey=detected==='CUSTOM'?'A4':detected;
+      shouldChunkPdf=pdfPageCount>=LARGE_PDF_THRESHOLD_PAGES||pdfSizeMb>=LARGE_PDF_THRESHOLD_MB;
+    } else throw new Error('Format file tidak didukung. Gunakan PDF, JPG, JPEG, atau PNG.');
 
-    const opts = {
-      printer: options.printerName,
-      monochrome: options.colorMode === 'monochrome',
-      side: options.duplexMode,
-      paperSize: outputPaperKey === 'F4'
-        ? '210x330mm'
-        : outputPaperKey === 'LETTER'
-          ? 'Letter'
-          : outputPaperKey === 'LEGAL'
-            ? 'Legal'
-            : 'A4',
-      // Layout/skala sudah dibentuk di PDF final; driver hanya mengecilkan bila area printable lebih sempit.
-      scale: 'shrink',
+    job.metrics.outputPages=pdfPageCount||1;
+    job.metrics.sheets=estimateSheets(job.metrics.outputPages,options.copies,options.duplexMode);
+    if(options.separatorMode==='between-copies'&&options.copies>1)job.metrics.sheets+=options.copies-1;
+    emitQueueUpdate(job);
+    if(options.safetySheetLimit>0&&job.metrics.sheets>options.safetySheetLimit&&!options.safetyConfirmed){
+      throw new Error(`SAFETY_CONFIRM_REQUIRED: estimasi ${job.metrics.sheets} lembar melebihi batas ${options.safetySheetLimit}.`);
+    }
+    if(options.separatorMode==='between-copies'&&options.copies>1){
+      options.separatorFilePath=path.join(jobStoreDir,`${job.id}-separator.pdf`);
+      await createSeparatorPdf(options.separatorFilePath,options,outputPaperKey);
+    }
+    if (job.cancelRequested) throw new Error('JOB_CANCELLED');
+
+    const opts={
+      printer:options.printerName, monochrome:options.colorMode==='monochrome', side:options.duplexMode,
+      paperSize:outputPaperKey==='F4'?'210x330mm':outputPaperKey==='LETTER'?'Letter':outputPaperKey==='LEGAL'?'Legal':'A4',
+      scale:'shrink', silent:options.driverExecutionMode!=='dialog', printDialog:options.driverExecutionMode==='dialog'
     };
+    if(options.driverBin)opts.bin=options.driverBin;
+    if(options.driverPaperKind>0){opts.paperkind=options.driverPaperKind;delete opts.paperSize;}
+    const vendorSelected=options.driverMediaType!=='default'||options.driverQuality!=='default'||options.driverBorderless!=='default'||options.driverEconomy!=='default';
+    if(vendorSelected&&options.driverExecutionMode!=='dialog')throw new Error('Media Type / Quality / Borderless / Economy membutuhkan Mode Eksekusi Driver: Dialog Printer.');
 
-    if (isPdfFile && shouldChunkPdf) {
-      updateStatus(`PDF besar terdeteksi. Mencetak per ${LARGE_PDF_CHUNK_PAGES} halaman agar spooler/printer lebih stabil...`, 'printing');
-      await printPdfInChunks(fPath, opts, options.duplexMode === 'simplex' ? LARGE_PDF_CHUNK_PAGES : Math.max(2, LARGE_PDF_CHUNK_PAGES - (LARGE_PDF_CHUNK_PAGES % 2)), options);
-    } else {
-      updateStatus('Mencetak ke mesin fisik...', 'printing');
-      await printOneDocument(fPath, opts, options);
-    }
-    updateStatus('Cetak Sukses!', 'success');
-    res.send('OK');
-  } catch (e) {
-    console.error('[PRINT ERROR]', e);
-    updateStatus(`Gagal: ${e.message}`, 'error');
-    res.status(500).send(`PRINT_FAILED: ${e.message}`);
+    setJobStatus(job,'processing','spooling');
+    updateStatus(`[${job.id}] Dikirim ke ${options.printerName||'printer default'}...`,'printing');
+    if(isPdfFile&&shouldChunkPdf) await printPdfInChunks(fPath,opts,options.duplexMode==='simplex'?LARGE_PDF_CHUNK_PAGES:Math.max(2,LARGE_PDF_CHUNK_PAGES-(LARGE_PDF_CHUNK_PAGES%2)),options);
+    else await printOneDocument(fPath,opts,options);
+    updateStatus(`[${job.id}] Cetak selesai.`,'success');
   } finally {
-    if (fPath && fs.existsSync(fPath)) {
-      try { fs.unlinkSync(fPath); } catch (_) {}
-    }
+    try { if(fPath&&fs.existsSync(fPath))fs.unlinkSync(fPath); } catch(_){}
+    try {
+      for(const p of fs.readdirSync(jobStoreDir)) if(p.startsWith(`${job.id}-work-`)) fs.unlinkSync(path.join(jobStoreDir,p));
+    } catch(_){}
   }
+}
+function cleanupOldJobs() {
+  const now=Date.now();
+  const completed=[...printJobs.values()].filter(j=>['success','failed','cancelled'].includes(j.status)).sort((a,b)=>(b.finishedAt||0)-(a.finishedAt||0));
+  completed.forEach((job,index)=>{
+    if((job.finishedAt&&now-job.finishedAt>JOB_RETENTION_MS)||index>=MAX_JOB_HISTORY){
+      try{if(job.sourcePath&&fs.existsSync(job.sourcePath))fs.unlinkSync(job.sourcePath)}catch(_){}
+      printJobs.delete(job.id);
+    }
+  });
+}
+setInterval(cleanupOldJobs,10*60*1000).unref?.();
+
+app.get('/queue',(req,res)=>{
+  cleanupOldJobs();
+  const jobs=[...printJobs.values()].sort((a,b)=>b.createdAt-a.createdAt).map(publicJob);
+  res.json({paused:queuePaused,jobs,active:jobs.filter(j=>['processing'].includes(j.status)).length,waiting:jobs.filter(j=>j.status==='queued').length,held:jobs.filter(j=>j.status==='held').length});
 });
+app.post('/queue/pause',(req,res)=>{queuePaused=true;emitQueueUpdate();res.json({ok:true,paused:true});});
+app.post('/queue/resume',(req,res)=>{queuePaused=false;emitQueueUpdate();resumeAllWorkers();res.json({ok:true,paused:false});});
+app.post('/queue/:id/release',(req,res)=>{const j=printJobs.get(req.params.id);if(!j)return res.status(404).send('JOB_NOT_FOUND');if(j.status!=='held')return res.status(409).send('JOB_NOT_HELD');j.status='queued';j.stage='queued';emitQueueUpdate(j);startPrinterWorker(printerQueueKey(j));res.json(publicJob(j));});
+app.post('/queue/:id/priority',(req,res)=>{const j=printJobs.get(req.params.id);if(!j)return res.status(404).send('JOB_NOT_FOUND');const p=['normal','priority','urgent'].includes(req.body.priority)?req.body.priority:'normal';j.priority=p;emitQueueUpdate(j);if(j.status==='queued')startPrinterWorker(printerQueueKey(j));res.json(publicJob(j));});
+app.post('/queue/:id/cancel',async(req,res)=>{const j=printJobs.get(req.params.id);if(!j)return res.status(404).send('JOB_NOT_FOUND');if(['success','failed','cancelled'].includes(j.status))return res.status(409).send('JOB_ALREADY_FINISHED');j.cancelRequested=true;if(['queued','held'].includes(j.status)){setJobStatus(j,'cancelled','cancelled');settleCompletion(j,new Error('JOB_CANCELLED'));return res.json({job:publicJob(j),spooler:null});}j.spoolerCancel=await tryCancelSpoolerJob(j);emitQueueUpdate(j);res.json({job:publicJob(j),spooler:j.spoolerCancel});});
+app.post('/queue/:id/retry',(req,res)=>{const old=printJobs.get(req.params.id);if(!old)return res.status(404).send('JOB_NOT_FOUND');if(!old.sourcePath||!fs.existsSync(old.sourcePath))return res.status(410).send('SOURCE_EXPIRED');if(['queued','held','processing'].includes(old.status))return res.status(409).send('JOB_STILL_ACTIVE');const id=makeJobId(),ext=path.extname(old.sourcePath)||'.bin',retrySource=path.join(jobStoreDir,`${id}-source${ext}`);fs.copyFileSync(old.sourcePath,retrySource);const job={...old,id,sourcePath:retrySource,status:'queued',stage:'queued',createdAt:Date.now(),startedAt:null,finishedAt:null,error:'',cancelRequested:false,spoolerCancel:null,attempts:0,fingerprint:`${old.fingerprint}-retry-${id}`,completion:null,_resolve:null,_reject:null};createCompletion(job);enqueueJob(job);res.status(202).json(publicJob(job));});
+app.get('/printer-status',async(req,res)=>{try{const name=String(req.query.name||'');const cap=await getWindowsPrinterCapabilities(name);const jobs=[...printJobs.values()].filter(j=>(j.options.printerName||'')===name&&!['success','failed','cancelled'].includes(j.status));res.json({name:cap.name||name,status:cap.status||'Unknown',offline:/offline/i.test(String(cap.status||'')),canDuplex:cap.canDuplex,supportsColor:cap.supportsColor,queued:jobs.filter(j=>j.status==='queued').length,printing:jobs.filter(j=>j.status==='processing').length,held:jobs.filter(j=>j.status==='held').length,paused:queuePaused});}catch(e){res.status(500).send(`PRINTER_STATUS_FAILED: ${e.message}`);}});
+
+app.post('/print',
+  (req,res,next)=>uploadDocument(req,res,err=>{if(!err)return next();const message=err.code==='LIMIT_FILE_SIZE'?`Ukuran file melebihi batas ${MAX_UPLOAD_MB} MB.`:`Upload gagal: ${err.message}`;return res.status(err.code==='LIMIT_FILE_SIZE'?413:400).send(message);}),
+  async(req,res)=>{
+    let uploaded=req.file?req.file.path:'';
+    try{
+      if(req.body.pin!==APP_PIN)throw Object.assign(new Error('PIN Salah!'),{statusCode:401});
+      if(!req.file||!uploaded||!fs.existsSync(uploaded))throw new Error('File dokumen tidak ditemukan.');
+      const originalName=req.file.originalname||'document',mimeType=req.file.mimetype||'',options=sanitizePrintOptions(req.body);options.sourceName=originalName;
+      if(options.poster){options.booklet=false;options.impositionMode='normal';options.pagesPerSheet=1;options.duplexMode='simplex';}
+      if(options.booklet){options.impositionMode='normal';options.pagesPerSheet=2;options.orientation='landscape';options.duplexMode='duplexshort';options.collate=true;options.pageSubset='all';options.pageOrder='normal';options.nupOrder='row-ltr';}
+      if(options.impositionMode==='repeat-2')options.pagesPerSheet=2;
+      else if(options.impositionMode==='repeat-4')options.pagesPerSheet=4;
+      else if(options.impositionMode==='repeat-custom')options.pagesPerSheet=options.repeatCount;
+      if(options.startCopyNewSheet||options.separatorMode==='between-copies')options.collate=true;
+      const size=fs.statSync(uploaded).size,fingerprint=jobFingerprint(originalName,size,options),duplicate=findRecentDuplicate(fingerprint);
+      if(duplicate&&String(req.body.allowDuplicate||'false')!=='true'){try{fs.unlinkSync(uploaded)}catch(_){};uploaded='';return res.status(409).json({code:'DUPLICATE_JOB',message:'Dokumen dengan printer dan pengaturan yang sama baru saja dikirim.',existingJob:publicJob(duplicate)});}
+      const id=makeJobId(),sourcePath=copyToJobStore(uploaded,originalName,id);uploaded='';
+      const priority=['normal','priority','urgent'].includes(req.body.jobPriority)?req.body.jobPriority:'normal';
+      const hold=String(req.body.holdJob||'false')==='true';
+      const device=String(req.headers['user-agent']||'').slice(0,160);
+      const job={id,originalName,mimeType,sourcePath,fileSizeMb:Math.round(size/104857.6)/10,options,priority,status:hold?'held':'queued',stage:hold?'held':'queued',createdAt:Date.now(),startedAt:null,finishedAt:null,attempts:0,error:'',cancelRequested:false,device,fingerprint,metrics:{}};
+      createCompletion(job);enqueueJob(job);
+      if(hold||queuePaused)return res.status(202).json({queued:true,held:hold,paused:queuePaused,job:publicJob(job)});
+      try{const result=await job.completion;res.setHeader('X-Print-Job-Id',job.id);return res.status(200).json({ok:true,job:result});}
+      catch(e){return res.status(e.message==='JOB_CANCELLED'?409:500).send(e.message==='JOB_CANCELLED'?'JOB_CANCELLED':`PRINT_FAILED: ${e.message}`);}
+    }catch(e){console.error('[PRINT SUBMIT ERROR]',e);if(uploaded){try{fs.unlinkSync(uploaded)}catch(_){}}return res.status(e.statusCode||500).send(e.message||'PRINT_FAILED');}
+  }
+);
+
 
 server.requestTimeout = 0;
 server.headersTimeout = 0;
 server.timeout = 0;
 
-server.listen(port, '0.0.0.0', () => console.log(`Print Server V4.5.21 Ready on ${port}`));
+server.listen(port, '0.0.0.0', () => console.log(`Print Server V4.5.26 Ready on ${port}`));
