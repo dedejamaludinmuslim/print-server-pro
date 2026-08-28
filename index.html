@@ -90,7 +90,21 @@
         .cap-badge.warn { background:rgba(245,158,11,.14); color:#a16207; }
 
         .capability-card { margin-top:8px; padding:9px 10px; border:1px solid var(--border); border-radius:9px; font-size:10px; line-height:1.45; color:var(--text-muted); background:rgba(51,65,85,.04); }
-        /* v4.5.32 — Print Settings UX Consolidation */
+        .capability-card.is-loading { border-color:#bfdbfe; background:#eff6ff; color:#1d4ed8; }
+        .capability-card.is-verified { border-color:#bbf7d0; background:#f0fdf4; }
+        .capability-card.is-unavailable { border-color:#fed7aa; background:#fff7ed; color:#9a3412; }
+        .capability-overview { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; margin-top:8px; }
+        .capability-feature { min-width:0; padding:7px 8px; border:1px solid #e2e8f0; border-radius:8px; background:#fff; color:#64748b; }
+        .capability-feature strong { display:block; color:#334155; font-size:10px; }
+        .capability-feature.verified strong { color:#047857; }
+        .capability-feature.unsupported strong { color:#b91c1c; }
+        .capability-feature.unknown strong { color:#a16207; }
+        .capability-meta { margin-top:8px; color:#64748b; overflow-wrap:anywhere; }
+        .capability-adjustment { margin-top:7px; color:#9a3412; font-weight:700; }
+        .capability-refresh { margin-top:8px; padding:5px 8px; border:1px solid #cbd5e1; border-radius:7px; background:#fff; color:#334155; font:inherit; font-weight:700; cursor:pointer; }
+        .capability-unavailable { opacity:.62; }
+        @media (max-width:560px) { .capability-overview { grid-template-columns:1fr; } }
+        /* v4.5.31 — Print Settings UX Consolidation */
         .ux-settings-root { display:flex; flex-direction:column; gap:10px; margin-top:12px; }
         .ux-basic-card { border:1px solid var(--border-soft); background:#f8fafc; border-radius:12px; padding:12px; }
         .ux-basic-card-title { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px; font-size:11px; font-weight:800; color:#334155; }
@@ -150,7 +164,7 @@
 
     
         /* =========================================================
-           v4.5.32 — Professional UI Refresh
+           v4.5.31 — Professional UI Refresh
            Visual layer only. Print engine and control IDs unchanged.
            ========================================================= */
         :root {
@@ -648,7 +662,7 @@
             #printBtn { min-height:48px; }
         }
 
-        /* v4.5.32 — Professional Print Dialog Layout */
+        /* v4.5.31 — Professional Print Dialog Layout */
         .legacy-section-title,.dialog-hidden-control,.dialog-hidden-toolbar,#uxLegacySettingsGrid,#uxLegacyJobGrid{display:none!important}
         .print-dialog-shell{display:grid;grid-template-columns:168px minmax(0,1fr);margin-top:4px;border:1px solid #d9e1eb;border-radius:14px;background:#fff;min-height:680px;box-shadow:0 5px 18px rgba(15,23,42,.04)}
         .dialog-sidebar{min-width:0;padding:14px 10px;background:linear-gradient(180deg,#f8fafc,#f4f7fb);border-right:1px solid #e1e7ef;border-radius:14px 0 0 14px}
@@ -677,7 +691,7 @@
         .mobile-sheet-overlay{position:fixed;display:block;inset:0;z-index:8990;background:rgba(15,23,42,.42);opacity:0;visibility:hidden;transition:.18s}.mobile-sheet-overlay.open{opacity:1;visibility:visible}.mobile-settings-sheet{position:fixed;display:block;left:0;right:0;bottom:0;z-index:9000;max-height:78vh;padding:8px 12px 18px;border-radius:20px 20px 0 0;background:#fff;box-shadow:0 -18px 48px rgba(15,23,42,.18);transform:translateY(105%);transition:transform .2s;overflow:auto}.mobile-settings-sheet.open{transform:translateY(0)}
         .mobile-sheet-handle{width:42px;height:4px;border-radius:999px;background:#cbd5e1;margin:2px auto 11px}.mobile-sheet-head{display:flex;align-items:center;justify-content:space-between;padding:0 2px 10px;border-bottom:1px solid #eef2f6}.mobile-sheet-head strong{font-size:13px}.mobile-sheet-head button{border:0;background:#f1f5f9;color:#475569;border-radius:8px;padding:7px 10px;font-weight:700}.mobile-sheet-list{display:flex;flex-direction:column;gap:4px;padding-top:8px}.mobile-sheet-item{display:grid;grid-template-columns:28px 1fr;gap:8px;align-items:center;width:100%;padding:9px 10px;border:0;border-radius:9px;background:#fff;color:#334155;text-align:left;font-family:inherit}.mobile-sheet-item strong{display:block;font-size:10.5px}.mobile-sheet-item small{display:block;margin-top:2px;font-size:8px;color:#94a3b8}.mobile-sheet-item.active{background:#eff6ff;color:#1d4ed8}body.mobile-sheet-open{overflow:hidden}}
 
-        /* v4.5.32 — Readability & Typography Upgrade */
+        /* v4.5.31 — Readability & Typography Upgrade */
         body { font-size:14px; }
         .app-brand-title { font-size:18px; }
         .app-brand-subtitle { font-size:11px; }
@@ -791,64 +805,6 @@
             .panel-heading { padding:14px; }
         }
 
-/* v4.5.32 extended print options */
-.option-expanded-group{
- margin-top:12px;padding:12px;border:1px solid #dbe3ec;
- border-radius:10px;background:#f8fafc
-}
-.option-expanded-title{
- font-size:12px;font-weight:750;color:#334155;margin-bottom:9px
-}
-.option-expanded-grid{
- display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px
-}
-.option-chip{
- display:flex;align-items:center;gap:7px;
- min-height:38px;padding:8px 10px;
- border:1px solid #cbd5e1;border-radius:8px;
- background:white;font-size:12px
-}
-@media(max-width:991px){
- .option-expanded-grid{grid-template-columns:1fr}
-}
-
-/* v4.5.32 Printer Capability Detection */
-.capability-panel{
-    margin-top:12px;
-    padding:12px;
-    border:1px solid #dbe3ec;
-    border-radius:10px;
-    background:#f8fafc;
-}
-.capability-title{
-    font-size:12px;
-    font-weight:800;
-    color:#334155;
-    margin-bottom:8px;
-}
-.capability-grid{
-    display:grid;
-    grid-template-columns:repeat(2,minmax(0,1fr));
-    gap:8px;
-}
-.capability-item{
-    padding:9px;
-    border-radius:8px;
-    background:#fff;
-    border:1px solid #e2e8f0;
-    font-size:11px;
-    color:#475569;
-}
-.capability-item strong{
-    display:block;
-    color:#0f172a;
-    font-size:12px;
-}
-.capability-on{color:#047857!important}
-.capability-off{color:#94a3b8!important}
-@media(max-width:991px){
-    .capability-grid{grid-template-columns:1fr}
-}
 </style>
 </head>
 <body>
@@ -861,7 +817,7 @@
                         <div class="app-brand-title">Print Server Pro</div>
                         <div class="app-brand-subtitle">Network Printing Console</div>
                     </div>
-                    <span class="app-version">v4.5.32</span>
+                    <span class="app-version">v4.5.33</span>
                 </div>
                 <div class="install-row"><button id="installBtn" class="btn-block secondary">Install Aplikasi</button></div>
                 <div class="section-title">
@@ -952,29 +908,29 @@
                             <select id="collateMode" class="input-standard"><option value="collated">Tersusun / Collate</option><option value="uncollated">Per Halaman / Uncollated</option></select>
                         </div>
                         <div class="driver-cap-grid advanced-setting" id="driverAdvancedPanel">
-                            <div class="input-group"><label>Sumber Kertas / Tray:</label>
-                                <select id="driverBin" class="input-standard"><option value="">Default Driver</option><option value="auto">Auto sesuai ukuran halaman</option></select>
+                            <div class="input-group capability-unavailable"><label>Sumber Kertas / Tray:</label>
+                                <select id="driverBin" class="input-standard" disabled><option value="">Default Driver</option></select>
                             </div>
-                            <div class="input-group"><label>Paper Kind Driver:</label>
-                                <select id="driverPaperKind" class="input-standard"><option value="0">Ikuti Kertas Printer</option></select>
+                            <div class="input-group capability-unavailable"><label>Paper Kind Driver:</label>
+                                <select id="driverPaperKind" class="input-standard" disabled><option value="0">Ikuti Kertas Printer</option></select>
                             </div>
-                            <div class="input-group"><label>Media Type:</label>
-                                <select id="driverMediaType" class="input-standard"><option value="default">Default Driver</option></select>
+                            <div class="input-group capability-unavailable"><label>Media Type:</label>
+                                <select id="driverMediaType" class="input-standard" disabled><option value="default">Default Driver</option></select>
                             </div>
-                            <div class="input-group"><label>Kualitas / DPI:</label>
-                                <select id="driverQuality" class="input-standard"><option value="default">Default Driver</option></select>
+                            <div class="input-group capability-unavailable"><label>Kualitas / DPI:</label>
+                                <select id="driverQuality" class="input-standard" disabled><option value="default">Default Driver</option></select>
                             </div>
-                            <div class="input-group"><label>Borderless Driver:</label>
-                                <select id="driverBorderless" class="input-standard"><option value="default">Default Driver</option><option value="off">Off</option><option value="on">On</option></select>
+                            <div class="input-group capability-unavailable"><label>Borderless Driver:</label>
+                                <select id="driverBorderless" class="input-standard" disabled><option value="default">Default Driver</option></select>
                             </div>
-                            <div class="input-group"><label>Economy / Toner Save:</label>
-                                <select id="driverEconomy" class="input-standard"><option value="default">Default Driver</option><option value="off">Normal</option><option value="on">Hemat / Economy</option></select>
+                            <div class="input-group capability-unavailable"><label>Economy / Toner Save:</label>
+                                <select id="driverEconomy" class="input-standard" disabled><option value="default">Default Driver</option></select>
                             </div>
                             <div class="input-group"><label>Mode Eksekusi Driver:</label>
                                 <select id="driverExecutionMode" class="input-standard"><option value="direct">Langsung / Silent</option><option value="dialog">Dialog Printer di PC Server</option></select>
                             </div>
                             <div class="input-group" style="display:flex;align-items:end;"><button type="button" class="mini-btn" style="width:100%;" onclick="openPrinterProperties()">⚙️ Atur Driver Sekarang</button></div>
-                            <div id="driverAdvancedNote" class="driver-note">Tray dan Paper Kind dapat diterapkan langsung. Media Type, Quality, Borderless, dan Economy bergantung driver; jika dipilih, gunakan Dialog Printer untuk memastikan opsi vendor diterapkan.</div>
+                            <div id="driverAdvancedNote" class="driver-note">Opsi driver akan diaktifkan hanya setelah kemampuannya dilaporkan oleh printer aktif.</div>
                         </div>
                         <div class="input-group"><label>Margin Cetak:</label>
                             <select id="marginMode" class="input-standard">
@@ -1424,68 +1380,13 @@
             set('expert',[sx!==100||sy!==100?`X ${sx}% / Y ${sy}%`:'Presisi default',document.getElementById('signatureMode')?.value!=='auto'?uxSelectText('signatureMode'):''].filter(Boolean).join(' • '));
             set('queue',document.getElementById('queueSummaryBadge')?.textContent||'0 antre');
         }
-        function updateAccordionSummaries(){addPrintOptionExpansion();
-            addPrinterCapabilityDetection();
-            updatePrintDialogSummaries();}
+        function updateAccordionSummaries(){updatePrintDialogSummaries();}
         function applySettingsViewMode(){try{localStorage.setItem('settingsViewModeV4529','dialog');}catch(_){}updatePrintDialogSummaries();}
         function openAdvancedSettings(){showPrintPanel('layout',true);}
         function openExpertSettings(){showPrintPanel('expert',true);}
         function collapseAllAdvanced(){showPrintPanel('basic',false);}
 
         
-
-function addPrinterCapabilityDetection(){
-    const target=document.getElementById('panelContent-printer');
-    if(!target || document.getElementById('printerCapabilityPanel')) return;
-
-    const box=document.createElement('div');
-    box.id='printerCapabilityPanel';
-    box.className='capability-panel';
-    box.innerHTML=`
-      <div class="capability-title">Kemampuan Printer Terdeteksi</div>
-      <div class="capability-grid">
-        <div class="capability-item capability-on"><strong>✓ Warna</strong>Tersedia dari driver</div>
-        <div class="capability-item capability-on"><strong>✓ Duplex</strong>Tergantung dukungan printer</div>
-        <div class="capability-item capability-on"><strong>✓ Tray</strong>Memerlukan driver Windows</div>
-        <div class="capability-item capability-off"><strong>○ Booklet</strong>Perlu simulasi aplikasi</div>
-        <div class="capability-item capability-off"><strong>○ Borderless</strong>Tergantung media printer</div>
-        <div class="capability-item capability-off"><strong>○ Resolusi DPI</strong>Dibaca dari driver</div>
-      </div>
-      <small style="display:block;margin-top:8px;color:#64748b;font-size:10px">
-      Catatan: sebagian kemampuan printer mengikuti driver Windows, bukan hanya aplikasi.
-      </small>
-    `;
-    target.appendChild(box);
-}
-
-function addPrintOptionExpansion(){
- const groups=[
-  ['basic','Opsi Dokumen',['Kualitas cetak','Profil warna','Penyesuaian ukuran dokumen']],
-  ['pages','Kontrol Halaman',['Urutan terbalik','Ganjil / Genap','Halaman pemisah']],
-  ['layout','Tata Letak Lanjutan',['Fit / Fill / Actual Size','Mirror / Flip','Perataan halaman']],
-  ['duplex','Finishing',['Collate','Sisi jilid','Mode lipat']],
-  ['printer','Driver Printer',['Jenis media','Tray printer','Mode hemat tinta']],
-  ['expert','Produksi Profesional',['ICC profile','Rendering PDF','Raster fallback']]
- ];
- groups.forEach(g=>{
-  const target=document.getElementById('panelContent-'+g[0]);
-  if(!target)return;
-  const box=document.createElement('div');
-  box.className='option-expanded-group';
-  box.innerHTML='<div class="option-expanded-title">'+g[1]+'</div>';
-  const grid=document.createElement('div');
-  grid.className='option-expanded-grid';
-  g[2].forEach(x=>{
-   const d=document.createElement('label');
-   d.className='option-chip';
-   d.innerHTML='<input type="checkbox"> '+x;
-   grid.appendChild(d);
-  });
-  box.appendChild(grid);
-  target.appendChild(box);
- });
-}
-
 function buildConsolidatedSettingsUi(){
             if(document.getElementById('printDialogShell'))return;
             const inline=document.getElementById('inlinePrintSettings');if(!inline)return;
@@ -1545,6 +1446,42 @@ function buildConsolidatedSettingsUi(){
 
         function markAdvancedSettingGroups(){ ADVANCED_SETTING_IDS.forEach(id=>{const el=document.getElementById(id);if(!el)return;const group=el.closest('.input-group');if(group)group.classList.add('advanced-setting');}); }
         let currentPrinterCapabilities = null;
+        let capabilityRequestController = null;
+        let capabilityRequestSequence = 0;
+        const CAPABILITY_DRIVER_CONTROLS=['driverBin','driverPaperKind','driverMediaType','driverQuality','driverBorderless','driverEconomy'];
+
+        function escapeCapabilityHtml(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+        function asCapabilityArray(value){return Array.isArray(value)?value:(value===null||value===undefined?[]:[value]);}
+        function capabilityFeature(label,state,detail){
+            const icon=state==='verified'?'✓':state==='unsupported'?'×':'?';
+            return `<div class="capability-feature ${state}"><strong>${icon} ${escapeCapabilityHtml(label)}</strong>${escapeCapabilityHtml(detail)}</div>`;
+        }
+        function renderCapabilityInfo(state,data=null,adjustments=[],message=''){
+            const info=document.getElementById('printerCapabilityInfo'); if(!info)return;
+            if(state==='loading'){
+                info.className='capability-card is-loading';
+                info.textContent='Membaca kemampuan nyata dari driver Windows…';
+                return;
+            }
+            if(state==='unavailable'){
+                info.className='capability-card is-unavailable';
+                info.innerHTML=`<strong>Deteksi driver belum tersedia</strong><div style="margin-top:3px">${escapeCapabilityHtml(message||data?.reason||'Kemampuan printer tidak dapat dibaca.')}</div><button type="button" class="capability-refresh" onclick="refreshPrinterCapabilities(true)">↻ Periksa Ulang</button>`;
+                return;
+            }
+            const trays=asCapabilityArray(data?.trays),papers=asCapabilityArray(data?.paperSizes),resolutions=asCapabilityArray(data?.resolutions),media=asCapabilityArray(data?.mediaTypes),borderless=asCapabilityArray(data?.borderless);
+            const borderText=borderless.map(v=>String(v).toLowerCase()),hasBorderless=borderText.some(v=>v.includes('borderless')&&!v.includes('notborderless'));
+            const features=[
+                capabilityFeature('Warna',data?.supportsColor===true?'verified':data?.supportsColor===false?'unsupported':'unknown',data?.supportsColor===true?'Didukung':data?.supportsColor===false?'Monokrom saja':'Tidak dilaporkan'),
+                capabilityFeature('Duplex otomatis',data?.canDuplex===true?'verified':data?.canDuplex===false?'unsupported':'unknown',data?.canDuplex===true?'Didukung':data?.canDuplex===false?'Tidak didukung':'Tidak dilaporkan'),
+                capabilityFeature('Tray',trays.length?'verified':'unknown',trays.length?`${trays.length} terdeteksi`:'Tidak dilaporkan'),
+                capabilityFeature('Ukuran kertas',papers.length?'verified':'unknown',papers.length?`${papers.length} terdeteksi`:'Tidak dilaporkan'),
+                capabilityFeature('Kualitas / DPI',resolutions.length?'verified':'unknown',resolutions.length?`${resolutions.length} profil`:'Tidak dilaporkan'),
+                capabilityFeature('Borderless',hasBorderless?'verified':borderless.length?'unsupported':'unknown',hasBorderless?'Didukung':borderless.length?'Tidak didukung':'Tidak dilaporkan'),
+            ];
+            const meta=[data?.driverName?`Driver: ${data.driverName}`:'',data?.portName?`Port: ${data.portName}`:'',data?.status?`Status: ${data.status}`:'',data?.maxCopies?`Maks. copy driver: ${data.maxCopies}`:'',media.length?`${media.length} media type`:'' ].filter(Boolean).join(' • ');
+            info.className='capability-card is-verified';
+            info.innerHTML=`<strong>Printer terverifikasi: ${escapeCapabilityHtml(data?.name||'printer aktif')}</strong><div class="capability-overview">${features.join('')}</div>${meta?`<div class="capability-meta">${escapeCapabilityHtml(meta)}</div>`:''}${adjustments.length?`<div class="capability-adjustment">Disesuaikan otomatis: ${escapeCapabilityHtml(adjustments.join(', '))}.</div>`:''}<button type="button" class="capability-refresh" onclick="refreshPrinterCapabilities(true)">↻ Deteksi Ulang</button>`;
+        }
         function capabilityText(data){
             if(!data)return 'Kemampuan printer tidak tersedia.';
             const bits=[];
@@ -1557,27 +1494,58 @@ function buildConsolidatedSettingsUi(){
             if(data.status)bits.push(`Status: ${data.status}`);
             return bits.join(' • ')||'Printer terdeteksi.';
         }
-        function replaceSelectOptions(id, base, items, mapper){
+        function replaceSelectOptions(id, base, items, mapper, preferredValue){
             const el=document.getElementById(id); if(!el)return;
-            const previous=el.value; el.innerHTML='';
-            base.forEach(o=>el.add(new Option(o.label,o.value)));
-            (items||[]).forEach(item=>{const m=mapper(item); if(m&&m.value!==undefined)el.add(new Option(m.label,String(m.value)));});
+            const previous=preferredValue===undefined?el.value:String(preferredValue); el.innerHTML='';
+            const seen=new Set();
+            [...base,...asCapabilityArray(items).map(mapper).filter(Boolean)].forEach(o=>{
+                if(o.value===undefined||o.value===null)return;const value=String(o.value);if(seen.has(value))return;seen.add(value);el.add(new Option(o.label,value));
+            });
             if([...el.options].some(o=>o.value===previous))el.value=previous;
         }
-        function populateDriverControls(data){
-            currentPrinterCapabilities=data||null;
-            replaceSelectOptions('driverBin',[{label:'Default Driver',value:''},{label:'Auto sesuai ukuran halaman',value:'auto'}],data?.trays||[],x=>({label:x.name||`Tray ${x.rawKind}`,value:x.name||String(x.rawKind)}));
-            replaceSelectOptions('driverPaperKind',[{label:'Ikuti Kertas Printer',value:'0'}],data?.paperSizes||[],x=>({label:`${x.name}${x.widthMm&&x.heightMm?` • ${x.widthMm}×${x.heightMm} mm`:''}`,value:x.rawKind||0}));
-            replaceSelectOptions('driverMediaType',[{label:'Default Driver',value:'default'}],data?.mediaTypes||[],x=>({label:String(x),value:String(x)}));
-            replaceSelectOptions('driverQuality',[{label:'Default Driver',value:'default'}],data?.resolutions||[],x=>({label:x.label||`${x.x||'?'}×${x.y||'?'} DPI`,value:x.value||`${x.x||0}x${x.y||0}`}));
-            const border=document.getElementById('driverBorderless');
-            const borderCaps=(data?.borderless||[]).map(v=>String(v).toLowerCase());
-            border.querySelector('option[value="on"]').disabled=borderCaps.length>0&&!borderCaps.some(v=>v.includes('borderless'));
+        function setCapabilityControlAvailability(id,available){
+            const el=document.getElementById(id);if(!el)return;el.disabled=!available;
+            const group=el.closest('.input-group');if(group)group.classList.toggle('capability-unavailable',!available);
+        }
+        function paperCapabilityMatch(data,key){
+            const targets={A4:[210,297],F4:[210,330],LETTER:[215.9,279.4],LEGAL:[215.9,355.6]},target=targets[key];
+            const papers=asCapabilityArray(data?.paperSizes);if(!target||!papers.length)return null;
+            return papers.some(x=>{const w=Number(x.widthMm),h=Number(x.heightMm);return (Math.abs(w-target[0])<=2&&Math.abs(h-target[1])<=2)||(Math.abs(w-target[1])<=2&&Math.abs(h-target[0])<=2);});
+        }
+        function populateDriverControls(data,preferred={}){
+            currentPrinterCapabilities=data?.detected===false?null:(data||null);
+            const trays=asCapabilityArray(data?.trays),papers=asCapabilityArray(data?.paperSizes),media=asCapabilityArray(data?.mediaTypes),resolutions=asCapabilityArray(data?.resolutions),qualities=asCapabilityArray(data?.outputQualities),borderCaps=asCapabilityArray(data?.borderless).map(v=>String(v).toLowerCase());
+            replaceSelectOptions('driverBin',[{label:'Default Driver',value:''}],trays,x=>({label:x.name||`Tray ${x.rawKind}`,value:x.name||String(x.rawKind)}),preferred.driverBin);
+            replaceSelectOptions('driverPaperKind',[{label:'Ikuti Kertas Printer',value:'0'}],papers,x=>Number(x.rawKind)>0?({label:`${x.name}${x.widthMm&&x.heightMm?` • ${x.widthMm}×${x.heightMm} mm`:''}`,value:x.rawKind}):null,preferred.driverPaperKind);
+            replaceSelectOptions('driverMediaType',[{label:'Default Driver',value:'default'}],media,x=>({label:String(x),value:String(x)}),preferred.driverMediaType);
+            const qualityItems=resolutions.length?resolutions:qualities;
+            replaceSelectOptions('driverQuality',[{label:'Default Driver',value:'default'}],qualityItems,x=>typeof x==='object'?({label:x.label||`${x.x||'?'}×${x.y||'?'} DPI`,value:x.value||`${x.x||0}x${x.y||0}`}):({label:String(x),value:String(x)}),preferred.driverQuality);
+            const borderOptions=[];
+            if(borderCaps.some(v=>v.includes('none')||v.includes('standard')||v.includes('notborderless')))borderOptions.push({label:'Off (didukung driver)',value:'off'});
+            if(borderCaps.some(v=>v.includes('borderless')&&!v.includes('notborderless')))borderOptions.push({label:'On (didukung driver)',value:'on'});
+            replaceSelectOptions('driverBorderless',[{label:'Default Driver',value:'default'}],borderOptions,x=>x,preferred.driverBorderless);
+            const economyOptions=data?.economySupported===true?[{label:'Normal',value:'off'},{label:'Hemat / Economy',value:'on'}]:[];
+            replaceSelectOptions('driverEconomy',[{label:'Default Driver',value:'default'}],economyOptions,x=>x,preferred.driverEconomy);
+            setCapabilityControlAvailability('driverBin',trays.length>0);
+            setCapabilityControlAvailability('driverPaperKind',papers.length>0);
+            setCapabilityControlAvailability('driverMediaType',media.length>0);
+            setCapabilityControlAvailability('driverQuality',qualityItems.length>0);
+            setCapabilityControlAvailability('driverBorderless',borderOptions.length>0);
+            setCapabilityControlAvailability('driverEconomy',economyOptions.length>0);
+
+            const adjustments=[];
             const ds=document.getElementById('duplexMode');
             ['duplexlong','duplexshort'].forEach(v=>{const o=ds.querySelector(`option[value="${v}"]`);if(o)o.disabled=data?.canDuplex===false;});
+            if(data?.canDuplex===false&&ds.value.startsWith('duplex')){ds.value='simplex';adjustments.push('duplex otomatis → satu sisi');}
             const color=document.getElementById('colorMode');
             const colorOpt=color.querySelector('option[value="color"]'); if(colorOpt)colorOpt.disabled=data?.supportsColor===false;
+            if(data?.supportsColor===false&&color.value==='color'){color.value='monochrome';adjustments.push('warna → hitam putih');}
+            const paper=document.getElementById('paperSize');
+            ['A4','F4','LETTER','LEGAL'].forEach(key=>{const option=paper.querySelector(`option[value="${key}"]`),supported=paperCapabilityMatch(data,key);if(option)option.disabled=supported===false;});
+            if(paper.selectedOptions[0]?.disabled){const old=paper.value;paper.value='SOURCE';adjustments.push(`${old} → sama dengan dokumen`);}
+            for(const id of CAPABILITY_DRIVER_CONTROLS){const requested=preferred[id];if(requested!==undefined&&String(requested)!==document.getElementById(id).value&&!['','0','default'].includes(String(requested)))adjustments.push(`${id} → default driver`);}
             updateDriverExecutionHint();
+            return [...new Set(adjustments)];
         }
         function driverVendorOptionsSelected(){
             return document.getElementById('driverMediaType').value!=='default' || document.getElementById('driverQuality').value!=='default' || document.getElementById('driverBorderless').value!=='default' || document.getElementById('driverEconomy').value!=='default';
@@ -1596,24 +1564,25 @@ function buildConsolidatedSettingsUi(){
                 note.style.background='rgba(16,185,129,.08)';
             }
         }
-        async function refreshPrinterCapabilities(){
+        async function refreshPrinterCapabilities(force=false){
             const ip=document.getElementById('ipAddress').value.trim(),name=document.getElementById('printerSelect').value,info=document.getElementById('printerCapabilityInfo');
             if(!ip){info.textContent='Hubungkan ke server printer terlebih dahulu.';return;}
-            info.textContent='Memeriksa tray, kertas, DPI dan kemampuan driver…';
+            const preferred=Object.fromEntries(CAPABILITY_DRIVER_CONTROLS.map(id=>[id,document.getElementById(id).value]));
+            capabilityRequestController?.abort();const controller=new AbortController();capabilityRequestController=controller;const sequence=++capabilityRequestSequence;
+            currentPrinterCapabilities=null;
+            ['colorMode','duplexMode','paperSize'].forEach(id=>document.getElementById(id).querySelectorAll('option').forEach(o=>o.disabled=false));
+            CAPABILITY_DRIVER_CONTROLS.forEach(id=>setCapabilityControlAvailability(id,false));
+            renderCapabilityInfo('loading');
             try{
-                const q=name?`?name=${encodeURIComponent(name)}`:'';
-                const r=await fetchWithRetry(`http://${ip}:3000/printer-capabilities${q}`,{cache:'no-store'},0,200);
+                const params=new URLSearchParams();if(name)params.set('name',name);if(force)params.set('refresh','1');
+                const r=await fetchWithRetry(`http://${ip}:3000/printer-capabilities?${params.toString()}`,{cache:'no-store',signal:controller.signal},0,200);
                 if(!r.ok)throw new Error(await r.text());
-                const d=await r.json(); info.textContent=capabilityText(d); populateDriverControls(d);
-                const badges=[];
-                badges.push(`<span class="cap-badge ${d.trays?.length?'ok':'warn'}">${d.trays?.length||0} tray</span>`);
-                badges.push(`<span class="cap-badge ${d.paperSizes?.length?'ok':'warn'}">${d.paperSizes?.length||0} ukuran kertas</span>`);
-                badges.push(`<span class="cap-badge ${d.resolutions?.length?'ok':'warn'}">${d.resolutions?.length||0} kualitas/DPI</span>`);
-                badges.push(`<span class="cap-badge ${d.mediaTypes?.length?'ok':'warn'}">${d.mediaTypes?.length||0} media type</span>`);
-                info.insertAdjacentHTML('beforeend',`<div class="cap-badges">${badges.join('')}</div>`);
-            }catch(e){currentPrinterCapabilities=null;info.textContent='Kemampuan driver tidak dapat dibaca. Pengaturan cetak dasar tetap bisa digunakan.';}
+                const d=await r.json();if(sequence!==capabilityRequestSequence)return;
+                if(d?.detected===false){populateDriverControls(null,preferred);renderCapabilityInfo('unavailable',d,[],d.reason);return;}
+                const adjustments=populateDriverControls(d,preferred);renderCapabilityInfo('verified',d,adjustments);updateDynamicPreview();saveSettingsForCurrentPrinter();
+            }catch(e){if(e?.name==='AbortError'||sequence!==capabilityRequestSequence)return;populateDriverControls(null,preferred);renderCapabilityInfo('unavailable',null,[],String(e?.message||'Kemampuan driver tidak dapat dibaca.').replace(/^CAPABILITY_FAILED:\s*/i,''));}
         }
-        async function openPrinterProperties(){ const ip=document.getElementById('ipAddress').value.trim(),name=document.getElementById('printerSelect').value;if(!ip)return showToast('Hubungkan ke server printer terlebih dahulu.','error');try{const r=await fetchWithRetry(`http://${ip}:3000/printer-properties?name=${encodeURIComponent(name)}`,{method:'POST'},0,200);if(!r.ok)throw new Error(await r.text());showToast('Dialog properti printer dibuka di PC server.','success');}catch(e){showToast(e.message||'Gagal membuka properti printer.','error');} }
+        async function openPrinterProperties(){ const ip=document.getElementById('ipAddress').value.trim(),name=currentPrinterCapabilities?.name||document.getElementById('printerSelect').value;if(!ip)return showToast('Hubungkan ke server printer terlebih dahulu.','error');if(!name)return showToast('Printer default belum berhasil diidentifikasi. Jalankan Deteksi Ulang terlebih dahulu.','error');try{const r=await fetchWithRetry(`http://${ip}:3000/printer-properties?name=${encodeURIComponent(name)}`,{method:'POST'},0,200);if(!r.ok)throw new Error(await r.text());showToast('Dialog properti printer dibuka di PC server.','success');}catch(e){showToast(e.message||'Gagal membuka properti printer.','error');} }
         async function handlePrinterChanged(){ loadSettingsForCurrentPrinter(); loadPrinterCalibration(); await refreshPrinterCapabilities(); runPreflight(false); }
 
         let currentSourceInfo = { kind: 'none', width: 595.28, height: 841.89, label: 'Belum ada file', standard: 'A4' };

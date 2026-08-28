@@ -23,6 +23,7 @@ const DOCX_CONVERT_TIMEOUT_MS = Math.max(30000, parseInt(process.env.DOCX_CONVER
 const LIBREOFFICE_PATH = process.env.LIBREOFFICE_PATH || '';
 const WORD_CONVERT_TIMEOUT_MS = Math.max(30000, parseInt(process.env.WORD_CONVERT_TIMEOUT_MS || '180000', 10) || 180000);
 const WORD_CONVERTER_ENABLED = String(process.env.WORD_CONVERTER_ENABLED || 'true').toLowerCase() !== 'false';
+const PRINTER_CAPABILITY_CACHE_MS = Math.max(5000, parseInt(process.env.PRINTER_CAPABILITY_CACHE_MS || '60000', 10) || 60000);
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'https://printer-upmp.vercel.app,http://127.0.0.1:5500,http://localhost:5500')
   .split(',')
   .map(v => v.trim())
@@ -80,7 +81,9 @@ const upload = multer({ dest: uploadDir, limits: { fileSize: MAX_UPLOAD_MB * 102
 const uploadDocument = upload.single('document');
 
 function getLocalIpList() {
-  const nets = os.networkInterfaces();
+  let nets = {};
+  try { nets = os.networkInterfaces() || {}; }
+  catch (_) { return []; }
   const ips = [];
   Object.values(nets).forEach(entries => {
     (entries || []).forEach(net => {
@@ -318,7 +321,7 @@ app.get('/ping', (req, res) => {
     hostname: os.hostname(),
     ipHint: localIps[0] || '',
     localIps,
-    version: '4.5.32',
+    version: '4.5.33',
   });
 });
 
@@ -349,7 +352,7 @@ app.get('/docx-converter-status', async (req, res) => {
       executable: libreOfficeExecutable || null,
       timeoutSeconds: Math.round(DOCX_CONVERT_TIMEOUT_MS / 1000),
     },
-    version: '4.5.32',
+    version: '4.5.33',
   });
 });
 
@@ -360,7 +363,7 @@ app.get('/limits', (req, res) => {
     largePdfThresholdMb: LARGE_PDF_THRESHOLD_MB,
     largePdfChunkPages: LARGE_PDF_CHUNK_PAGES,
     supportedFileTypes: ['pdf', 'png', 'jpg', 'jpeg', 'docx'],
-    version: '4.5.32',
+    version: '4.5.33',
   });
 });
 
@@ -372,23 +375,38 @@ app.get('/printers', async (req, res) => {
   }
 });
 
-async function getWindowsPrinterCapabilities(printerName) {
-  if (process.platform !== 'win32') return { name: printerName || '', platform: process.platform, canDuplex: null, supportsColor: null, trays: [], paperSizes: [], resolutions: [], mediaTypes: [], borderless: [], outputQualities: [] };
+const printerCapabilityCache = new Map();
+
+function emptyPrinterCapabilities(printerName, reason = '') {
+  return {
+    name: printerName || '', platform: process.platform, detected: false, reliable: false,
+    source: 'unavailable', reason, supportsColor: null, canDuplex: null, maxCopies: null,
+    trays: [], paperSizes: [], resolutions: [], mediaTypes: [], borderless: [],
+    outputQualities: [], duplexCapabilities: [], colorCapabilities: [], economySupported: null,
+  };
+}
+
+async function readWindowsPrinterCapabilities(printerName) {
+  if (process.platform !== 'win32') return emptyPrinterCapabilities(printerName, 'Deteksi driver hanya tersedia pada server Windows.');
   const ps = findPowerShellExecutable();
   if (!ps) throw new Error('PowerShell tidak ditemukan.');
-  const safeName = String(printerName || '').replace(/'/g, "''");
+  const safeName = String(printerName || '').trim().slice(0, 260).replace(/'/g, "''");
   const script = `
 $ErrorActionPreference='Stop'
 $n='${safeName}'
+Add-Type -AssemblyName System.Drawing
+$settings=New-Object System.Drawing.Printing.PrinterSettings
 if([string]::IsNullOrWhiteSpace($n)){
-  $p=Get-Printer | Where-Object {$_.Default -eq $true} | Select-Object -First 1
-  if(-not $p){$p=Get-Printer | Select-Object -First 1}
-}else{$p=Get-Printer -Name $n -ErrorAction Stop}
+  $n=[string]$settings.PrinterName
+  if([string]::IsNullOrWhiteSpace($n)){
+    try{$n=[string](Get-CimInstance Win32_Printer | Where-Object {$_.Default} | Select-Object -First 1 -ExpandProperty Name)}catch{}
+  }
+}
+if([string]::IsNullOrWhiteSpace($n)){throw 'Printer default tidak ditemukan'}
+$p=Get-Printer -Name $n -ErrorAction Stop
 if(-not $p){throw 'Printer tidak ditemukan'}
 $n=$p.Name
 $c=$null; try{$c=Get-PrintConfiguration -PrinterName $n -ErrorAction Stop}catch{}
-Add-Type -AssemblyName System.Drawing
-$settings=New-Object System.Drawing.Printing.PrinterSettings
 $settings.PrinterName=$n
 if(-not $settings.IsValid){throw 'PrinterSettings tidak valid untuk printer ini'}
 $trays=@(); foreach($x in $settings.PaperSources){$trays += [pscustomobject]@{name=[string]$x.SourceName;rawKind=[int]$x.RawKind}}
@@ -407,6 +425,7 @@ try{
   if($caps.OutputColorCapability){$sysColors=@($caps.OutputColorCapability | ForEach-Object {[string]$_})}
 }catch{}
 [pscustomobject]@{
+  detected=$true;reliable=$true;source='Windows driver';detectedAt=(Get-Date).ToString('o');
   name=$p.Name;driverName=$p.DriverName;portName=$p.PortName;status=[string]$p.PrinterStatus;shared=[bool]$p.Shared;
   color=if($c){[bool]$c.Color}else{$null};duplexingMode=if($c){[string]$c.DuplexingMode}else{$null};paperSize=if($c){[string]$c.PaperSize}else{$null};
   supportsColor=[bool]$settings.SupportsColor;canDuplex=[bool]$settings.CanDuplex;maxCopies=[int]$settings.MaximumCopies;
@@ -418,6 +437,15 @@ try{
   const start = raw.indexOf('{');
   if (start < 0) throw new Error(raw);
   return JSON.parse(raw.slice(start));
+}
+
+async function getWindowsPrinterCapabilities(printerName, force = false) {
+  const key = String(printerName || '').trim().toLocaleLowerCase();
+  const cached = printerCapabilityCache.get(key);
+  if (!force && cached && Date.now() - cached.at < PRINTER_CAPABILITY_CACHE_MS) return cached.data;
+  const data = await readWindowsPrinterCapabilities(printerName);
+  printerCapabilityCache.set(key, { at: Date.now(), data });
+  return data;
 }
 
 
@@ -440,7 +468,7 @@ app.get('/calibration-sheet', async (req,res) => {
 });
 
 app.get('/printer-capabilities', async (req,res) => {
-  try { res.json(await getWindowsPrinterCapabilities(String(req.query.name || ''))); }
+  try { res.json(await getWindowsPrinterCapabilities(String(req.query.name || ''), String(req.query.refresh || '') === '1')); }
   catch (e) { res.status(500).send(`CAPABILITY_FAILED: ${e.message}`); }
 });
 
@@ -1119,7 +1147,7 @@ app.post('/convert-docx',
 );
 
 
-// ===== v4.5.32 Central Print Queue & Job Management =====
+// ===== v4.5.33 Central Print Queue & Job Management =====
 const JOB_RETENTION_MS = Math.max(60 * 60 * 1000, parseInt(process.env.JOB_RETENTION_MS || String(24 * 60 * 60 * 1000), 10));
 const DUPLICATE_WINDOW_MS = Math.max(3000, parseInt(process.env.DUPLICATE_WINDOW_MS || '15000', 10));
 const MAX_JOB_HISTORY = Math.max(20, parseInt(process.env.MAX_JOB_HISTORY || '100', 10));
@@ -1253,6 +1281,48 @@ async function tryCancelSpoolerJob(job) {
   try { const r=await runProcess(ps,['-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-Command',script],15000); const count=parseInt(String(r.stdout||'').trim(),10)||0; return {attempted:true,cancelled:count}; }
   catch(e){ return {attempted:true,cancelled:0,reason:e.message}; }
 }
+
+function printerSupportsPaper(capabilities, paperKey) {
+  const targets = {
+    A4: [210, 297], F4: [210, 330], LETTER: [215.9, 279.4], LEGAL: [215.9, 355.6],
+  };
+  const target = targets[String(paperKey || '').toUpperCase()];
+  if (!target || !(capabilities.paperSizes || []).length) return null;
+  return capabilities.paperSizes.some(item => {
+    const width = Number(item.widthMm), height = Number(item.heightMm);
+    return (Math.abs(width - target[0]) <= 2 && Math.abs(height - target[1]) <= 2)
+      || (Math.abs(width - target[1]) <= 2 && Math.abs(height - target[0]) <= 2);
+  });
+}
+
+async function assertPrintOptionsSupported(options, outputPaperKey) {
+  let cap;
+  try { cap = await getWindowsPrinterCapabilities(options.printerName || ''); }
+  catch (_) { return; }
+  if (!cap || cap.detected === false || cap.reliable === false) return;
+  const printerLabel = cap.name || options.printerName || 'printer aktif';
+  if (options.colorMode === 'color' && cap.supportsColor === false) {
+    throw new Error(`CAPABILITY_UNSUPPORTED: ${printerLabel} hanya mendukung cetak monokrom.`);
+  }
+  if (options.duplexMode !== 'simplex' && cap.canDuplex === false) {
+    throw new Error(`CAPABILITY_UNSUPPORTED: ${printerLabel} tidak mendukung duplex otomatis. Gunakan satu sisi atau duplex manual.`);
+  }
+  if (options.driverBin && (cap.trays || []).length) {
+    const requested = String(options.driverBin).toLocaleLowerCase();
+    const trayExists = cap.trays.some(item => String(item.name || '').toLocaleLowerCase() === requested);
+    if (!trayExists) throw new Error(`CAPABILITY_UNSUPPORTED: tray "${options.driverBin}" tidak tersedia pada ${printerLabel}.`);
+  }
+  if (options.driverPaperKind > 0 && (cap.paperSizes || []).length) {
+    const kindExists = cap.paperSizes.some(item => Number(item.rawKind) === Number(options.driverPaperKind));
+    if (!kindExists) throw new Error(`CAPABILITY_UNSUPPORTED: Paper Kind ${options.driverPaperKind} tidak tersedia pada ${printerLabel}.`);
+  } else {
+    const paperSupported = printerSupportsPaper(cap, outputPaperKey);
+    if (paperSupported === false) {
+      throw new Error(`CAPABILITY_UNSUPPORTED: ukuran ${outputPaperKey} tidak dilaporkan oleh driver ${printerLabel}.`);
+    }
+  }
+}
+
 async function executePrintJob(job) {
   const options = { ...job.options };
   let fPath = '';
@@ -1299,6 +1369,8 @@ async function executePrintJob(job) {
       await createSeparatorPdf(options.separatorFilePath,options,outputPaperKey);
     }
     if (job.cancelRequested) throw new Error('JOB_CANCELLED');
+
+    await assertPrintOptionsSupported(options, outputPaperKey);
 
     const opts={
       printer:options.printerName, monochrome:options.colorMode==='monochrome', side:options.duplexMode,
@@ -1381,4 +1453,4 @@ server.requestTimeout = 0;
 server.headersTimeout = 0;
 server.timeout = 0;
 
-server.listen(port, '0.0.0.0', () => console.log(`Print Server V4.5.32 Ready on ${port}`));
+server.listen(port, '0.0.0.0', () => console.log(`Print Server V4.5.33 Ready on ${port}`));
