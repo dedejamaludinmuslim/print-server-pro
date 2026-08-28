@@ -90,7 +90,7 @@
         .cap-badge.warn { background:rgba(245,158,11,.14); color:#a16207; }
 
         .capability-card { margin-top:8px; padding:9px 10px; border:1px solid var(--border); border-radius:9px; font-size:10px; line-height:1.45; color:var(--text-muted); background:rgba(51,65,85,.04); }
-        /* v4.5.26 — Print Settings UX Consolidation */
+        /* v4.5.27 — Print Settings UX Consolidation */
         .ux-settings-root { display:flex; flex-direction:column; gap:10px; margin-top:12px; }
         .ux-basic-card { border:1px solid var(--border-soft); background:#f8fafc; border-radius:12px; padding:12px; }
         .ux-basic-card-title { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px; font-size:11px; font-weight:800; color:#334155; }
@@ -122,6 +122,21 @@
         body.compact-settings-mode #advancedSettingsHeader { display:none !important; }
         body:not(.compact-settings-mode) #advancedAccordionRoot,
         body:not(.compact-settings-mode) #advancedSettingsHeader { display:flex; }
+        #expertAccordionRoot, #expertSettingsHeader { display:none; }
+        body.expert-settings-mode #expertAccordionRoot,
+        body.expert-settings-mode #expertSettingsHeader { display:flex; }
+        body.compact-settings-mode #expertAccordionRoot,
+        body.compact-settings-mode #expertSettingsHeader,
+        body.advanced-settings-mode #expertAccordionRoot,
+        body.advanced-settings-mode #expertSettingsHeader { display:none !important; }
+        .ux-priority-badge { display:inline-flex; align-items:center; border-radius:999px; padding:2px 6px; font-size:8px; font-weight:800; letter-spacing:.2px; background:#e2e8f0; color:#475569; }
+        .ux-priority-badge.p1 { background:rgba(16,185,129,.12); color:#047857; }
+        .ux-priority-badge.p23 { background:rgba(37,99,235,.10); color:#1d4ed8; }
+        .ux-priority-badge.p45 { background:rgba(124,58,237,.10); color:#6d28d9; }
+        .ux-section-divider { display:flex; align-items:center; gap:8px; margin-top:6px; }
+        .ux-section-divider::after { content:''; height:1px; flex:1; background:#e5e7eb; }
+        .ux-section-divider strong { font-size:11px; color:#334155; }
+        .ux-expert-note { font-size:9px; line-height:1.45; color:var(--text-muted); margin-top:3px; }
         body.compact-settings-mode .ux-basic-card .advanced-setting { display:block !important; }
         #uxLegacySettingsGrid,#uxLegacyJobGrid { display:none !important; }
         @media (max-width:560px){ .ux-field-grid{grid-template-columns:1fr;} .ux-accordion-summary{max-width:170px;} }
@@ -186,7 +201,7 @@
                         <span class="settings-live">● Preview Langsung</span>
                     </div>
                     <div class="settings-toolbar">
-                        <div class="input-group" style="margin:0;"><label>Mode Pengaturan:</label><select id="settingsViewMode" class="input-standard"><option value="compact">Ringkas</option><option value="advanced">Lanjutan</option></select></div>
+                        <div class="input-group" style="margin:0;"><label>Mode Pengaturan:</label><select id="settingsViewMode" class="input-standard"><option value="compact">Ringkas</option><option value="advanced">Lanjutan</option><option value="expert">Expert</option></select></div>
                         <div class="input-group" style="margin:0;"><label>Preset Cetak:</label><select id="presetSelect" class="input-standard"></select></div>
                         <div class="preset-actions">
                             <input type="text" id="presetName" class="input-standard" maxlength="40" placeholder="Nama preset baru">
@@ -632,40 +647,73 @@
         function printerSettingsKey(name){ return `printerSettingsV4521:${name||'__default__'}`; }
         function saveSettingsForCurrentPrinter(){ const remember=document.getElementById('rememberPrinterSettings');if(!remember||!remember.checked)return;const name=document.getElementById('printerSelect').value||'__default__';localStorage.setItem(printerSettingsKey(name),JSON.stringify(capturePrintSettings())); }
         function loadSettingsForCurrentPrinter(){ const name=document.getElementById('printerSelect').value||'__default__';try{const v=JSON.parse(localStorage.getItem(printerSettingsKey(name))||'null');if(v)applyPrintSettings(v,true);}catch(_){}syncAdvancedPrintControls();updatePrintSettingsSummary();updateDynamicPreview(); }
-        function applySettingsViewMode(){ const mode=document.getElementById('settingsViewMode').value;document.body.classList.toggle('compact-settings-mode',mode==='compact');localStorage.setItem('settingsViewModeV4526',mode);if(document.getElementById('advancedAccordionRoot'))updateAccordionSummaries();const hint=document.getElementById('uxModeHint');if(hint)hint.textContent=mode==='compact'?'Menampilkan pengaturan yang paling sering dipakai.':'Klik bagian lanjutan hanya saat diperlukan.'; }
+        function applySettingsViewMode(){
+            const mode=document.getElementById('settingsViewMode').value;
+            document.body.classList.toggle('compact-settings-mode',mode==='compact');
+            document.body.classList.toggle('advanced-settings-mode',mode==='advanced');
+            document.body.classList.toggle('expert-settings-mode',mode==='expert');
+            localStorage.setItem('settingsViewModeV4527',mode);
+            if(document.getElementById('advancedAccordionRoot'))updateAccordionSummaries();
+            const hint=document.getElementById('uxModeHint');
+            if(hint)hint.textContent=mode==='compact'?'P1 + P2 utama: pengaturan sehari-hari saja.':mode==='advanced'?'P2–P3: kontrol lanjutan yang masih sering berguna.':'P4–P5: seluruh kontrol profesional dan prepress ditampilkan.';
+            const expertHint=document.getElementById('uxExpertModeHint');
+            if(expertHint)expertHint.textContent='Fitur Expert untuk kebutuhan presisi, booklet profesional, driver vendor, dan prepress.';
+        }
         
         function uxGroupForControl(id){const el=document.getElementById(id);return el?el.closest('.input-group'):null;}
         function uxMoveGroup(id,target){const g=uxGroupForControl(id);if(g&&target&&!target.contains(g))target.appendChild(g);return g;}
         function uxSelectText(id){const el=document.getElementById(id);if(!el)return '';if(el.tagName==='SELECT')return el.options[el.selectedIndex]?.text||el.value||'';return el.value||'';}
         function uxShort(value,max=34){const s=String(value||'');return s.length>max?s.slice(0,max-1)+'…':s;}
-        function uxAccordion(key,title,icon){const d=document.createElement('details');d.className='ux-accordion';d.dataset.uxKey=key;try{d.open=localStorage.getItem(`uxAccordionV4526:${key}`)==='open';}catch(_){}d.innerHTML=`<summary><span class="ux-accordion-title"><strong>${icon} ${title}</strong><span class="ux-accordion-summary" id="uxSummary-${key}">Default</span></span><span class="ux-chevron">⌄</span></summary><div class="ux-accordion-body" id="uxBody-${key}"></div>`;d.addEventListener('toggle',()=>{try{localStorage.setItem(`uxAccordionV4526:${key}`,d.open?'open':'closed');}catch(_){}});return d;}
-        function uxBasicCard(title,subtitle,icon){const c=document.createElement('div');c.className='ux-basic-card';c.innerHTML=`<div class="ux-basic-card-title"><span>${icon} ${title}</span><small>${subtitle||''}</small></div><div class="ux-field-grid"></div>`;return c;}
+        function uxAccordion(key,title,icon,priority='p23'){const d=document.createElement('details');d.className='ux-accordion';d.dataset.uxKey=key;try{d.open=localStorage.getItem(`uxAccordionV4527:${key}`)==='open';}catch(_){}d.innerHTML=`<summary><span class="ux-accordion-title"><strong>${icon} ${title} <span class="ux-priority-badge ${priority}">${priority==='p45'?'P4–P5':'P2–P3'}</span></strong><span class="ux-accordion-summary" id="uxSummary-${key}">Default</span></span><span class="ux-chevron">⌄</span></summary><div class="ux-accordion-body" id="uxBody-${key}"></div>`;d.addEventListener('toggle',()=>{try{localStorage.setItem(`uxAccordionV4527:${key}`,d.open?'open':'closed');}catch(_){}});return d;}
+        function uxBasicCard(title,subtitle,icon){const c=document.createElement('div');c.className='ux-basic-card';c.innerHTML=`<div class="ux-basic-card-title"><span>${icon} ${title} <span class="ux-priority-badge p1">P1–P2</span></span><small>${subtitle||''}</small></div><div class="ux-field-grid"></div>`;return c;}
         function togglePresetManager(){const p=document.querySelector('.preset-actions');if(!p)return;const open=!p.classList.contains('ux-open');p.classList.toggle('ux-open',open);const b=document.getElementById('uxPresetManageBtn');if(b)b.textContent=open?'Tutup Pengelola Preset':'Kelola Preset';}
         function openAdvancedSettings(){const s=document.getElementById('settingsViewMode');if(!s)return;s.value='advanced';applySettingsViewMode();updateAccordionSummaries();}
-        function collapseAllAdvanced(){document.querySelectorAll('#advancedAccordionRoot details').forEach(d=>d.open=false);}
+        function openExpertSettings(){const s=document.getElementById('settingsViewMode');if(!s)return;s.value='expert';applySettingsViewMode();updateAccordionSummaries();}
+        function collapseAllAdvanced(){document.querySelectorAll('#advancedAccordionRoot details,#expertAccordionRoot details').forEach(d=>d.open=false);}
         function buildConsolidatedSettingsUi(){
             if(document.getElementById('uxSettingsRoot'))return;
             const inline=document.getElementById('inlinePrintSettings');if(!inline)return;
             const grids=[...inline.querySelectorAll(':scope > .settings-grid')],legacyGrid=grids[0];if(!legacyGrid)return;legacyGrid.id='uxLegacySettingsGrid';
             if(grids[1])grids[1].id='uxLegacyJobGrid';
             const sourceGroup=uxGroupForControl('sourceSizeInfo'),root=document.createElement('div');root.id='uxSettingsRoot';root.className='ux-settings-root';sourceGroup.insertAdjacentElement('afterend',root);
-            const docCard=uxBasicCard('Dokumen','pengaturan inti','📄'),paperCard=uxBasicCard('Kertas & Layout','pengaturan inti','📐'),duplexCard=uxBasicCard('Duplex','pengaturan inti','↔'),printerCard=uxBasicCard('Printer','pengaturan inti','🖨️');
+
+            const docCard=uxBasicCard('Dokumen','paling sering dipakai','📄'),
+                  paperCard=uxBasicCard('Kertas & Layout','paling sering dipakai','📐'),
+                  duplexCard=uxBasicCard('Duplex & Jilid','paling sering dipakai','↔'),
+                  printerCard=uxBasicCard('Printer','paling sering dipakai','🖨️');
             [docCard,paperCard,duplexCard,printerCard].forEach(c=>root.appendChild(c));
             ['colorMode','pages','copies'].forEach(id=>uxMoveGroup(id,docCard.querySelector('.ux-field-grid')));
             ['paperSize','orientation','scaleMode','pagesPerSheet'].forEach(id=>uxMoveGroup(id,paperCard.querySelector('.ux-field-grid')));
-            duplexCard.querySelector('.ux-field-grid').classList.add('one-col');uxMoveGroup('duplexMode',duplexCard.querySelector('.ux-field-grid'));
+            ['duplexMode','marginMode','bindingMode'].forEach(id=>uxMoveGroup(id,duplexCard.querySelector('.ux-field-grid')));
             ['driverBin','driverQuality','driverExecutionMode'].forEach(id=>uxMoveGroup(id,printerCard.querySelector('.ux-field-grid')));
-            const head=document.createElement('div');head.id='advancedSettingsHeader';head.className='ux-advanced-head';head.innerHTML=`<div><strong style="font-size:11px;">Pengaturan Lanjutan</strong><div class="ux-mode-note" id="uxModeHint">Klik bagian yang diperlukan.</div></div><button type="button" class="mini-btn" onclick="collapseAllAdvanced()">Tutup Semua</button>`;root.appendChild(head);
+
+            const advHead=document.createElement('div');advHead.id='advancedSettingsHeader';advHead.className='ux-advanced-head';
+            advHead.innerHTML=`<div><div class="ux-section-divider"><strong>Pengaturan Lanjutan</strong><span class="ux-priority-badge p23">P2–P3</span></div><div class="ux-mode-note" id="uxModeHint">Kontrol lanjutan yang masih cukup sering digunakan.</div></div><div style="display:flex;gap:6px;"><button type="button" class="mini-btn" onclick="openExpertSettings()">Expert</button><button type="button" class="mini-btn" onclick="collapseAllAdvanced()">Tutup Semua</button></div>`;
+            root.appendChild(advHead);
             const adv=document.createElement('div');adv.id='advancedAccordionRoot';adv.className='ux-accordion-root';root.appendChild(adv);
-            [['precision','Skala, Posisi & Transformasi','⌖'],['pages','Halaman & Urutan','☷'],['layout','Layout / N-up','▦'],['booklet','Booklet & Jilid','📖'],['prepress','Poster & Prepress','✂'],['marks','Tanda Dokumen','✎'],['driver','Driver Printer','⚙'],['system','Kalibrasi, Safety & Job','🛠']].forEach(([k,t,i])=>adv.appendChild(uxAccordion(k,t,i)));
-            ['autoRotateMode','contentAlign','scaleXPercent','offsetXmm','transformMode','pageRotationMode'].forEach(id=>uxMoveGroup(id,document.getElementById('uxBody-precision')));
+
+            [['position','Posisi & Rotasi','⌖'],['pages','Halaman & Urutan','☷'],['layout','Layout / N-up','▦'],['booklet','Booklet','📖'],['poster','Poster & Crop','✂'],['marks','Tanda Dokumen','✎'],['system','Kalibrasi, Safety & Job','🛠']].forEach(([k,t,i])=>adv.appendChild(uxAccordion(k,t,i,'p23')));
+
+            ['autoRotateMode','contentAlign','offsetXmm','pageRotationMode'].forEach(id=>uxMoveGroup(id,document.getElementById('uxBody-position')));
             ['pageSubset','pageOrder','collateMode','blankPageMode'].forEach(id=>uxMoveGroup(id,document.getElementById('uxBody-pages')));
             ['nupBorder','nupOrder','impositionMode','nupGapXmm'].forEach(id=>uxMoveGroup(id,document.getElementById('uxBody-layout')));
-            ['marginMode','bindingMode','bookletMode','signatureMode','creepMode','startCopyNewSheet'].forEach(id=>uxMoveGroup(id,document.getElementById('uxBody-booklet')));
-            ['posterMode','cropMode','pdfPageBox','bleedMode','prepressMarks'].forEach(id=>uxMoveGroup(id,document.getElementById('uxBody-prepress')));
+            ['bookletMode','startCopyNewSheet'].forEach(id=>uxMoveGroup(id,document.getElementById('uxBody-booklet')));
+            ['posterMode','cropMode'].forEach(id=>uxMoveGroup(id,document.getElementById('uxBody-poster')));
             ['watermarkMode','headerText','footerText','pageNumberMode','separatorMode'].forEach(id=>uxMoveGroup(id,document.getElementById('uxBody-marks')));
-            const driverPanel=document.getElementById('driverAdvancedPanel');if(driverPanel)document.getElementById('uxBody-driver').appendChild(driverPanel);
             ['calibrationXmm','safetySheetLimit','jobSubmissionMode','jobPriority'].forEach(id=>uxMoveGroup(id,document.getElementById('uxBody-system')));
+
+            const expertHead=document.createElement('div');expertHead.id='expertSettingsHeader';expertHead.className='ux-advanced-head';
+            expertHead.innerHTML=`<div><div class="ux-section-divider"><strong>Pengaturan Expert</strong><span class="ux-priority-badge p45">P4–P5</span></div><div class="ux-expert-note" id="uxExpertModeHint">Untuk presisi, prepress, dan kebutuhan produksi khusus.</div></div><button type="button" class="mini-btn" onclick="collapseAllAdvanced()">Tutup Semua</button>`;
+            root.appendChild(expertHead);
+            const expert=document.createElement('div');expert.id='expertAccordionRoot';expert.className='ux-accordion-root';root.appendChild(expert);
+
+            [['precision','Presisi & Transformasi','⌗'],['signature','Booklet Profesional','📚'],['prepress','Prepress Profesional','✣'],['driver','Driver Vendor / Expert','⚙']].forEach(([k,t,i])=>expert.appendChild(uxAccordion(k,t,i,'p45')));
+
+            ['scaleXPercent','transformMode'].forEach(id=>uxMoveGroup(id,document.getElementById('uxBody-precision')));
+            ['signatureMode','creepMode'].forEach(id=>uxMoveGroup(id,document.getElementById('uxBody-signature')));
+            ['pdfPageBox','bleedMode','prepressMarks'].forEach(id=>uxMoveGroup(id,document.getElementById('uxBody-prepress')));
+            const driverPanel=document.getElementById('driverAdvancedPanel');if(driverPanel)document.getElementById('uxBody-driver').appendChild(driverPanel);
+
             const presetActions=document.querySelector('.preset-actions'),toolbar=document.querySelector('.settings-toolbar');
             if(presetActions&&toolbar&&!document.getElementById('uxPresetManageBtn')){const b=document.createElement('button');b.type='button';b.id='uxPresetManageBtn';b.className='mini-btn ux-preset-manage-toggle';b.textContent='Kelola Preset';b.onclick=togglePresetManager;toolbar.appendChild(b);}
             const modeGroup=uxGroupForControl('settingsViewMode');if(modeGroup&&!document.getElementById('uxAdvancedQuickBtn')){const b=document.createElement('button');b.type='button';b.className='mini-btn';b.id='uxAdvancedQuickBtn';b.style.marginTop='7px';b.textContent='Buka Pengaturan Lanjutan';b.onclick=openAdvancedSettings;modeGroup.appendChild(b);}
@@ -674,16 +722,22 @@
         function updateAccordionSummaries(){
             if(!document.getElementById('advancedAccordionRoot'))return;
             const set=(k,parts)=>{const el=document.getElementById(`uxSummary-${k}`);if(el)el.textContent=parts.filter(Boolean).join(' • ')||'Default';};
-            const sx=Number(document.getElementById('scaleXPercent')?.value||100),sy=Number(document.getElementById('scaleYPercent')?.value||100),ox=Number(document.getElementById('offsetXmm')?.value||0)+Number(document.getElementById('calibrationXmm')?.value||0),oy=Number(document.getElementById('offsetYmm')?.value||0)+Number(document.getElementById('calibrationYmm')?.value||0);
-            set('precision',[uxSelectText('autoRotateMode'),sx!==100||sy!==100?`X ${sx}% / Y ${sy}%`:'',ox||oy?`Offset ${ox}/${oy} mm`:'',document.getElementById('transformMode')?.value!=='none'?uxSelectText('transformMode'):'',document.getElementById('pageRotationMode')?.value!=='none'?`Rotasi ${uxSelectText('pageRotationMode')}`:'']);
+            const sx=Number(document.getElementById('scaleXPercent')?.value||100),sy=Number(document.getElementById('scaleYPercent')?.value||100),
+                  ox=Number(document.getElementById('offsetXmm')?.value||0)+Number(document.getElementById('calibrationXmm')?.value||0),
+                  oy=Number(document.getElementById('offsetYmm')?.value||0)+Number(document.getElementById('calibrationYmm')?.value||0);
+            set('position',[uxSelectText('autoRotateMode'),uxSelectText('contentAlign'),ox||oy?`Offset ${ox}/${oy} mm`:'',document.getElementById('pageRotationMode')?.value!=='none'?`Rotasi ${uxSelectText('pageRotationMode')}`:'']);
             set('pages',[uxSelectText('pageSubset'),uxSelectText('pageOrder'),uxSelectText('collateMode'),document.getElementById('blankPageMode')?.value!=='preserve'?uxSelectText('blankPageMode'):'']);
             set('layout',[document.getElementById('nupBorder')?.value!=='none'?uxSelectText('nupBorder'):'',uxSelectText('nupOrder'),document.getElementById('impositionMode')?.value!=='normal'?uxSelectText('impositionMode'):'',(Number(document.getElementById('nupGapXmm')?.value||0)||Number(document.getElementById('nupGapYmm')?.value||0))?'Gap aktif':'']);
-            set('booklet',[document.getElementById('bookletMode')?.value==='on'?'Booklet aktif':'Booklet off',document.getElementById('marginMode')?.value!=='none'?`Margin ${uxSelectText('marginMode')}`:'',document.getElementById('bindingMode')?.value!=='off'?`${uxSelectText('bindingMode')} ${document.getElementById('gutterMm')?.value||0} mm`:'',document.getElementById('creepMode')?.value!=='off'?`Creep ${uxSelectText('creepMode')}`:'']);
-            set('prepress',[document.getElementById('posterMode')?.value==='on'?`Poster ${document.getElementById('posterCols')?.value}×${document.getElementById('posterRows')?.value}`:'Poster off',document.getElementById('cropMode')?.value!=='off'?'Crop aktif':'',document.getElementById('bleedMode')?.value!=='off'?`Bleed ${uxSelectText('bleedMode')}`:'',document.getElementById('prepressMarks')?.value!=='off'?uxSelectText('prepressMarks'):'']);
+            set('booklet',[document.getElementById('bookletMode')?.value==='on'?'Booklet aktif':'Booklet off',document.getElementById('startCopyNewSheet')?.value==='on'?'Copy mulai lembar baru':'']);
+            set('poster',[document.getElementById('posterMode')?.value==='on'?`Poster ${document.getElementById('posterCols')?.value}×${document.getElementById('posterRows')?.value}`:'Poster off',document.getElementById('cropMode')?.value!=='off'?'Crop aktif':'']);
             set('marks',[document.getElementById('watermarkMode')?.value==='on'?`Watermark: ${uxShort(document.getElementById('watermarkText')?.value||'DRAFT',18)}`:'',document.getElementById('headerText')?.value?'Header':'',document.getElementById('footerText')?.value?'Footer':'',document.getElementById('pageNumberMode')?.value!=='off'?'Nomor halaman':'',document.getElementById('separatorMode')?.value!=='off'?uxSelectText('separatorMode'):'']);
-            set('driver',[uxSelectText('driverPaperKind'),document.getElementById('driverMediaType')?.value!=='default'?uxSelectText('driverMediaType'):'',document.getElementById('driverBorderless')?.value!=='default'?`Borderless ${uxSelectText('driverBorderless')}`:'',document.getElementById('driverEconomy')?.value!=='default'?uxSelectText('driverEconomy'):'']);
             set('system',[(Number(document.getElementById('calibrationXmm')?.value||0)||Number(document.getElementById('calibrationYmm')?.value||0))?`Kal ${document.getElementById('calibrationXmm').value}/${document.getElementById('calibrationYmm').value} mm`:'Kalibrasi 0',`Limit ${document.getElementById('safetySheetLimit')?.value||0}`,uxSelectText('jobSubmissionMode'),uxSelectText('jobPriority')]);
-            const quick=document.getElementById('uxAdvancedQuickBtn');if(quick)quick.style.display=document.body.classList.contains('compact-settings-mode')?'inline-flex':'none';
+            set('precision',[sx!==100||sy!==100?`X ${sx}% / Y ${sy}%`:'Skala XY default',document.getElementById('transformMode')?.value!=='none'?uxSelectText('transformMode'):'']);
+            set('signature',[uxSelectText('signatureMode'),document.getElementById('creepMode')?.value!=='off'?`Creep ${uxSelectText('creepMode')}`:'Creep off']);
+            set('prepress',[uxSelectText('pdfPageBox'),document.getElementById('bleedMode')?.value!=='off'?`Bleed ${uxSelectText('bleedMode')}`:'Bleed off',document.getElementById('prepressMarks')?.value!=='off'?uxSelectText('prepressMarks'):'Marks off']);
+            set('driver',[uxSelectText('driverPaperKind'),document.getElementById('driverMediaType')?.value!=='default'?uxSelectText('driverMediaType'):'Media default',document.getElementById('driverBorderless')?.value!=='default'?`Borderless ${uxSelectText('driverBorderless')}`:'',document.getElementById('driverEconomy')?.value!=='default'?uxSelectText('driverEconomy'):'']);
+            const mode=document.getElementById('settingsViewMode')?.value||'compact';
+            const quick=document.getElementById('uxAdvancedQuickBtn');if(quick){quick.style.display=mode==='compact'?'inline-flex':'none';}
         }
 
         function markAdvancedSettingGroups(){ ADVANCED_SETTING_IDS.forEach(id=>{const el=document.getElementById(id);if(!el)return;const group=el.closest('.input-group');if(group)group.classList.add('advanced-setting');}); }
@@ -2040,7 +2094,7 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
             currentPreviewSheet = 0;
             updateDynamicPreview();
         });
-        window.addEventListener('load', () => { loadHistory(); setupPwaInstall(); startQueuePolling(); buildConsolidatedSettingsUi(); markAdvancedSettingGroups(); refreshPresetSelect(); const savedView=localStorage.getItem('settingsViewModeV4526')||localStorage.getItem('settingsViewModeV4521')||'compact'; document.getElementById('settingsViewMode').value=savedView; applySettingsViewMode(); syncAdvancedPrintControls(); validatePrintSettings(false); updatePrintSettingsSummary(); updateAccordionSummaries(); restoreActiveServerFromSession(); });
+        window.addEventListener('load', () => { loadHistory(); setupPwaInstall(); startQueuePolling(); buildConsolidatedSettingsUi(); markAdvancedSettingGroups(); refreshPresetSelect(); const savedView=localStorage.getItem('settingsViewModeV4527')||localStorage.getItem('settingsViewModeV4526')||localStorage.getItem('settingsViewModeV4521')||'compact'; document.getElementById('settingsViewMode').value=savedView; applySettingsViewMode(); syncAdvancedPrintControls(); validatePrintSettings(false); updatePrintSettingsSummary(); updateAccordionSummaries(); restoreActiveServerFromSession(); });
     </script>
 </body>
 </html>

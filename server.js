@@ -318,7 +318,7 @@ app.get('/ping', (req, res) => {
     hostname: os.hostname(),
     ipHint: localIps[0] || '',
     localIps,
-    version: '4.5.26',
+    version: '4.5.27',
   });
 });
 
@@ -349,7 +349,7 @@ app.get('/docx-converter-status', async (req, res) => {
       executable: libreOfficeExecutable || null,
       timeoutSeconds: Math.round(DOCX_CONVERT_TIMEOUT_MS / 1000),
     },
-    version: '4.5.26',
+    version: '4.5.27',
   });
 });
 
@@ -360,7 +360,7 @@ app.get('/limits', (req, res) => {
     largePdfThresholdMb: LARGE_PDF_THRESHOLD_MB,
     largePdfChunkPages: LARGE_PDF_CHUNK_PAGES,
     supportedFileTypes: ['pdf', 'png', 'jpg', 'jpeg', 'docx'],
-    version: '4.5.26',
+    version: '4.5.27',
   });
 });
 
@@ -1119,7 +1119,7 @@ app.post('/convert-docx',
 );
 
 
-// ===== v4.5.26 Central Print Queue & Job Management =====
+// ===== v4.5.27 Central Print Queue & Job Management =====
 const JOB_RETENTION_MS = Math.max(60 * 60 * 1000, parseInt(process.env.JOB_RETENTION_MS || String(24 * 60 * 60 * 1000), 10));
 const DUPLICATE_WINDOW_MS = Math.max(3000, parseInt(process.env.DUPLICATE_WINDOW_MS || '15000', 10));
 const MAX_JOB_HISTORY = Math.max(20, parseInt(process.env.MAX_JOB_HISTORY || '100', 10));
@@ -1381,4 +1381,4 @@ server.requestTimeout = 0;
 server.headersTimeout = 0;
 server.timeout = 0;
 
-server.listen(port, '0.0.0.0', () => console.log(`Print Server V4.5.26 Ready on ${port}`));
+server.listen(port, '0.0.0.0', () => console.log(`Print Server V4.5.27 Ready on ${port}`));
