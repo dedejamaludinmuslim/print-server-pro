@@ -199,7 +199,8 @@ function sanitizePrintOptions(body) {
   const copies = Math.min(MAX_COPIES, Math.max(1, parseInt(body.copies, 10) || 1));
   const pagesPerSheetRaw = parseInt(body.pagesPerSheet, 10) || 1;
   const pagesPerSheet = SUPPORTED_PPS.has(pagesPerSheetRaw) ? pagesPerSheetRaw : 1;
-  const duplexMode = ['simplex', 'duplexlong', 'duplexshort'].includes(body.duplexMode) ? body.duplexMode : 'simplex';
+  const requestedDuplexMode = ['simplex','duplexlong','duplexshort','manual-long','manual-short'].includes(body.duplexMode) ? body.duplexMode : 'simplex';
+  const duplexMode = requestedDuplexMode.startsWith('manual-') ? 'simplex' : requestedDuplexMode;
   const pageSubset = ['all', 'odd', 'even'].includes(body.pageSubset) ? body.pageSubset : 'all';
   const pageOrder = body.pageOrder === 'reverse' ? 'reverse' : 'normal';
   let collate = body.collateMode !== 'uncollated';
@@ -309,7 +310,7 @@ app.get('/docx-converter-status', async (req, res) => {
       executable: libreOfficeExecutable || null,
       timeoutSeconds: Math.round(DOCX_CONVERT_TIMEOUT_MS / 1000),
     },
-    version: '4.5.20',
+    version: '4.5.21',
   });
 });
 
@@ -320,7 +321,7 @@ app.get('/limits', (req, res) => {
     largePdfThresholdMb: LARGE_PDF_THRESHOLD_MB,
     largePdfChunkPages: LARGE_PDF_CHUNK_PAGES,
     supportedFileTypes: ['pdf', 'png', 'jpg', 'jpeg', 'docx'],
-    version: '4.5.20',
+    version: '4.5.21',
   });
 });
 
@@ -330,6 +331,40 @@ app.get('/printers', async (req, res) => {
   } catch (e) {
     res.status(500).send('Gagal');
   }
+});
+
+async function getWindowsPrinterCapabilities(printerName) {
+  if (process.platform !== 'win32') return { name: printerName || '', platform: process.platform, duplexSupported: null };
+  const ps = findPowerShellExecutable();
+  if (!ps) throw new Error('PowerShell tidak ditemukan.');
+  const safeName = String(printerName || '').replace(/'/g, "''");
+  const script = printerName
+    ? `$n='${safeName}'; $p=Get-Printer -Name $n -ErrorAction Stop; $c=$null; try{$c=Get-PrintConfiguration -PrinterName $n -ErrorAction Stop}catch{}; [pscustomobject]@{name=$p.Name;driverName=$p.DriverName;portName=$p.PortName;status=[string]$p.PrinterStatus;shared=[bool]$p.Shared;color=if($c){[bool]$c.Color}else{$null};duplexingMode=if($c){[string]$c.DuplexingMode}else{$null};paperSize=if($c){[string]$c.PaperSize}else{$null}} | ConvertTo-Json -Compress`
+    : `$p=Get-Printer | Where-Object {$_.Default -eq $true} | Select-Object -First 1; if(-not $p){$p=Get-Printer | Select-Object -First 1}; if(-not $p){throw 'Printer tidak ditemukan'}; $c=$null; try{$c=Get-PrintConfiguration -PrinterName $p.Name -ErrorAction Stop}catch{}; [pscustomobject]@{name=$p.Name;driverName=$p.DriverName;portName=$p.PortName;status=[string]$p.PrinterStatus;shared=[bool]$p.Shared;color=if($c){[bool]$c.Color}else{$null};duplexingMode=if($c){[string]$c.DuplexingMode}else{$null};paperSize=if($c){[string]$c.PaperSize}else{$null}} | ConvertTo-Json -Compress`;
+  const result = await runProcess(ps, ['-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-Command', script], 20000);
+  const line = String(result.stdout || '').trim().split(/\r?\n/).filter(Boolean).pop();
+  if (!line) throw new Error(result.stderr || 'Tidak ada data kemampuan printer.');
+  const data = JSON.parse(line);
+  // DuplexingMode dari Get-PrintConfiguration adalah konfigurasi aktif, bukan bukti kemampuan hardware.
+  // Karena itu jangan menonaktifkan duplex hanya karena konfigurasi saat ini OneSided.
+  data.duplexSupported = null;
+  return data;
+}
+
+app.get('/printer-capabilities', async (req,res) => {
+  try { res.json(await getWindowsPrinterCapabilities(String(req.query.name || ''))); }
+  catch (e) { res.status(500).send(`CAPABILITY_FAILED: ${e.message}`); }
+});
+
+app.post('/printer-properties', async (req,res) => {
+  try {
+    if (process.platform !== 'win32') return res.status(400).send('Properti driver hanya tersedia di Windows.');
+    const name = String(req.query.name || '').trim();
+    if (!name) return res.status(400).send('Pilih printer spesifik terlebih dahulu.');
+    const child = spawn('rundll32.exe', ['printui.dll,PrintUIEntry','/p','/n',name], { detached:true, stdio:'ignore', windowsHide:false });
+    child.unref();
+    res.json({ok:true,name});
+  } catch(e) { res.status(500).send(`DRIVER_PROPERTIES_FAILED: ${e.message}`); }
 });
 
 function getCropBoxForPage(page,options){
@@ -913,4 +948,4 @@ server.requestTimeout = 0;
 server.headersTimeout = 0;
 server.timeout = 0;
 
-server.listen(port, '0.0.0.0', () => console.log(`Print Server V4.5.20 Ready on ${port}`));
+server.listen(port, '0.0.0.0', () => console.log(`Print Server V4.5.21 Ready on ${port}`));

@@ -68,6 +68,15 @@
         .settings-summary { font-size:11px; line-height:1.45; color:var(--text-muted); background:#f8fafc; border:1px solid var(--border-soft); border-radius:10px; padding:9px 11px; margin-bottom:12px; }
         .settings-live { font-size:10px; font-weight:700; color:var(--success); text-transform:uppercase; letter-spacing:.4px; }
         @media (max-width: 560px) { .settings-grid { grid-template-columns:1fr; gap:0; } }
+        .printer-tools { display:grid; grid-template-columns:1fr auto; gap:8px; margin-top:8px; }
+        .capability-card { margin-top:8px; padding:9px 10px; border:1px solid var(--border); border-radius:9px; font-size:10px; line-height:1.45; color:var(--text-muted); background:rgba(51,65,85,.04); }
+        .settings-toolbar { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:8px; margin-bottom:10px; }
+        .preset-actions { display:grid; grid-template-columns:minmax(0,1fr) auto auto; gap:6px; grid-column:1/-1; }
+        body.compact-settings-mode .advanced-setting { display:none !important; }
+        .mini-btn { border:0; border-radius:8px; padding:9px 10px; cursor:pointer; font-weight:700; background:#475569; color:white; white-space:nowrap; }
+        .mini-btn.danger { background:#b91c1c; }
+        @media (max-width:560px){ .settings-toolbar{grid-template-columns:1fr;} .preset-actions{grid-template-columns:1fr 1fr;} .preset-actions input{grid-column:1/-1;} .printer-tools{grid-template-columns:1fr;} }
+
     </style>
 </head>
 <body>
@@ -97,6 +106,11 @@
                     <div class="input-with-btn">
                         <select id="printerSelect"><option value="">Default Printer...</option></select>
                     </div>
+                    <div class="printer-tools">
+                        <label style="font-size:10px; display:flex; gap:7px; align-items:center; margin:0;"><input type="checkbox" id="rememberPrinterSettings" checked> Ingat pengaturan untuk printer ini</label>
+                        <button type="button" id="driverPropertiesBtn" class="mini-btn" onclick="openPrinterProperties()">⚙️ Properti Driver</button>
+                    </div>
+                    <div id="printerCapabilityInfo" class="capability-card">Kemampuan printer akan diperiksa setelah printer dipilih.</div>
                 </div>
                 <div class="section-title"><span>📁 Pilih File (PDF/DOCX/Gambar)</span></div>
                 <div class="input-group">
@@ -114,6 +128,15 @@
                     <div class="section-title" style="margin-top:8px;">
                         <span>⚙️ Pengaturan Cetak</span>
                         <span class="settings-live">● Preview Langsung</span>
+                    </div>
+                    <div class="settings-toolbar">
+                        <div class="input-group" style="margin:0;"><label>Mode Pengaturan:</label><select id="settingsViewMode" class="input-standard"><option value="compact">Ringkas</option><option value="advanced">Lanjutan</option></select></div>
+                        <div class="input-group" style="margin:0;"><label>Preset Cetak:</label><select id="presetSelect" class="input-standard"></select></div>
+                        <div class="preset-actions">
+                            <input type="text" id="presetName" class="input-standard" maxlength="40" placeholder="Nama preset baru">
+                            <button type="button" class="mini-btn" onclick="saveCurrentPreset()">💾 Simpan</button>
+                            <button type="button" class="mini-btn danger" onclick="deleteSelectedPreset()">Hapus</button>
+                        </div>
                     </div>
                     <div id="printSettingsSummary" class="settings-summary">Sama dengan dokumen • Otomatis • Perkecil jika perlu • 1 hal/lembar</div>
                     <div class="input-group">
@@ -138,7 +161,7 @@
                         <div class="input-group"><label>Hal/Lembar:</label><select id="pagesPerSheet" class="input-standard"><option value="1">1</option><option value="2">2</option><option value="4">4</option><option value="6">6</option><option value="9">9</option><option value="16">16</option></select></div>
                         <div class="input-group"><label>Jumlah Copy:</label><input type="number" id="copies" class="input-standard" value="1" min="1" max="50"></div>
                         <div class="input-group"><label>Duplex / Bolak-balik:</label>
-                            <select id="duplexMode" class="input-standard"><option value="simplex">Satu Sisi</option><option value="duplexlong">Bolak-balik • Sisi Panjang</option><option value="duplexshort">Bolak-balik • Sisi Pendek</option></select>
+                            <select id="duplexMode" class="input-standard"><option value="simplex">Satu Sisi</option><option value="duplexlong">Duplex Otomatis • Sisi Panjang</option><option value="duplexshort">Duplex Otomatis • Sisi Pendek</option><option value="manual-long">Duplex Manual • Sisi Panjang</option><option value="manual-short">Duplex Manual • Sisi Pendek</option></select>
                         </div>
                         <div class="input-group"><label>Cetak Halaman:</label>
                             <select id="pageSubset" class="input-standard"><option value="all">Semua</option><option value="odd">Ganjil Saja</option><option value="even">Genap Saja</option></select>
@@ -341,6 +364,32 @@
 
     <script>
         let currentPdfDoc = null, currentImgSrc = null, currentPreviewSheet = 0, totalPreviewSheets = 1;
+        const PRINT_SETTING_IDS = ['colorMode','paperSize','orientation','scaleMode','customScale','pagesPerSheet','copies','duplexMode','pageSubset','pageOrder','collateMode','marginMode','marginTop','marginRight','marginBottom','marginLeft','autoRotateMode','contentAlign','nupBorder','nupOrder','bookletMode','posterMode','posterCols','posterRows','posterOverlap','posterCutMarks','transformMode','cropMode','cropTop','cropRight','cropBottom','cropLeft','watermarkMode','watermarkText','watermarkOpacity','watermarkAngle','headerText','footerText','pageNumberMode','pageNumberStart','pages'];
+        const ADVANCED_SETTING_IDS = ['pageSubset','pageOrder','collateMode','marginMode','marginTop','marginRight','marginBottom','marginLeft','autoRotateMode','contentAlign','nupBorder','nupOrder','bookletMode','posterMode','posterCols','posterRows','posterOverlap','posterCutMarks','transformMode','cropMode','cropTop','cropRight','cropBottom','cropLeft','watermarkMode','watermarkText','watermarkOpacity','watermarkAngle','headerText','footerText','pageNumberMode','pageNumberStart'];
+        const BUILTIN_PRESETS = {
+            'builtin-a4-color': {label:'A4 • Warna • Simplex', values:{paperSize:'A4',colorMode:'color',orientation:'auto',scaleMode:'shrink',pagesPerSheet:'1',duplexMode:'simplex',copies:'1'}},
+            'builtin-f4-mono': {label:'F4 • Hitam Putih', values:{paperSize:'F4',colorMode:'monochrome',orientation:'auto',scaleMode:'shrink',pagesPerSheet:'1',duplexMode:'simplex',copies:'1'}},
+            'builtin-module': {label:'Modul • 2-up Duplex', values:{paperSize:'A4',colorMode:'monochrome',orientation:'landscape',scaleMode:'fit',pagesPerSheet:'2',duplexMode:'duplexlong',collateMode:'collated',copies:'1'}},
+            'builtin-certificate': {label:'Sertifikat • Fit • Warna', values:{paperSize:'A4',colorMode:'color',orientation:'landscape',scaleMode:'fit',pagesPerSheet:'1',duplexMode:'simplex',marginMode:'none',copies:'1'}}
+        };
+
+        function capturePrintSettings(){ const out={}; PRINT_SETTING_IDS.forEach(id=>{const el=document.getElementById(id); if(el) out[id]=el.value;}); return out; }
+        function applyPrintSettings(values, silent=false){ Object.entries(values||{}).forEach(([id,v])=>{const el=document.getElementById(id); if(el && v!==undefined && v!==null) el.value=String(v);}); syncAdvancedPrintControls(); if(!silent){currentPreviewSheet=0;updatePrintSettingsSummary();updateDynamicPreview();} }
+        function getUserPresets(){ try{return JSON.parse(localStorage.getItem('printPresetsV4521')||'{}')||{};}catch(_){return {};} }
+        function refreshPresetSelect(selected=''){ const sel=document.getElementById('presetSelect'); if(!sel)return; const users=getUserPresets(); sel.innerHTML='<option value="">— Pilih Preset —</option>'; const g1=document.createElement('optgroup');g1.label='Preset Bawaan';Object.entries(BUILTIN_PRESETS).forEach(([k,p])=>g1.add(new Option(p.label,k)));sel.add(g1);const names=Object.keys(users).sort((a,b)=>a.localeCompare(b));if(names.length){const g2=document.createElement('optgroup');g2.label='Preset Saya';names.forEach(n=>g2.add(new Option(n,'user:'+n)));sel.add(g2);}if(selected)sel.value=selected; }
+        function saveCurrentPreset(){ const name=(document.getElementById('presetName').value||'').trim(); if(!name)return showToast('Isi nama preset terlebih dahulu.','error'); const p=getUserPresets();p[name]=capturePrintSettings();localStorage.setItem('printPresetsV4521',JSON.stringify(p));refreshPresetSelect('user:'+name);document.getElementById('presetName').value='';showToast(`Preset “${name}” disimpan.`,'success'); }
+        function deleteSelectedPreset(){ const v=document.getElementById('presetSelect').value;if(!v.startsWith('user:'))return showToast('Preset bawaan tidak dapat dihapus.','info');const name=v.slice(5);const p=getUserPresets();delete p[name];localStorage.setItem('printPresetsV4521',JSON.stringify(p));refreshPresetSelect();showToast(`Preset “${name}” dihapus.`,'success'); }
+        function applySelectedPreset(){ const v=document.getElementById('presetSelect').value;if(!v)return;if(v.startsWith('user:')){const p=getUserPresets()[v.slice(5)];if(p)applyPrintSettings(p);}else if(BUILTIN_PRESETS[v])applyPrintSettings(BUILTIN_PRESETS[v].values);saveSettingsForCurrentPrinter(); }
+        function printerSettingsKey(name){ return `printerSettingsV4521:${name||'__default__'}`; }
+        function saveSettingsForCurrentPrinter(){ const remember=document.getElementById('rememberPrinterSettings');if(!remember||!remember.checked)return;const name=document.getElementById('printerSelect').value||'__default__';localStorage.setItem(printerSettingsKey(name),JSON.stringify(capturePrintSettings())); }
+        function loadSettingsForCurrentPrinter(){ const name=document.getElementById('printerSelect').value||'__default__';try{const v=JSON.parse(localStorage.getItem(printerSettingsKey(name))||'null');if(v)applyPrintSettings(v,true);}catch(_){}syncAdvancedPrintControls();updatePrintSettingsSummary();updateDynamicPreview(); }
+        function applySettingsViewMode(){ const mode=document.getElementById('settingsViewMode').value;document.body.classList.toggle('compact-settings-mode',mode==='compact');localStorage.setItem('settingsViewModeV4521',mode); }
+        function markAdvancedSettingGroups(){ ADVANCED_SETTING_IDS.forEach(id=>{const el=document.getElementById(id);if(!el)return;const group=el.closest('.input-group');if(group)group.classList.add('advanced-setting');}); }
+        function capabilityText(data){ if(!data)return 'Kemampuan printer tidak tersedia.';const bits=[];if(data.driverName)bits.push(`Driver: ${data.driverName}`);if(data.portName)bits.push(`Port: ${data.portName}`);if(data.color!==null&&data.color!==undefined)bits.push(data.color?'Warna':'Monokrom');if(data.duplexingMode)bits.push(`Duplex: ${data.duplexingMode}`);if(data.paperSize)bits.push(`Kertas: ${data.paperSize}`);if(data.status)bits.push(`Status: ${data.status}`);return bits.join(' • ')||'Printer terdeteksi.'; }
+        async function refreshPrinterCapabilities(){ const ip=document.getElementById('ipAddress').value.trim(),name=document.getElementById('printerSelect').value,info=document.getElementById('printerCapabilityInfo');if(!ip){info.textContent='Hubungkan ke server printer terlebih dahulu.';return;}info.textContent='Memeriksa kemampuan printer…';try{const q=name?`?name=${encodeURIComponent(name)}`:'';const r=await fetchWithRetry(`http://${ip}:3000/printer-capabilities${q}`,{cache:'no-store'},0,200);if(!r.ok)throw new Error(await r.text());const d=await r.json();info.textContent=capabilityText(d);if(d.duplexSupported===false){const ds=document.getElementById('duplexMode');['duplexlong','duplexshort'].forEach(v=>{const o=ds.querySelector(`option[value="${v}"]`);if(o)o.disabled=true;});}else{const ds=document.getElementById('duplexMode');['duplexlong','duplexshort'].forEach(v=>{const o=ds.querySelector(`option[value="${v}"]`);if(o)o.disabled=false;});}}catch(e){info.textContent='Kemampuan driver tidak dapat dibaca. Pengaturan cetak dasar tetap bisa digunakan.';} }
+        async function openPrinterProperties(){ const ip=document.getElementById('ipAddress').value.trim(),name=document.getElementById('printerSelect').value;if(!ip)return showToast('Hubungkan ke server printer terlebih dahulu.','error');try{const r=await fetchWithRetry(`http://${ip}:3000/printer-properties?name=${encodeURIComponent(name)}`,{method:'POST'},0,200);if(!r.ok)throw new Error(await r.text());showToast('Dialog properti printer dibuka di PC server.','success');}catch(e){showToast(e.message||'Gagal membuka properti printer.','error');} }
+        async function handlePrinterChanged(){ loadSettingsForCurrentPrinter(); await refreshPrinterCapabilities(); }
+
         let currentSourceInfo = { kind: 'none', width: 595.28, height: 841.89, label: 'Belum ada file', standard: 'A4' };
         let currentPrintableFile = null;
         let currentOriginalFileName = '';
@@ -793,6 +842,8 @@
                 setConnectionStatus('connected', `Server terhubung: ${ip}`);
                 sessionStorage.setItem('activePrintServerIp', ip);
                 showToast(`Printer Server ${ip} siap!`, 'success');
+                loadSettingsForCurrentPrinter();
+                refreshPrinterCapabilities();
             } catch (e) {
                 sel.innerHTML = '<option value="">⚠️ Gagal terhubung</option>';
                 sel.disabled = false;
@@ -840,15 +891,17 @@
             return new File([await outPdf.save()],'compatibility-print.pdf',{type:'application/pdf'});
         }
 
-async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false) {
+async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false, overrides = {}) {
             let uploadFile=fileObj;
             if(!useCompatibilityMode && currentInputKind==='image') uploadFile=await prepareImageFileForUpload(fileObj);
             const fd=new FormData(); fd.append('document',uploadFile); fd.append('pin',pin);
-            const val=id=>document.getElementById(id).value;
+            const val=id => Object.prototype.hasOwnProperty.call(overrides,id) ? overrides[id] : document.getElementById(id).value;
             fd.append('printerName',document.getElementById('printerSelect').value);
             ['colorMode','paperSize','orientation','scaleMode','customScale','pagesPerSheet','copies','duplexMode','collateMode','marginMode','marginTop','marginRight','marginBottom','marginLeft','autoRotateMode','contentAlign','nupBorder','nupOrder','posterMode','posterCols','posterRows','posterOverlap','posterCutMarks','transformMode','cropMode','cropTop','cropRight','cropBottom','cropLeft','watermarkMode','watermarkText','watermarkOpacity','watermarkAngle','headerText','footerText','pageNumberMode','pageNumberStart'].forEach(id=>fd.append(id,val(id)));
-            fd.append('pageSubset',useCompatibilityMode?'all':val('pageSubset')); fd.append('pageOrder',useCompatibilityMode?'normal':val('pageOrder'));
-            fd.append('bookletMode',useCompatibilityMode?'off':val('bookletMode')); fd.append('pages',useCompatibilityMode?'':val('pages'));
+            fd.append('pageSubset',Object.prototype.hasOwnProperty.call(overrides,'pageSubset')?overrides.pageSubset:(useCompatibilityMode?'all':document.getElementById('pageSubset').value));
+            fd.append('pageOrder',Object.prototype.hasOwnProperty.call(overrides,'pageOrder')?overrides.pageOrder:(useCompatibilityMode?'normal':document.getElementById('pageOrder').value));
+            fd.append('bookletMode',Object.prototype.hasOwnProperty.call(overrides,'bookletMode')?overrides.bookletMode:(useCompatibilityMode?'off':document.getElementById('bookletMode').value));
+            fd.append('pages',Object.prototype.hasOwnProperty.call(overrides,'pages')?overrides.pages:(useCompatibilityMode?'':document.getElementById('pages').value));
             fd.append('transformsBaked',useCompatibilityMode||currentInputKind==='image'?'true':'false');
             return await fetchWithRetry(`http://${ip}:3000/print`,{method:'POST',body:fd},1,400);
         }
@@ -877,6 +930,19 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
             return await buildCompatibilityPdfFromCurrentPdf();
         }
 
+        async function printManualDuplex(ip,pin,fileToPrint,useCompatibilityMode,historyName,mode){
+            if(!currentPdfDoc || currentPdfDoc.numPages < 2){showToast('Duplex manual hanya diperlukan untuk dokumen multi-halaman. Mencetak satu sisi.','info');return null;}
+            const first=await submitPrintRequest(ip,pin,fileToPrint,useCompatibilityMode,{duplexMode:'simplex',pageSubset:'odd',pageOrder:'normal',collateMode:'collated'});
+            if(!first.ok) throw new Error(await first.text()||'Cetak sisi pertama gagal.');
+            const edge=mode==='manual-short'?'sisi pendek':'sisi panjang';
+            const go=confirm(`SISI PERTAMA SELESAI.\n\nAmbil tumpukan kertas tanpa mengubah urutannya. Balik/reinsert kertas untuk penjilidan ${edge}, sesuai arah masuk printer Anda.\n\nKlik OK setelah kertas siap untuk mencetak sisi kedua.`);
+            if(!go){showToast('Duplex manual dihentikan setelah sisi pertama.','info');return false;}
+            const second=await submitPrintRequest(ip,pin,fileToPrint,useCompatibilityMode,{duplexMode:'simplex',pageSubset:'even',pageOrder:'reverse',collateMode:'collated'});
+            if(!second.ok) throw new Error(await second.text()||'Cetak sisi kedua gagal.');
+            resetAfterSuccessfulPrint(ip,historyName+' (Duplex Manual)');
+            return true;
+        }
+
         async function confirmAndPrint(useCompatibilityMode = false) {
             const pin = document.getElementById('modalPinInput').value;
             closePinModal();
@@ -896,7 +962,12 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
                     fileToPrint = await buildCompatibilityFileOrThrow();
                     effectiveCompatibility = true;
                 }
-                const r = await submitPrintRequest(ip, pin, fileToPrint, effectiveCompatibility);
+                const selectedDuplex = document.getElementById('duplexMode').value;
+                if (selectedDuplex === 'manual-long' || selectedDuplex === 'manual-short') {
+                    const manualResult = await printManualDuplex(ip,pin,fileToPrint,effectiveCompatibility,historyName,selectedDuplex);
+                    if (manualResult !== null) return;
+                }
+                const r = await submitPrintRequest(ip, pin, fileToPrint, effectiveCompatibility, selectedDuplex.startsWith('manual-') ? {duplexMode:'simplex'} : {});
 
                 if (r.ok) {
                     resetAfterSuccessfulPrint(ip, historyName);
@@ -1172,7 +1243,7 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
         });
         function updatePrintSettingsSummary() {
             const el=document.getElementById('printSettingsSummary');if(!el)return;
-            const p=[]; p.push(document.getElementById('paperSize').value,document.getElementById('orientation').value,document.getElementById('scaleMode').value,`${document.getElementById('pagesPerSheet').value} hal/lembar`,`${document.getElementById('copies').value} copy`);
+            const p=[]; p.push(document.getElementById('paperSize').value,document.getElementById('orientation').value,document.getElementById('scaleMode').value,`${document.getElementById('pagesPerSheet').value} hal/lembar`,`${document.getElementById('copies').value} copy`); const dx=document.getElementById('duplexMode').value; if(dx!=='simplex')p.push(dx.startsWith('manual-')?'Duplex Manual':'Duplex Otomatis');
             if(document.getElementById('bookletMode').value==='on')p.push('BOOKLET');
             if(document.getElementById('posterMode').value==='on')p.push(`POSTER ${document.getElementById('posterCols').value}×${document.getElementById('posterRows').value}`);
             if(document.getElementById('transformMode').value!=='none')p.push(document.getElementById('transformMode').value);
@@ -1266,14 +1337,19 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
                 currentPreviewSheet = 0;
                 updatePrintSettingsSummary();
                 updateDynamicPreview();
+                saveSettingsForCurrentPrinter();
             });
         });
+        document.getElementById('printerSelect').addEventListener('change', handlePrinterChanged);
+        document.getElementById('presetSelect').addEventListener('change', applySelectedPreset);
+        document.getElementById('settingsViewMode').addEventListener('change', ()=>{applySettingsViewMode();updateDynamicPreview();});
+        document.getElementById('rememberPrinterSettings').addEventListener('change', ()=>{if(document.getElementById('rememberPrinterSettings').checked)saveSettingsForCurrentPrinter();});
         document.getElementById('pages').addEventListener('blur', () => {
             validatePrintSettings(false);
             currentPreviewSheet = 0;
             updateDynamicPreview();
         });
-        window.addEventListener('load', () => { loadHistory(); setupPwaInstall(); syncAdvancedPrintControls(); validatePrintSettings(false); updatePrintSettingsSummary(); restoreActiveServerFromSession(); });
+        window.addEventListener('load', () => { loadHistory(); setupPwaInstall(); markAdvancedSettingGroups(); refreshPresetSelect(); const savedView=localStorage.getItem('settingsViewModeV4521')||'compact'; document.getElementById('settingsViewMode').value=savedView; applySettingsViewMode(); syncAdvancedPrintControls(); validatePrintSettings(false); updatePrintSettingsSummary(); restoreActiveServerFromSession(); });
     </script>
 </body>
 </html>
