@@ -5,7 +5,7 @@ const ptp = require('pdf-to-printer');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const { PDFDocument, degrees, rgb } = require('pdf-lib');
+const { PDFDocument, degrees, rgb, StandardFonts } = require('pdf-lib');
 const { Server } = require('socket.io');
 const http = require('http');
 const { spawn } = require('child_process');
@@ -212,6 +212,16 @@ function sanitizePrintOptions(body) {
   const nupBorder=['none','thin','medium'].includes(body.nupBorder)?body.nupBorder:'none';
   const nupOrder=['row-ltr','column-ttb','row-rtl'].includes(body.nupOrder)?body.nupOrder:'row-ltr';
   const booklet=body.bookletMode==='on';
+  const poster=body.posterMode==='on';
+  const posterCols=Math.min(6,Math.max(1,parseInt(body.posterCols,10)||2)),posterRows=Math.min(6,Math.max(1,parseInt(body.posterRows,10)||2));
+  const posterOverlap=Math.min(30,Math.max(0,parseFloat(body.posterOverlap)||0)),posterCutMarks=body.posterCutMarks==='on';
+  const transformMode=['none','mirror-h','flip-v','both'].includes(body.transformMode)?body.transformMode:'none';
+  const cropMode=body.cropMode==='custom'?'custom':'off',clampCrop=v=>Math.min(100,Math.max(0,parseFloat(v)||0));
+  const cropTop=clampCrop(body.cropTop),cropRight=clampCrop(body.cropRight),cropBottom=clampCrop(body.cropBottom),cropLeft=clampCrop(body.cropLeft);
+  const watermarkMode=body.watermarkMode==='on',watermarkText=String(body.watermarkText||'DRAFT').slice(0,80),watermarkOpacity=Math.min(.8,Math.max(.05,(parseFloat(body.watermarkOpacity)||20)/100)),watermarkAngle=[-45,0,45].includes(parseInt(body.watermarkAngle,10))?parseInt(body.watermarkAngle,10):-45;
+  const headerText=String(body.headerText||'').slice(0,120),footerText=String(body.footerText||'').slice(0,120);
+  const pageNumberMode=['off','bottom-center','bottom-right','top-right'].includes(body.pageNumberMode)?body.pageNumberMode:'off',pageNumberStart=Math.min(9999,Math.max(1,parseInt(body.pageNumberStart,10)||1));
+  const transformsBaked=String(body.transformsBaked||'false')==='true';
   return {
     orientation,
     paperSize,
@@ -225,7 +235,7 @@ function sanitizePrintOptions(body) {
     pageOrder,
     collate,
     marginMode, marginTop, marginRight, marginBottom, marginLeft,
-    autoRotate, contentAlign, nupBorder, nupOrder, booklet,
+    autoRotate, contentAlign, nupBorder, nupOrder, booklet, poster,posterCols,posterRows,posterOverlap,posterCutMarks,transformMode,cropMode,cropTop,cropRight,cropBottom,cropLeft,watermarkMode,watermarkText,watermarkOpacity,watermarkAngle,headerText,footerText,pageNumberMode,pageNumberStart,transformsBaked,
     pages: String(body.pages || '').trim(),
     printerName: body.printerName || ''
   };
@@ -258,18 +268,7 @@ function drawImageInPdfCell(page,image,cellX,cellY,cellW,cellH,padding,scaleMode
 }
 
 async function convertImageToPdf(imagePath,mimeType,originalName,options){
-  if(options.booklet) throw new Error('Booklet hanya tersedia untuk PDF/DOCX.');
-  const pdfDoc=await PDFDocument.create(),image=await loadEmbeddedImage(pdfDoc,imagePath,mimeType,originalName);
-  const sourceWPt=image.width*72/96,sourceHPt=image.height*72/96;
-  const resolvedOrientation=resolveOrientation(options.orientation,sourceWPt,sourceHPt,options.pagesPerSheet);
-  const outputSize=resolvePaperSize(options.paperSize,resolvedOrientation,sourceWPt,sourceHPt,options.paperSize==='SOURCE'?'A4':options.paperSize);
-  const scaleMode=getEffectiveScaleMode(options.scaleMode,options.pagesPerSheet),{cols,rows}=getGrid(options.pagesPerSheet,resolvedOrientation),page=pdfDoc.addPage([outputSize.width,outputSize.height]);
-  const margins=marginModeToPoints(options),contentW=Math.max(1,outputSize.width-margins.left-margins.right),contentH=Math.max(1,outputSize.height-margins.top-margins.bottom);
-  const cellW=contentW/cols,cellH=contentH/rows,pos=getSlotPosition(0,cols,rows,options.nupOrder),cellX=margins.left+pos.col*cellW,cellY=margins.bottom+(rows-1-pos.row)*cellH;
-  drawImageInPdfCell(page,image,cellX,cellY,cellW,cellH,0,scaleMode,options.customScale,options.autoRotate,options.contentAlign);
-  if(options.nupBorder!=='none'&&options.pagesPerSheet>1) page.drawRectangle({x:cellX,y:cellY,width:cellW,height:cellH,borderWidth:options.nupBorder==='medium'?1.5:.7,borderColor:rgb(.6,.6,.6)});
-  const newPdfPath=imagePath+'_converted.pdf'; fs.writeFileSync(newPdfPath,await pdfDoc.save()); try{fs.unlinkSync(imagePath)}catch(_){}
-  return{filePath:newPdfPath,outputPaperKey:outputSize.key,resolvedOrientation};
+  const doc=await PDFDocument.create(),image=await loadEmbeddedImage(doc,imagePath,mimeType,originalName),w=image.width*72/96,h=image.height*72/96,p=doc.addPage([w,h]);p.drawImage(image,{x:0,y:0,width:w,height:h});const newPath=imagePath+'_source.pdf';fs.writeFileSync(newPath,await doc.save());try{fs.unlinkSync(imagePath)}catch(_){};const result=await processPdf(newPath,{...options,transformMode:'none',cropMode:'off'});return {filePath:newPath,outputPaperKey:result.outputPaperKey,resolvedOrientation:result.resolvedOrientation};
 }
 
 app.get('/ping', (req, res) => {
@@ -310,7 +309,7 @@ app.get('/docx-converter-status', async (req, res) => {
       executable: libreOfficeExecutable || null,
       timeoutSeconds: Math.round(DOCX_CONVERT_TIMEOUT_MS / 1000),
     },
-    version: '4.5.19',
+    version: '4.5.20',
   });
 });
 
@@ -321,7 +320,7 @@ app.get('/limits', (req, res) => {
     largePdfThresholdMb: LARGE_PDF_THRESHOLD_MB,
     largePdfChunkPages: LARGE_PDF_CHUNK_PAGES,
     supportedFileTypes: ['pdf', 'png', 'jpg', 'jpeg', 'docx'],
-    version: '4.5.19',
+    version: '4.5.20',
   });
 });
 
@@ -333,30 +332,37 @@ app.get('/printers', async (req, res) => {
   }
 });
 
-function shouldProcessPdf(options){
-  return Boolean(options.pages)||options.pagesPerSheet!==1||options.orientation!=='auto'||options.paperSize!=='SOURCE'||options.scaleMode!=='shrink'||options.pageSubset!=='all'||options.pageOrder!=='normal'||options.marginMode!=='none'||!options.autoRotate||options.contentAlign!=='center'||options.nupBorder!=='none'||options.nupOrder!=='row-ltr'||options.booklet;
+function getCropBoxForPage(page,options){
+  const size=page.getSize(),mm=72/25.4; const l=options.cropMode==='custom'?options.cropLeft*mm:0,r=options.cropMode==='custom'?options.cropRight*mm:0,t=options.cropMode==='custom'?options.cropTop*mm:0,b=options.cropMode==='custom'?options.cropBottom*mm:0;
+  const left=Math.min(size.width-1,l),bottom=Math.min(size.height-1,b),right=Math.max(left+1,size.width-r),top=Math.max(bottom+1,size.height-t); return {left,bottom,right,top,width:right-left,height:top-bottom};
 }
+function formatOverlayText(text,options,pageNo,totalPages){const d=new Date();return String(text||'').replaceAll('{file}',options.sourceName||'').replaceAll('{date}',d.toLocaleDateString()).replaceAll('{time}',d.toLocaleTimeString()).replaceAll('{page}',String(pageNo)).replaceAll('{pages}',String(totalPages));}
+async function applyDocumentOverlays(doc,options){
+  const pages=doc.getPages(); if(!pages.length)return; const font=await doc.embedFont(StandardFonts.Helvetica),bold=await doc.embedFont(StandardFonts.HelveticaBold);
+  for(let i=0;i<pages.length;i++){const p=pages[i],{width,height}=p.getSize(),num=i+1,total=pages.length;
+    const header=formatOverlayText(options.headerText,options,num,total),footer=formatOverlayText(options.footerText,options,num,total); const fs=9,edge=10;
+    if(header)p.drawText(header,{x:edge,y:height-edge-fs,size:fs,font,color:rgb(.15,.15,.15),maxWidth:width-edge*2});
+    if(footer)p.drawText(footer,{x:edge,y:edge,size:fs,font,color:rgb(.15,.15,.15),maxWidth:width-edge*2});
+    if(options.pageNumberMode!=='off'){const label=String(options.pageNumberStart+i),tw=font.widthOfTextAtSize(label,fs);let x=width/2-tw/2,y=edge;if(options.pageNumberMode==='bottom-right'){x=width-edge-tw;y=edge;}else if(options.pageNumberMode==='top-right'){x=width-edge-tw;y=height-edge-fs;}p.drawText(label,{x,y,size:fs,font,color:rgb(.15,.15,.15)});}
+    if(options.watermarkMode&&options.watermarkText){const size=Math.max(34,Math.min(110,width/7)),tw=bold.widthOfTextAtSize(options.watermarkText,size);p.drawText(options.watermarkText,{x:width/2-tw/2,y:height/2-size/3,size,font:bold,color:rgb(.15,.15,.15),opacity:options.watermarkOpacity,rotate:degrees(options.watermarkAngle)});}
+  }
+}
+function drawCutMarks(page,x,y,w,h){const c=rgb(.35,.35,.35),L=12;page.drawLine({start:{x,y:y+L},end:{x,y},thickness:.6,color:c});page.drawLine({start:{x,y},end:{x:x+L,y},thickness:.6,color:c});page.drawLine({start:{x:x+w-L,y},end:{x:x+w,y},thickness:.6,color:c});page.drawLine({start:{x:x+w,y},end:{x:x+w,y:y+L},thickness:.6,color:c});page.drawLine({start:{x,y:y+h-L},end:{x,y:y+h},thickness:.6,color:c});page.drawLine({start:{x,y:y+h},end:{x:x+L,y:y+h},thickness:.6,color:c});page.drawLine({start:{x:x+w-L,y:y+h},end:{x:x+w,y:y+h},thickness:.6,color:c});page.drawLine({start:{x:x+w,y:y+h},end:{x:x+w,y:y+h-L},thickness:.6,color:c});}
+async function processPdfPoster(filePath,options){
+  const bytes=fs.readFileSync(filePath),src=await PDFDocument.load(bytes,{ignoreEncryption:true}),total=src.getPageCount();let indices=parsePagesInput(options.pages,total);if(!indices.length)indices=Array.from({length:total},(_,i)=>i);if(options.pageSubset==='odd')indices=indices.filter(i=>(i+1)%2===1);else if(options.pageSubset==='even')indices=indices.filter(i=>(i+1)%2===0);if(options.pageOrder==='reverse')indices.reverse();
+  const first=src.getPage(indices[0]||0),fsz=first.getSize(),std=detectStandardPaper(fsz.width,fsz.height),orient=resolveOrientation(options.orientation,fsz.width,fsz.height,1),outSize=resolvePaperSize(options.paperSize,orient,fsz.width,fsz.height,std),m=marginModeToPoints(options),cw=Math.max(1,outSize.width-m.left-m.right),ch=Math.max(1,outSize.height-m.top-m.bottom),doc=await PDFDocument.create(),ovPt=options.posterOverlap*72/25.4;
+  for(const idx of indices){const pg=src.getPage(idx),box=getCropBoxForPage(pg,options),tileW=box.width/options.posterCols,tileH=box.height/options.posterRows;for(let row=0;row<options.posterRows;row++){for(let col=0;col<options.posterCols;col++){const ovX=(ovPt*tileW/cw)/2,ovY=(ovPt*tileH/ch)/2;let left=box.left+col*tileW-(col>0?ovX:0),right=box.left+(col+1)*tileW+(col<options.posterCols-1?ovX:0),bottom=box.bottom+(options.posterRows-1-row)*tileH-(row<options.posterRows-1?ovY:0),top=box.bottom+(options.posterRows-row)*tileH+(row>0?ovY:0);left=Math.max(box.left,left);right=Math.min(box.right,right);bottom=Math.max(box.bottom,bottom);top=Math.min(box.top,top);const emb=await doc.embedPage(pg,{left,bottom,right,top});const out=doc.addPage([outSize.width,outSize.height]),scale=Math.min(cw/emb.width,ch/emb.height),w=emb.width*scale,h=emb.height*scale,x=m.left+(cw-w)/2,y=m.bottom+(ch-h)/2;out.drawPage(emb,{x,y,width:w,height:h});if(options.posterCutMarks)drawCutMarks(out,m.left,m.bottom,cw,ch);}}}
+  await applyDocumentOverlays(doc,options);fs.writeFileSync(filePath,await doc.save());return {outputPaperKey:outSize.key,resolvedOrientation:orient};
+}
+function shouldProcessPdf(options){return true;}
 
 async function processPdf(filePath,options){
-  const bytes=fs.readFileSync(filePath),sourceDoc=await PDFDocument.load(bytes,{ignoreEncryption:true}),totalPages=sourceDoc.getPageCount();
-  let indices=parsePagesInput(options.pages,totalPages); if(!indices.length)indices=Array.from({length:totalPages},(_,i)=>i);
-  if(options.booklet) indices=makeBookletSequence(indices); else { if(options.pageSubset==='odd')indices=indices.filter(i=>(i+1)%2===1); else if(options.pageSubset==='even')indices=indices.filter(i=>(i+1)%2===0); if(options.pageOrder==='reverse')indices.reverse(); }
-  if(!indices.length)throw new Error('Tidak ada halaman yang sesuai dengan pilihan cetak.');
-  const firstIndex=indices.find(i=>i!==null)??0,firstSize=sourceDoc.getPage(firstIndex).getSize(),sourceStandard=detectStandardPaper(firstSize.width,firstSize.height);
-  const resolvedOrientation=resolveOrientation(options.orientation,firstSize.width,firstSize.height,options.pagesPerSheet),outputSize=resolvePaperSize(options.paperSize,resolvedOrientation,firstSize.width,firstSize.height,sourceStandard);
-  const scaleMode=getEffectiveScaleMode(options.scaleMode,options.pagesPerSheet),{cols,rows,safePps}=getGrid(options.pagesPerSheet,resolvedOrientation),margins=marginModeToPoints(options);
-  const contentW=Math.max(1,outputSize.width-margins.left-margins.right),contentH=Math.max(1,outputSize.height-margins.top-margins.bottom),cellW=contentW/cols,cellH=contentH/rows;
-  const final=await PDFDocument.create(); let curPage;
-  for(let i=0;i<indices.length;i++){
-    if(i%safePps===0)curPage=final.addPage([outputSize.width,outputSize.height]);
-    const slot=i%safePps,pos=getSlotPosition(slot,cols,rows,options.nupOrder),cellX=margins.left+pos.col*cellW,cellY=margins.bottom+(rows-1-pos.row)*cellH;
-    if(options.nupBorder!=='none'&&options.pagesPerSheet>1)curPage.drawRectangle({x:cellX,y:cellY,width:cellW,height:cellH,borderWidth:options.nupBorder==='medium'?1.5:.7,borderColor:rgb(.6,.6,.6)});
-    const sourceIndex=indices[i]; if(sourceIndex===null)continue;
-    const emb=await final.embedPage(sourceDoc.getPage(sourceIndex)),placement=computePlacement(emb.width,emb.height,cellW,cellH,0,scaleMode,options.autoRotate,options.customScale);
-    let x=cellX+(cellW-placement.width)/2,y=cellY+(cellH-placement.height)/2; if(options.contentAlign==='top-left'){x=cellX;y=cellY+cellH-placement.height;}
-    curPage.drawPage(emb,{x:x+(placement.rotate?emb.height*placement.scale:0),y,width:emb.width*placement.scale,height:emb.height*placement.scale,rotate:placement.rotate?degrees(90):degrees(0)});
-  }
-  fs.writeFileSync(filePath,await final.save()); return{outputPaperKey:outputSize.key,resolvedOrientation};
+  if(options.poster)return await processPdfPoster(filePath,options);
+  const bytes=fs.readFileSync(filePath),sourceDoc=await PDFDocument.load(bytes,{ignoreEncryption:true}),totalPages=sourceDoc.getPageCount();let indices=parsePagesInput(options.pages,totalPages);if(!indices.length)indices=Array.from({length:totalPages},(_,i)=>i);
+  if(options.booklet)indices=makeBookletSequence(indices);else{if(options.pageSubset==='odd')indices=indices.filter(i=>(i+1)%2===1);else if(options.pageSubset==='even')indices=indices.filter(i=>(i+1)%2===0);if(options.pageOrder==='reverse')indices.reverse();}if(!indices.length)throw new Error('Tidak ada halaman yang sesuai.');
+  const firstIndex=indices.find(i=>i!==null)??0,firstSize=sourceDoc.getPage(firstIndex).getSize(),std=detectStandardPaper(firstSize.width,firstSize.height),orient=resolveOrientation(options.orientation,firstSize.width,firstSize.height,options.pagesPerSheet),outSize=resolvePaperSize(options.paperSize,orient,firstSize.width,firstSize.height,std),scaleMode=getEffectiveScaleMode(options.scaleMode,options.pagesPerSheet),grid=getGrid(options.pagesPerSheet,orient),m=marginModeToPoints(options),cw=Math.max(1,outSize.width-m.left-m.right),ch=Math.max(1,outSize.height-m.top-m.bottom),cellW=cw/grid.cols,cellH=ch/grid.rows,doc=await PDFDocument.create();let out;
+  for(let i=0;i<indices.length;i++){if(i%grid.safePps===0)out=doc.addPage([outSize.width,outSize.height]);const slot=i%grid.safePps,pos=getSlotPosition(slot,grid.cols,grid.rows,options.nupOrder),cellX=m.left+pos.col*cellW,cellY=m.bottom+(grid.rows-1-pos.row)*cellH;if(options.nupBorder!=='none'&&options.pagesPerSheet>1)out.drawRectangle({x:cellX,y:cellY,width:cellW,height:cellH,borderWidth:options.nupBorder==='medium'?1.5:.7,borderColor:rgb(.6,.6,.6)});const idx=indices[i];if(idx===null)continue;const pg=sourceDoc.getPage(idx),box=getCropBoxForPage(pg,options),emb=await doc.embedPage(pg,box),placement=computePlacement(emb.width,emb.height,cellW,cellH,0,scaleMode,options.autoRotate,options.customScale);let x=options.contentAlign==='top-left'?cellX:cellX+(cellW-placement.width)/2,y=options.contentAlign==='top-left'?cellY+cellH-placement.height:cellY+(cellH-placement.height)/2;out.drawPage(emb,{x:x+(placement.rotate?emb.height*placement.scale:0),y,width:emb.width*placement.scale,height:emb.height*placement.scale,rotate:placement.rotate?degrees(90):degrees(0)});}
+  await applyDocumentOverlays(doc,options);fs.writeFileSync(filePath,await doc.save());return {outputPaperKey:outSize.key,resolvedOrientation:orient};
 }
 
 async function getPdfPageCount(filePath) {
@@ -825,6 +831,8 @@ app.post('/print',
   const mimeType = req.file ? req.file.mimetype : '';
   const originalName = req.file ? req.file.originalname : '';
   const options = sanitizePrintOptions(req.body);
+  options.sourceName = originalName;
+  if (options.poster) { options.booklet=false; options.pagesPerSheet=1; options.duplexMode='simplex'; }
   if (options.booklet) {
     options.pagesPerSheet=2; options.orientation='landscape'; options.duplexMode='duplexshort'; options.collate=true; options.pageSubset='all'; options.pageOrder='normal'; options.nupOrder='row-ltr';
   }
@@ -905,4 +913,4 @@ server.requestTimeout = 0;
 server.headersTimeout = 0;
 server.timeout = 0;
 
-server.listen(port, '0.0.0.0', () => console.log(`Print Server V4.5.19 Ready on ${port}`));
+server.listen(port, '0.0.0.0', () => console.log(`Print Server V4.5.20 Ready on ${port}`));

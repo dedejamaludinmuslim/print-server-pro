@@ -184,6 +184,51 @@
                             <select id="bookletMode" class="input-standard"><option value="off">Nonaktif</option><option value="on">Aktif • Lipat Tengah</option></select>
                             <div style="font-size:10px; color:var(--text-muted); margin-top:5px; line-height:1.35;">Booklet otomatis memakai Landscape, 2 hal/lembar, Duplex sisi pendek, dan Collate.</div>
                         </div>
+                        <div class="input-group"><label>Poster / Tile:</label>
+                            <select id="posterMode" class="input-standard"><option value="off">Nonaktif</option><option value="on">Aktif</option></select>
+                            <div id="posterSettings" style="display:none; margin-top:7px; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px;">
+                                <label style="font-size:10px;">Kolom<input type="number" id="posterCols" class="input-standard" value="2" min="1" max="6" step="1"></label>
+                                <label style="font-size:10px;">Baris<input type="number" id="posterRows" class="input-standard" value="2" min="1" max="6" step="1"></label>
+                                <label style="font-size:10px;">Overlap (mm)<input type="number" id="posterOverlap" class="input-standard" value="5" min="0" max="30" step="0.5"></label>
+                                <label style="font-size:10px;">Tanda Potong<select id="posterCutMarks" class="input-standard"><option value="off">Tidak</option><option value="on">Ya</option></select></label>
+                            </div>
+                        </div>
+                        <div class="input-group"><label>Mirror / Flip:</label>
+                            <select id="transformMode" class="input-standard">
+                                <option value="none">Normal</option>
+                                <option value="mirror-h">Mirror Horizontal</option>
+                                <option value="flip-v">Flip Vertikal</option>
+                                <option value="both">Mirror + Flip</option>
+                            </select>
+                        </div>
+                        <div class="input-group"><label>Crop Dokumen:</label>
+                            <select id="cropMode" class="input-standard"><option value="off">Nonaktif</option><option value="custom">Custom</option></select>
+                            <div id="cropSettings" style="display:none; margin-top:7px; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px;">
+                                <input type="number" id="cropTop" class="input-standard" value="0" min="0" max="100" step="0.1" placeholder="Atas mm">
+                                <input type="number" id="cropRight" class="input-standard" value="0" min="0" max="100" step="0.1" placeholder="Kanan mm">
+                                <input type="number" id="cropBottom" class="input-standard" value="0" min="0" max="100" step="0.1" placeholder="Bawah mm">
+                                <input type="number" id="cropLeft" class="input-standard" value="0" min="0" max="100" step="0.1" placeholder="Kiri mm">
+                            </div>
+                        </div>
+                        <div class="input-group"><label>Watermark:</label>
+                            <select id="watermarkMode" class="input-standard"><option value="off">Nonaktif</option><option value="on">Aktif</option></select>
+                            <div id="watermarkSettings" style="display:none; margin-top:7px; gap:7px; flex-direction:column;">
+                                <input type="text" id="watermarkText" class="input-standard" value="DRAFT" maxlength="80" placeholder="Teks watermark">
+                                <div style="display:grid; grid-template-columns:1fr 1fr; gap:7px;">
+                                    <label style="font-size:10px;">Opacity %<input type="number" id="watermarkOpacity" class="input-standard" value="20" min="5" max="80" step="1"></label>
+                                    <label style="font-size:10px;">Arah<select id="watermarkAngle" class="input-standard"><option value="-45">Diagonal</option><option value="0">Horizontal</option><option value="45">Diagonal Balik</option></select></label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="input-group"><label>Header Cetak:</label><input type="text" id="headerText" class="input-standard" maxlength="120" placeholder="Contoh: {file} • {date}"></div>
+                        <div class="input-group"><label>Footer Cetak:</label><input type="text" id="footerText" class="input-standard" maxlength="120" placeholder="Contoh: Dokumen internal"></div>
+                        <div class="input-group"><label>Nomor Halaman:</label>
+                            <select id="pageNumberMode" class="input-standard"><option value="off">Nonaktif</option><option value="bottom-center">Bawah Tengah</option><option value="bottom-right">Bawah Kanan</option><option value="top-right">Atas Kanan</option></select>
+                            <div id="pageNumberSettings" style="display:none; margin-top:7px; align-items:center; gap:7px;">
+                                <span style="font-size:10px;">Mulai dari</span><input type="number" id="pageNumberStart" class="input-standard" value="1" min="1" max="9999" step="1" style="flex:1;">
+                            </div>
+                        </div>
+                        <div style="font-size:10px; color:var(--text-muted); line-height:1.4; grid-column:1/-1;">Token header/footer: <strong>{file}</strong>, <strong>{date}</strong>, <strong>{time}</strong>, <strong>{page}</strong>, <strong>{pages}</strong>. Poster mengunci 1 hal/lembar dan simplex.</div>
                     </div>
                     <div class="input-group"><label>Rincian Halaman:</label><input type="text" id="pages" class="input-standard" placeholder="1,3,5-7"></div>
                     <div style="font-size:11px; color:var(--text-muted); line-height:1.5;">Setiap perubahan langsung diterapkan pada preview. Duplex bergantung pada kemampuan printer. Booklet mengunci pengaturan yang diperlukan agar urutan lipatan benar.</div>
@@ -448,6 +493,71 @@
             }
             ids.forEach(id => document.getElementById(id).disabled = booklet);
         }
+        function getCropMm() {
+            if (document.getElementById('cropMode').value !== 'custom') return {top:0,right:0,bottom:0,left:0};
+            return {
+                top:Number(document.getElementById('cropTop').value||0), right:Number(document.getElementById('cropRight').value||0),
+                bottom:Number(document.getElementById('cropBottom').value||0), left:Number(document.getElementById('cropLeft').value||0)
+            };
+        }
+        function applyCanvasMirrorFlip(ctx, width, height) {
+            const mode=document.getElementById('transformMode').value;
+            if (mode==='mirror-h' || mode==='both') { ctx.translate(width,0); ctx.scale(-1,1); }
+            if (mode==='flip-v' || mode==='both') { ctx.translate(0,height); ctx.scale(1,-1); }
+        }
+        function formatOverlayTemplate(text, page, pages) {
+            const now=new Date();
+            const file=currentOriginalFileName || document.getElementById('fileInput').files[0]?.name || '';
+            return String(text||'').replaceAll('{file}',file).replaceAll('{date}',now.toLocaleDateString()).replaceAll('{time}',now.toLocaleTimeString()).replaceAll('{page}',String(page)).replaceAll('{pages}',String(pages));
+        }
+        function drawPreviewOverlays(ctx, width, height, pageNo, totalPages) {
+            const header=formatOverlayTemplate(document.getElementById('headerText').value,pageNo,totalPages);
+            const footer=formatOverlayTemplate(document.getElementById('footerText').value,pageNo,totalPages);
+            ctx.save(); ctx.fillStyle='rgba(30,41,59,.85)'; ctx.font='16px Arial';
+            if(header) ctx.fillText(header,18,24);
+            if(footer) ctx.fillText(footer,18,height-12);
+            const pnMode=document.getElementById('pageNumberMode').value;
+            if(pnMode!=='off') {
+                const start=Number(document.getElementById('pageNumberStart').value||1), label=String(start+pageNo-1);
+                const tw=ctx.measureText(label).width; let x=width/2-tw/2,y=height-12;
+                if(pnMode==='bottom-right'){x=width-tw-18;y=height-12;} else if(pnMode==='top-right'){x=width-tw-18;y=24;}
+                ctx.fillText(label,x,y);
+            }
+            if(document.getElementById('watermarkMode').value==='on') {
+                const txt=document.getElementById('watermarkText').value||'DRAFT'; const op=Math.max(.05,Math.min(.8,Number(document.getElementById('watermarkOpacity').value||20)/100));
+                const ang=Number(document.getElementById('watermarkAngle').value||-45)*Math.PI/180;
+                ctx.translate(width/2,height/2);ctx.rotate(ang);ctx.globalAlpha=op;ctx.fillStyle='#111827';ctx.font=`bold ${Math.max(42,Math.round(width/10))}px Arial`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(txt,0,0);
+            }
+            ctx.restore();
+        }
+        function syncDocumentAdvancedControls() {
+            const poster=document.getElementById('posterMode').value==='on', booklet=document.getElementById('bookletMode').value==='on';
+            document.getElementById('posterSettings').style.display=poster?'grid':'none';
+            document.getElementById('cropSettings').style.display=document.getElementById('cropMode').value==='custom'?'grid':'none';
+            document.getElementById('watermarkSettings').style.display=document.getElementById('watermarkMode').value==='on'?'flex':'none';
+            document.getElementById('pageNumberSettings').style.display=document.getElementById('pageNumberMode').value==='off'?'none':'flex';
+            if(poster){
+                if(booklet) document.getElementById('bookletMode').value='off';
+                document.getElementById('pagesPerSheet').value='1'; document.getElementById('duplexMode').value='simplex';
+            }
+            document.getElementById('pagesPerSheet').disabled=poster || document.getElementById('bookletMode').value==='on';
+            document.getElementById('duplexMode').disabled=poster || document.getElementById('bookletMode').value==='on';
+        }
+        async function prepareImageFileForUpload(file) {
+            if(currentInputKind!=='image') return file;
+            const needsCrop=document.getElementById('cropMode').value==='custom';
+            const transform=document.getElementById('transformMode').value;
+            if(!needsCrop && transform==='none') return file;
+            const img=new Image(); img.src=currentImgSrc; await new Promise((res,rej)=>{img.onload=res;img.onerror=rej;});
+            const crop=getCropMm(), mmToPx=96/25.4;
+            const sx=Math.max(0,crop.left*mmToPx), sy=Math.max(0,crop.top*mmToPx);
+            const sw=Math.max(1,img.width-(crop.left+crop.right)*mmToPx), sh=Math.max(1,img.height-(crop.top+crop.bottom)*mmToPx);
+            if(sw<=1||sh<=1) throw new Error('Crop terlalu besar untuk ukuran gambar.');
+            const c=document.createElement('canvas'); c.width=Math.round(sw); c.height=Math.round(sh); const cx=c.getContext('2d');
+            cx.save(); applyCanvasMirrorFlip(cx,c.width,c.height); cx.drawImage(img,sx,sy,sw,sh,0,0,c.width,c.height); cx.restore();
+            const type=file.type==='image/png'?'image/png':'image/jpeg'; const blob=await new Promise(resolve=>c.toBlob(resolve,type,type==='image/jpeg'?.9:undefined));
+            return new File([blob],file.name,{type});
+        }
         function parsePagesInput(value) {
             const raw = (value || '').trim();
             if (!raw) return { ok: true, normalized: '', message: '' };
@@ -517,6 +627,14 @@
                     el.setCustomValidity('');
                 }
             }
+            for (const id of ['posterCols','posterRows']) {
+                const el=document.getElementById(id),v=Number(el.value); if(!Number.isInteger(v)||v<1||v>6){el.setCustomValidity('Poster 1 sampai 6.'); if(showFeedback){el.reportValidity();showToast('Kolom/baris poster harus 1 sampai 6.','error');} return false;} el.setCustomValidity('');
+            }
+            for (const id of ['posterOverlap','cropTop','cropRight','cropBottom','cropLeft']) {
+                const el=document.getElementById(id),v=Number(el.value); if(!Number.isFinite(v)||v<0||v>100){el.setCustomValidity('Nilai harus 0 sampai 100 mm.'); if(showFeedback){el.reportValidity();showToast('Nilai poster/crop tidak valid.','error');} return false;} el.setCustomValidity('');
+            }
+            const wmOp=Number(document.getElementById('watermarkOpacity').value); if(wmOp<5||wmOp>80){if(showFeedback)showToast('Opacity watermark harus 5%–80%.','error');return false;}
+            syncDocumentAdvancedControls();
             syncLayoutFinishingControls();
             if (document.getElementById('bookletMode').value === 'on' && currentImgSrc) {
                 if (showFeedback) showToast('Booklet hanya tersedia untuk PDF atau DOCX yang sudah dikonversi ke PDF.', 'error');
@@ -707,73 +825,32 @@
         }
 
         async function buildCompatibilityPdfFromCurrentPdf() {
-            if (!currentPdfDoc || !window.PDFLib) {
-                throw new Error('Mode kompatibilitas belum siap. Pastikan file PDF sudah tampil di preview dan koneksi internet tersedia untuk memuat PDF-lib.');
-            }
-            const { PDFDocument } = window.PDFLib;
-            const outPdf = await PDFDocument.create();
-            const selectedPages = getSelectedPdfPages(currentPdfDoc.numPages, true);
-            if (selectedPages.length > 120) {
-                const ok = confirm(`Mode kompatibilitas akan merender ${selectedPages.length} halaman. Proses bisa lama. Lanjutkan?`);
-                if (!ok) throw new Error('Dibatalkan pengguna.');
-            }
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d', { alpha: false });
-            const renderScale = 1.6;
+            if (!currentPdfDoc || !window.PDFLib) throw new Error('Mode kompatibilitas belum siap.');
+            const { PDFDocument }=window.PDFLib, outPdf=await PDFDocument.create();
+            const selectedPages=getSelectedPdfPages(currentPdfDoc.numPages,true); const renderScale=1.6;
             document.getElementById('realtimeStatus').style.display='block';
-            for (let idx = 0; idx < selectedPages.length; idx += 1) {
-                const pageNumber = selectedPages[idx];
-                document.getElementById('statusMessage').innerText = `Mode kompatibilitas: merender halaman ${idx + 1}/${selectedPages.length}...`;
-                document.getElementById('progressBar').style.width = `${Math.round((idx / selectedPages.length) * 65)}%`;
-                const page = await currentPdfDoc.getPage(pageNumber);
-                const vp = page.getViewport({ scale: renderScale });
-                canvas.width = Math.ceil(vp.width);
-                canvas.height = Math.ceil(vp.height);
-                ctx.fillStyle = 'white';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                await page.render({ canvasContext: ctx, viewport: vp }).promise;
-                const jpgDataUrl = canvas.toDataURL('image/jpeg', 0.82);
-                const jpgBytes = await fetch(jpgDataUrl).then(r => r.arrayBuffer());
-                const jpg = await outPdf.embedJpg(jpgBytes);
-                const baseVp = page.getViewport({ scale: 1 });
-                const pdfPage = outPdf.addPage([baseVp.width, baseVp.height]);
-                pdfPage.drawImage(jpg, { x: 0, y: 0, width: baseVp.width, height: baseVp.height });
-                if (idx % 3 === 2) await new Promise(r => setTimeout(r, 0));
+            for(let idx=0;idx<selectedPages.length;idx++){
+                const pageNumber=selectedPages[idx]; document.getElementById('statusMessage').innerText=`Mode kompatibilitas: merender halaman ${idx+1}/${selectedPages.length}...`;
+                const page=await currentPdfDoc.getPage(pageNumber), vp=page.getViewport({scale:renderScale});
+                const src=document.createElement('canvas'); src.width=Math.ceil(vp.width);src.height=Math.ceil(vp.height); await page.render({canvasContext:src.getContext('2d'),viewport:vp}).promise;
+                const out=document.createElement('canvas');out.width=src.width;out.height=src.height;const ox=out.getContext('2d');ox.fillStyle='white';ox.fillRect(0,0,out.width,out.height);ox.save();applyCanvasMirrorFlip(ox,out.width,out.height);ox.drawImage(src,0,0);ox.restore();
+                const jpg=await outPdf.embedJpg(await (await fetch(out.toDataURL('image/jpeg',.84))).arrayBuffer()); const base=page.getViewport({scale:1}); const p=outPdf.addPage([base.width,base.height]);p.drawImage(jpg,{x:0,y:0,width:base.width,height:base.height});
+                if(idx%3===2)await new Promise(r=>setTimeout(r,0));
             }
-            document.getElementById('statusMessage').innerText = 'Mode kompatibilitas: menyiapkan file cetak...';
-            document.getElementById('progressBar').style.width = '70%';
-            const bytes = await outPdf.save();
-            return new File([bytes], 'compatibility-print.pdf', { type: 'application/pdf' });
+            return new File([await outPdf.save()],'compatibility-print.pdf',{type:'application/pdf'});
         }
 
 async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false) {
-            const fd = new FormData();
-            fd.append('document', fileObj);
-            fd.append('pin', pin);
-            fd.append('printerName', document.getElementById('printerSelect').value);
-            fd.append('colorMode', document.getElementById('colorMode').value);
-            fd.append('paperSize', document.getElementById('paperSize').value);
-            fd.append('orientation', document.getElementById('orientation').value);
-            fd.append('scaleMode', document.getElementById('scaleMode').value);
-            fd.append('customScale', document.getElementById('customScale').value);
-            fd.append('pagesPerSheet', document.getElementById('pagesPerSheet').value);
-            fd.append('copies', document.getElementById('copies').value);
-            fd.append('duplexMode', document.getElementById('duplexMode').value);
-            fd.append('pageSubset', useCompatibilityMode ? 'all' : document.getElementById('pageSubset').value);
-            fd.append('pageOrder', useCompatibilityMode ? 'normal' : document.getElementById('pageOrder').value);
-            fd.append('collateMode', document.getElementById('collateMode').value);
-            fd.append('marginMode', document.getElementById('marginMode').value);
-            fd.append('marginTop', document.getElementById('marginTop').value);
-            fd.append('marginRight', document.getElementById('marginRight').value);
-            fd.append('marginBottom', document.getElementById('marginBottom').value);
-            fd.append('marginLeft', document.getElementById('marginLeft').value);
-            fd.append('autoRotateMode', document.getElementById('autoRotateMode').value);
-            fd.append('contentAlign', document.getElementById('contentAlign').value);
-            fd.append('nupBorder', document.getElementById('nupBorder').value);
-            fd.append('nupOrder', document.getElementById('nupOrder').value);
-            fd.append('bookletMode', document.getElementById('bookletMode').value);
-            fd.append('pages', useCompatibilityMode ? '' : document.getElementById('pages').value);
-            return await fetchWithRetry(`http://${ip}:3000/print`, { method: 'POST', body: fd }, 1, 400);
+            let uploadFile=fileObj;
+            if(!useCompatibilityMode && currentInputKind==='image') uploadFile=await prepareImageFileForUpload(fileObj);
+            const fd=new FormData(); fd.append('document',uploadFile); fd.append('pin',pin);
+            const val=id=>document.getElementById(id).value;
+            fd.append('printerName',document.getElementById('printerSelect').value);
+            ['colorMode','paperSize','orientation','scaleMode','customScale','pagesPerSheet','copies','duplexMode','collateMode','marginMode','marginTop','marginRight','marginBottom','marginLeft','autoRotateMode','contentAlign','nupBorder','nupOrder','posterMode','posterCols','posterRows','posterOverlap','posterCutMarks','transformMode','cropMode','cropTop','cropRight','cropBottom','cropLeft','watermarkMode','watermarkText','watermarkOpacity','watermarkAngle','headerText','footerText','pageNumberMode','pageNumberStart'].forEach(id=>fd.append(id,val(id)));
+            fd.append('pageSubset',useCompatibilityMode?'all':val('pageSubset')); fd.append('pageOrder',useCompatibilityMode?'normal':val('pageOrder'));
+            fd.append('bookletMode',useCompatibilityMode?'off':val('bookletMode')); fd.append('pages',useCompatibilityMode?'':val('pages'));
+            fd.append('transformsBaked',useCompatibilityMode||currentInputKind==='image'?'true':'false');
+            return await fetchWithRetry(`http://${ip}:3000/print`,{method:'POST',body:fd},1,400);
         }
 
         function resetAfterSuccessfulPrint(ip, printedName) {
@@ -812,12 +889,14 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
 
             try {
                 let fileToPrint = originalFile;
-
-                if (useCompatibilityMode) {
+                let effectiveCompatibility = useCompatibilityMode;
+                const needsPdfTransform = currentPdfDoc && document.getElementById('transformMode').value !== 'none';
+                if (useCompatibilityMode || needsPdfTransform) {
+                    if (needsPdfTransform && !useCompatibilityMode) showToast('Mirror/Flip PDF diproses otomatis melalui mode kompatibilitas.', 'info');
                     fileToPrint = await buildCompatibilityFileOrThrow();
+                    effectiveCompatibility = true;
                 }
-
-                const r = await submitPrintRequest(ip, pin, fileToPrint, useCompatibilityMode);
+                const r = await submitPrintRequest(ip, pin, fileToPrint, effectiveCompatibility);
 
                 if (r.ok) {
                     resetAfterSuccessfulPrint(ip, historyName);
@@ -1092,79 +1171,49 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
             }
         });
         function updatePrintSettingsSummary() {
-            const el=document.getElementById('printSettingsSummary'); if(!el)return;
-            const paperMap={SOURCE:'Sama dengan dokumen',A4:'A4',F4:'F4',LETTER:'Letter',LEGAL:'Legal'};
-            const orientationMap={auto:'Otomatis',portrait:'Portrait',landscape:'Landscape'};
-            const scaleMap={shrink:'Shrink',fit:'Fit',actual:'100%',custom:`${document.getElementById('customScale').value||100}%`,fill:'Fill'};
-            const duplexMap={simplex:'1 sisi',duplexlong:'Duplex panjang',duplexshort:'Duplex pendek'};
-            const subsetMap={all:'Semua hlm',odd:'Ganjil',even:'Genap'};
-            const marginMap={none:'Tanpa margin',narrow:'Margin sempit',normal:'Margin normal',wide:'Margin lebar',custom:'Margin custom'};
-            const parts=[
-                paperMap[document.getElementById('paperSize').value], orientationMap[document.getElementById('orientation').value],
-                scaleMap[document.getElementById('scaleMode').value], `${document.getElementById('pagesPerSheet').value} hal/lembar`,
-                `${document.getElementById('copies').value} copy`, duplexMap[document.getElementById('duplexMode').value],
-                subsetMap[document.getElementById('pageSubset').value], document.getElementById('pageOrder').value==='reverse'?'Terbalik':'Normal',
-                document.getElementById('collateMode').value==='collated'?'Collate':'Uncollated', marginMap[document.getElementById('marginMode').value],
-                document.getElementById('autoRotateMode').value==='auto'?'Auto rotate':'Tanpa rotate',
-                document.getElementById('contentAlign').value==='center'?'Tengah':'Kiri atas'
-            ];
-            if (document.getElementById('nupBorder').value!=='none') parts.push(document.getElementById('nupBorder').value==='thin'?'Border tipis':'Border sedang');
-            if (document.getElementById('bookletMode').value==='on') parts.push('BOOKLET');
-            el.textContent=parts.filter(Boolean).join(' • ');
+            const el=document.getElementById('printSettingsSummary');if(!el)return;
+            const p=[]; p.push(document.getElementById('paperSize').value,document.getElementById('orientation').value,document.getElementById('scaleMode').value,`${document.getElementById('pagesPerSheet').value} hal/lembar`,`${document.getElementById('copies').value} copy`);
+            if(document.getElementById('bookletMode').value==='on')p.push('BOOKLET');
+            if(document.getElementById('posterMode').value==='on')p.push(`POSTER ${document.getElementById('posterCols').value}×${document.getElementById('posterRows').value}`);
+            if(document.getElementById('transformMode').value!=='none')p.push(document.getElementById('transformMode').value);
+            if(document.getElementById('cropMode').value==='custom')p.push('Crop');
+            if(document.getElementById('watermarkMode').value==='on')p.push('Watermark');
+            if(document.getElementById('headerText').value)p.push('Header'); if(document.getElementById('footerText').value)p.push('Footer'); if(document.getElementById('pageNumberMode').value!=='off')p.push('Nomor hlm');
+            el.textContent=p.filter(Boolean).join(' • ');
         }
 
         async function updateDynamicPreview() {
-            syncLayoutFinishingControls(); updatePrintSettingsSummary();
-            const canvas=document.getElementById('mainPreviewCanvas'), emptyState=document.getElementById('emptyPreviewState');
-            if (!currentPdfDoc && !currentImgSrc) {
-                canvas.style.display='none'; emptyState.style.display='block'; document.getElementById('previewPagination').style.display='none';
-                document.getElementById('previewBadge').textContent=document.getElementById('colorMode').value==='monochrome'?'Hitam Putih':'Warna'; return;
+            syncAdvancedPrintControls(); updatePrintSettingsSummary();
+            const canvas=document.getElementById('mainPreviewCanvas'), empty=document.getElementById('emptyPreviewState');
+            if(!currentPdfDoc&&!currentImgSrc){canvas.style.display='none';empty.style.display='block';document.getElementById('previewPagination').style.display='none';return;}
+            validatePrintSettings(false);empty.style.display='none';canvas.style.display='block';
+            const poster=document.getElementById('posterMode').value==='on', pCols=Number(document.getElementById('posterCols').value||2), pRows=Number(document.getElementById('posterRows').value||2);
+            const requestedOrientation=document.getElementById('orientation').value,paperSize=document.getElementById('paperSize').value,pps=poster?1:(parseInt(document.getElementById('pagesPerSheet').value,10)||1);
+            const autoRotate=document.getElementById('autoRotateMode').value==='auto',align=document.getElementById('contentAlign').value,scaleMode=getEffectiveScaleMode(document.getElementById('scaleMode').value,pps),customScale=Number(document.getElementById('customScale').value||100);
+            const orient=resolveOrientation(requestedOrientation,currentSourceInfo.width,currentSourceInfo.height,pps),paper=resolvePaperViewport(paperSize,orient,currentSourceInfo.width,currentSourceInfo.height,currentSourceInfo.standard),grid=getGrid(pps,orient),margin=getMarginMm();
+            const baseH=1000;canvas.height=baseH;canvas.width=Math.max(650,Math.round(baseH*paper.width/paper.height));const ps=canvas.width/paper.width,mmPt=72/25.4;
+            const m={top:margin.top*mmPt*ps,right:margin.right*mmPt*ps,bottom:margin.bottom*mmPt*ps,left:margin.left*mmPt*ps},cx=m.left,cy=m.top,cw=Math.max(1,canvas.width-m.left-m.right),ch=Math.max(1,canvas.height-m.top-m.bottom);
+            const ctx=canvas.getContext('2d');ctx.fillStyle='white';ctx.fillRect(0,0,canvas.width,canvas.height);canvas.style.filter=document.getElementById('colorMode').value==='monochrome'?'grayscale(100%)':'none';
+            document.getElementById('previewBadge').textContent=`${paperSize} • ${orient}${poster?` • Poster ${pCols}×${pRows}`:''}`;
+            const drawSourceCanvas=(src,cellX,cellY,cellW,cellH)=>{ctx.save();ctx.beginPath();ctx.rect(cellX,cellY,cellW,cellH);ctx.clip();const fit=Math.min(cellW/src.width,cellH/src.height),w=src.width*fit,h=src.height*fit,x=align==='top-left'?cellX:cellX+(cellW-w)/2,y=align==='top-left'?cellY:cellY+(cellH-h)/2;ctx.drawImage(src,x,y,w,h);ctx.restore();};
+            let pages=[]; if(currentPdfDoc)pages=getSelectedPdfPages(currentPdfDoc.numPages); else pages=[1];
+            const tileCount=poster?pCols*pRows:1,totalLogical=pages.length*tileCount; totalPreviewSheets=poster?totalLogical:Math.ceil(pages.length/grid.safePps); if(currentPreviewSheet>=totalPreviewSheets)currentPreviewSheet=Math.max(0,totalPreviewSheets-1);
+            document.getElementById('previewPagination').style.display=totalPreviewSheets>1?'flex':'none';document.getElementById('previewSheetText').innerText=`${currentPreviewSheet+1} / ${Math.max(1,totalPreviewSheets)}`;document.getElementById('btnPrevPage').disabled=currentPreviewSheet<=0;document.getElementById('btnNextPage').disabled=currentPreviewSheet>=totalPreviewSheets-1;
+            if(poster){
+                const sourcePos=Math.floor(currentPreviewSheet/tileCount),tile=currentPreviewSheet%tileCount,row=Math.floor(tile/pCols),col=tile%pCols;
+                let srcCanvas;
+                if(currentPdfDoc){const pn=pages[sourcePos];if(!pn)return;const page=await currentPdfDoc.getPage(pn),vp=page.getViewport({scale:1.5});srcCanvas=document.createElement('canvas');srcCanvas.width=Math.ceil(vp.width);srcCanvas.height=Math.ceil(vp.height);await page.render({canvasContext:srcCanvas.getContext('2d'),viewport:vp}).promise;}
+                else {const img=new Image();img.src=currentImgSrc;await new Promise((r,j)=>{img.onload=r;img.onerror=j;});srcCanvas=document.createElement('canvas');srcCanvas.width=img.width;srcCanvas.height=img.height;srcCanvas.getContext('2d').drawImage(img,0,0);}
+                const crop=getCropMm(),mx=96/25.4,sx=crop.left*mx,sy=crop.top*mx,sw=Math.max(1,srcCanvas.width-(crop.left+crop.right)*mx),sh=Math.max(1,srcCanvas.height-(crop.top+crop.bottom)*mx);const tw=sw/pCols,th=sh/pRows;
+                const tileCanvas=document.createElement('canvas');tileCanvas.width=Math.max(1,Math.round(tw));tileCanvas.height=Math.max(1,Math.round(th));const tx=tileCanvas.getContext('2d');tx.save();applyCanvasMirrorFlip(tx,tileCanvas.width,tileCanvas.height);tx.drawImage(srcCanvas,sx+col*tw,sy+row*th,tw,th,0,0,tileCanvas.width,tileCanvas.height);tx.restore();drawSourceCanvas(tileCanvas,cx,cy,cw,ch);
+                if(document.getElementById('posterCutMarks').value==='on'){ctx.save();ctx.strokeStyle='#555';ctx.lineWidth=1;const L=20;ctx.beginPath();ctx.moveTo(cx,cy+L);ctx.lineTo(cx,cy);ctx.lineTo(cx+L,cy);ctx.moveTo(cx+cw-L,cy);ctx.lineTo(cx+cw,cy);ctx.lineTo(cx+cw,cy+L);ctx.moveTo(cx,cy+ch-L);ctx.lineTo(cx,cy+ch);ctx.lineTo(cx+L,cy+ch);ctx.moveTo(cx+cw-L,cy+ch);ctx.lineTo(cx+cw,cy+ch);ctx.lineTo(cx+cw,cy+ch-L);ctx.stroke();ctx.restore();}
+                drawPreviewOverlays(ctx,canvas.width,canvas.height,currentPreviewSheet+1,totalPreviewSheets);return;
             }
-            validatePrintSettings(false); emptyState.style.display='none'; canvas.style.display='block';
-            const requestedOrientation=document.getElementById('orientation').value, paperSize=document.getElementById('paperSize').value;
-            const requestedScaleMode=document.getElementById('scaleMode').value, customScalePercent=Number(document.getElementById('customScale').value||100);
-            const pps=parseInt(document.getElementById('pagesPerSheet').value,10)||1;
-            const autoRotate=document.getElementById('autoRotateMode').value==='auto', contentAlign=document.getElementById('contentAlign').value;
-            const nupBorder=document.getElementById('nupBorder').value, nupOrder=document.getElementById('nupOrder').value, marginMm=getMarginMm();
-            const resolvedOrientation=resolveOrientation(requestedOrientation,currentSourceInfo.width,currentSourceInfo.height,pps);
-            const scaleMode=getEffectiveScaleMode(requestedScaleMode,pps);
-            const paperViewport=resolvePaperViewport(paperSize,resolvedOrientation,currentSourceInfo.width,currentSourceInfo.height,currentSourceInfo.standard);
-            const {cols,rows,safePps}=getGrid(pps,resolvedOrientation);
-            const baseHeight=1000, ratio=paperViewport.width/paperViewport.height; canvas.height=baseHeight; canvas.width=Math.max(650,Math.round(baseHeight*ratio));
-            const paperScale=canvas.width/paperViewport.width, mmToPt=72/25.4;
-            const m={top:marginMm.top*mmToPt*paperScale,right:marginMm.right*mmToPt*paperScale,bottom:marginMm.bottom*mmToPt*paperScale,left:marginMm.left*mmToPt*paperScale};
-            const contentX=m.left, contentY=m.top, contentW=Math.max(1,canvas.width-m.left-m.right), contentH=Math.max(1,canvas.height-m.top-m.bottom);
-            canvas.style.filter=document.getElementById('colorMode').value==='monochrome'?'grayscale(100%)':'none';
-            const paperLabel=paperSize==='SOURCE'?`Sama dengan Dokumen (${currentSourceInfo.standard==='CUSTOM'?'Kustom':(PAPER_DIMENSIONS[currentSourceInfo.standard]?.label||'A4')})`:PAPER_DIMENSIONS[paperSize].label;
-            const scaleLabels={fit:'Fit',shrink:'Shrink',actual:'100%',custom:`${customScalePercent}%`,fill:'Fill'};
-            document.getElementById('previewBadge').textContent=`${paperLabel} • ${resolvedOrientation==='landscape'?'Landscape':'Portrait'} • ${scaleLabels[scaleMode]}${document.getElementById('bookletMode').value==='on'?' • Booklet':''}`;
-            const ctx=canvas.getContext('2d'); ctx.fillStyle='white'; ctx.fillRect(0,0,canvas.width,canvas.height);
-            const strokeCell=(x,y,w,h)=>{ if(nupBorder!=='none'&&pps>1){ctx.save();ctx.strokeStyle='#999';ctx.lineWidth=nupBorder==='medium'?2:1;ctx.strokeRect(x,y,w,h);ctx.restore();} };
-            if (currentImgSrc) {
-                totalPreviewSheets=1; currentPreviewSheet=0; document.getElementById('previewPagination').style.display='none';
-                const imgObj=new Image(); imgObj.src=currentImgSrc; await new Promise((resolve,reject)=>{imgObj.onload=resolve;imgObj.onerror=reject;});
-                const cellW=contentW/cols,cellH=contentH/rows,pos=getSlotPosition(0,cols,rows,nupOrder),cellX=contentX+pos.col*cellW,cellY=contentY+pos.row*cellH;
-                strokeCell(cellX,cellY,cellW,cellH); drawImageInCell(ctx,imgObj,cellX,cellY,cellW,cellH,0,scaleMode,paperScale,customScalePercent,autoRotate,contentAlign); return;
-            }
-            let pageArr=getSelectedPdfPages(currentPdfDoc.numPages); totalPreviewSheets=Math.ceil(pageArr.length/safePps);
-            if (currentPreviewSheet>=totalPreviewSheets) currentPreviewSheet=Math.max(0,totalPreviewSheets-1);
-            document.getElementById('previewPagination').style.display=totalPreviewSheets>1?'flex':'none';
-            document.getElementById('previewSheetText').innerText=`${currentPreviewSheet+1} / ${Math.max(1,totalPreviewSheets)}`;
-            document.getElementById('btnPrevPage').disabled=currentPreviewSheet<=0; document.getElementById('btnNextPage').disabled=currentPreviewSheet>=totalPreviewSheets-1;
-            const startPage=currentPreviewSheet*safePps, cellW=contentW/cols, cellH=contentH/rows;
-            for(let slot=0;slot<Math.min(safePps,pageArr.length-startPage);slot++){
-                const pos=getSlotPosition(slot,cols,rows,nupOrder),cellX=contentX+pos.col*cellW,cellY=contentY+pos.row*cellH; strokeCell(cellX,cellY,cellW,cellH);
-                const pageNumber=pageArr[startPage+slot]; if(!pageNumber) continue;
-                const page=await currentPdfDoc.getPage(pageNumber), baseVp=page.getViewport({scale:1});
-                const placement=computePlacement(baseVp.width*paperScale,baseVp.height*paperScale,cellW,cellH,0,scaleMode,autoRotate,customScalePercent);
-                const renderScale=placement.scale*paperScale, renderVp=page.getViewport({scale:renderScale,rotation:placement.rotate?90:0});
-                const off=document.createElement('canvas'); off.width=Math.max(1,Math.ceil(renderVp.width)); off.height=Math.max(1,Math.ceil(renderVp.height));
-                await page.render({canvasContext:off.getContext('2d'),viewport:renderVp}).promise;
-                ctx.save();ctx.beginPath();ctx.rect(cellX,cellY,cellW,cellH);ctx.clip();
-                const x=contentAlign==='top-left'?cellX:cellX+(cellW-renderVp.width)/2, y=contentAlign==='top-left'?cellY:cellY+(cellH-renderVp.height)/2;
-                ctx.drawImage(off,x,y);ctx.restore();
-            }
+            if(currentImgSrc){const img=new Image();img.src=currentImgSrc;await new Promise((r,j)=>{img.onload=r;img.onerror=j;});const crop=getCropMm(),mx=96/25.4,sx=crop.left*mx,sy=crop.top*mx,sw=Math.max(1,img.width-(crop.left+crop.right)*mx),sh=Math.max(1,img.height-(crop.top+crop.bottom)*mx);const c=document.createElement('canvas');c.width=Math.round(sw);c.height=Math.round(sh);const cc=c.getContext('2d');cc.save();applyCanvasMirrorFlip(cc,c.width,c.height);cc.drawImage(img,sx,sy,sw,sh,0,0,c.width,c.height);cc.restore();drawSourceCanvas(c,cx,cy,cw,ch);drawPreviewOverlays(ctx,canvas.width,canvas.height,1,1);return;}
+            const start=currentPreviewSheet*grid.safePps,cellW=cw/grid.cols,cellH=ch/grid.rows;for(let slot=0;slot<Math.min(grid.safePps,pages.length-start);slot++){const pn=pages[start+slot];if(!pn)continue;const pos=getSlotPosition(slot,grid.cols,grid.rows,document.getElementById('nupOrder').value),x=cx+pos.col*cellW,y=cy+pos.row*cellH;const page=await currentPdfDoc.getPage(pn),base=page.getViewport({scale:1}),placement=computePlacement(base.width*ps,base.height*ps,cellW,cellH,0,scaleMode,autoRotate,customScale),vp=page.getViewport({scale:placement.scale*ps,rotation:placement.rotate?90:0});const off=document.createElement('canvas');off.width=Math.ceil(vp.width);off.height=Math.ceil(vp.height);await page.render({canvasContext:off.getContext('2d'),viewport:vp}).promise;const temp=document.createElement('canvas');temp.width=off.width;temp.height=off.height;const tc=temp.getContext('2d');tc.save();applyCanvasMirrorFlip(tc,temp.width,temp.height);tc.drawImage(off,0,0);tc.restore();drawSourceCanvas(temp,x,y,cellW,cellH);if(document.getElementById('nupBorder').value!=='none'&&pps>1){ctx.save();ctx.strokeStyle='#999';ctx.lineWidth=document.getElementById('nupBorder').value==='medium'?2:1;ctx.strokeRect(x,y,cellW,cellH);ctx.restore();}}
+            drawPreviewOverlays(ctx,canvas.width,canvas.height,currentPreviewSheet+1,totalPreviewSheets);
         }
+
         function changePreviewSheet(dir) { currentPreviewSheet = Math.max(0, Math.min(totalPreviewSheets-1, currentPreviewSheet + dir)); updateDynamicPreview(); }
         function setupPwaInstall() {
             const installBtn = document.getElementById('installBtn');
@@ -1202,15 +1251,15 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
 
         function syncAdvancedPrintControls() {
             const scaleMode=document.getElementById('scaleMode').value; document.getElementById('customScaleWrap').style.display=scaleMode==='custom'?'flex':'none';
-            syncLayoutFinishingControls();
+            syncLayoutFinishingControls(); syncDocumentAdvancedControls();
             const duplex=document.getElementById('duplexMode').value, collate=document.getElementById('collateMode');
             if(duplex!=='simplex'&&collate.value==='uncollated') collate.value='collated';
             collate.querySelector('option[value="uncollated"]').disabled=duplex!=='simplex';
         }
 
-        ['copies','pages','pagesPerSheet','paperSize','orientation','scaleMode','customScale','colorMode','duplexMode','pageSubset','pageOrder','collateMode','marginMode','marginTop','marginRight','marginBottom','marginLeft','autoRotateMode','contentAlign','nupBorder','nupOrder','bookletMode'].forEach((id) => {
+        ['copies','pages','pagesPerSheet','paperSize','orientation','scaleMode','customScale','colorMode','duplexMode','pageSubset','pageOrder','collateMode','marginMode','marginTop','marginRight','marginBottom','marginLeft','autoRotateMode','contentAlign','nupBorder','nupOrder','bookletMode','posterMode','posterCols','posterRows','posterOverlap','posterCutMarks','transformMode','cropMode','cropTop','cropRight','cropBottom','cropLeft','watermarkMode','watermarkText','watermarkOpacity','watermarkAngle','headerText','footerText','pageNumberMode','pageNumberStart'].forEach((id) => {
             const el = document.getElementById(id);
-            const eventName = (id === 'pages' || id === 'copies' || id === 'customScale') ? 'input' : 'change';
+            const eventName = ['pages','copies','customScale','posterCols','posterRows','posterOverlap','cropTop','cropRight','cropBottom','cropLeft','watermarkText','watermarkOpacity','headerText','footerText','pageNumberStart'].includes(id) ? 'input' : 'change';
             el.addEventListener(eventName, () => {
                 syncAdvancedPrintControls();
                 if (['copies','pagesPerSheet','customScale','duplexMode','marginMode','marginTop','marginRight','marginBottom','marginLeft','bookletMode'].includes(id)) validatePrintSettings(false);
