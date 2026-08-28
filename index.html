@@ -90,7 +90,7 @@
         .cap-badge.warn { background:rgba(245,158,11,.14); color:#a16207; }
 
         .capability-card { margin-top:8px; padding:9px 10px; border:1px solid var(--border); border-radius:9px; font-size:10px; line-height:1.45; color:var(--text-muted); background:rgba(51,65,85,.04); }
-        /* v4.5.28 — Print Settings UX Consolidation */
+        /* v4.5.29 — Print Settings UX Consolidation */
         .ux-settings-root { display:flex; flex-direction:column; gap:10px; margin-top:12px; }
         .ux-basic-card { border:1px solid var(--border-soft); background:#f8fafc; border-radius:12px; padding:12px; }
         .ux-basic-card-title { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px; font-size:11px; font-weight:800; color:#334155; }
@@ -150,7 +150,7 @@
 
     
         /* =========================================================
-           v4.5.28 — Professional UI Refresh
+           v4.5.29 — Professional UI Refresh
            Visual layer only. Print engine and control IDs unchanged.
            ========================================================= */
         :root {
@@ -647,6 +647,35 @@
             .preview-actions { padding:12px !important; }
             #printBtn { min-height:48px; }
         }
+
+        /* v4.5.29 — Professional Print Dialog Layout */
+        .legacy-section-title,.dialog-hidden-control,.dialog-hidden-toolbar,#uxLegacySettingsGrid,#uxLegacyJobGrid{display:none!important}
+        .print-dialog-shell{display:grid;grid-template-columns:168px minmax(0,1fr);margin-top:4px;border:1px solid #d9e1eb;border-radius:14px;background:#fff;min-height:680px;box-shadow:0 5px 18px rgba(15,23,42,.04)}
+        .dialog-sidebar{min-width:0;padding:14px 10px;background:linear-gradient(180deg,#f8fafc,#f4f7fb);border-right:1px solid #e1e7ef;border-radius:14px 0 0 14px}
+        .dialog-sidebar-head{padding:4px 7px 12px;border-bottom:1px solid #e2e8f0;margin-bottom:8px}
+        .dialog-sidebar-title{font-size:11px;font-weight:800;color:#0f172a}.dialog-sidebar-sub{margin-top:3px;font-size:8.5px;color:#94a3b8}
+        .dialog-nav{display:flex;flex-direction:column;gap:3px}.dialog-nav-item{width:100%;display:flex;align-items:center;gap:8px;min-height:43px;padding:7px 8px;border:0;border-radius:8px;background:transparent;color:#475569;text-align:left;cursor:pointer;font-family:inherit}
+        .dialog-nav-item:hover{background:#edf3fa}.dialog-nav-item.active{background:#eaf2ff;color:#1d4ed8;box-shadow:inset 3px 0 0 #2563eb}
+        .dialog-nav-icon{width:20px;flex:0 0 20px;text-align:center;font-size:13px}.dialog-nav-copy{min-width:0;display:flex;flex-direction:column;gap:1px}.dialog-nav-copy strong{font-size:9.5px}.dialog-nav-copy small{max-width:105px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:7.5px;color:#94a3b8}
+        .dialog-nav-badge{margin-left:auto;min-width:18px;height:18px;padding:0 5px;display:flex;align-items:center;justify-content:center;border-radius:999px;background:#e2e8f0;color:#475569;font-size:7.5px;font-weight:800}.dialog-nav-item.active .dialog-nav-badge{background:#2563eb;color:#fff}
+        .dialog-settings{min-width:0;background:#fff;border-radius:0 14px 14px 0}.dialog-settings-topbar{display:flex;align-items:flex-end;gap:10px;min-height:68px;padding:11px 14px;border-bottom:1px solid #e6ebf1}
+        .dialog-preset-slot{flex:0 0 200px;display:flex;align-items:flex-end;gap:6px;flex-wrap:wrap}.dialog-preset-slot .dialog-preset-group{flex:1 1 150px;margin:0}.dialog-preset-slot .input-standard{min-height:36px;padding:8px 9px;font-size:10px}.dialog-preset-slot .mini-btn{min-height:34px;padding:7px 9px;font-size:8.5px}.dialog-preset-slot .preset-actions{order:3;flex:1 0 100%;margin-top:3px}
+        .dialog-quick-summary{flex:1;min-width:0}.dialog-quick-summary .settings-summary{margin:0;min-height:36px;display:flex;align-items:center;font-size:8.5px;border-left:2px solid #3b82f6}
+        .print-panel{display:none}.print-panel.active{display:block}.panel-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;min-height:78px;padding:15px 16px 12px;border-bottom:1px solid #eef2f6;background:#fbfcfe}
+        .panel-eyebrow{margin-bottom:3px;font-size:7.5px;font-weight:800;color:#94a3b8;letter-spacing:.12em}.panel-heading h3{margin:0;font-size:16px;font-weight:750;color:#0f172a}.panel-heading p{margin:4px 0 0;font-size:8.5px;color:#64748b}.panel-summary{max-width:190px;padding:5px 8px;border:1px solid #e2e8f0;border-radius:999px;background:#fff;color:#64748b;font-size:7.5px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+        .panel-content{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 12px;padding:15px 16px 18px}.panel-content>.input-group{min-width:0;margin:0}
+        .panel-content>.input-group:has(#ipAddress),.panel-content>.input-group:has(#printerSelect),.panel-content>.input-group:has(#fileInput),.panel-content>.input-group:has(#sourceSizeInfo),.panel-content>.driver-cap-grid,.panel-content>.queue-card,.panel-content>.history-card,#panelContent-expert>#driverAdvancedPanel,#panelContent-basic>#sheetEstimate,#panelContent-basic>#preflightStatus,#panelContent-basic>button[onclick*="runPreflight"]{grid-column:1/-1}
+        .panel-content .input-group label{margin-bottom:5px;font-size:9.5px}.panel-content .input-standard,.panel-content .input-with-btn input,.panel-content .input-with-btn select{min-height:38px;padding:8px 10px;font-size:10.5px}.panel-content .input-with-btn{height:38px}.panel-content .btn-icon{width:38px;height:38px}
+        .dialog-embedded-card{width:100%;margin:0!important;padding:12px!important;border:1px solid #e2e8f0!important;border-radius:10px!important;box-shadow:none!important;background:#fff!important}#panelContent-queue{grid-template-columns:1fr}#panelContent-queue .queue-list{max-height:420px}
+        #realtimeStatus{margin-top:12px!important;padding:10px 12px;border:1px solid #dbe3ec;border-radius:9px;background:#f8fafc}
+        @media(min-width:992px){.app-wrapper{grid-template-columns:minmax(690px,760px) minmax(480px,1fr)!important;max-width:1480px!important;gap:20px!important}.left-col{display:block!important;min-width:0}.main-card{padding:18px!important}.dialog-sidebar{position:sticky;top:28px;align-self:start}}
+        @media(min-width:1320px){.app-wrapper{grid-template-columns:780px minmax(560px,1fr)!important}.print-dialog-shell{grid-template-columns:178px minmax(0,1fr)}}
+        .mobile-sheet-overlay,.mobile-settings-sheet,.mobile-print-bar{display:none}
+        @media(max-width:991px){body{padding-bottom:78px!important}.print-dialog-shell{display:block;min-height:0;border-radius:12px}.dialog-sidebar{display:none}.dialog-settings{border-radius:12px}.dialog-settings-topbar{display:block;min-height:0;padding:10px}.dialog-preset-slot{width:100%}.dialog-quick-summary{margin-top:7px}.panel-heading{min-height:68px;padding:12px}.panel-summary{display:none}.panel-content{grid-template-columns:1fr;gap:9px;padding:12px}.panel-content>*{grid-column:1!important}
+        .mobile-print-bar{position:fixed;display:grid;grid-template-columns:minmax(0,1fr) 132px;gap:8px;left:10px;right:10px;bottom:10px;z-index:8500;padding:7px;border:1px solid rgba(203,213,225,.92);border-radius:14px;background:rgba(255,255,255,.96);box-shadow:0 12px 34px rgba(15,23,42,.18);backdrop-filter:blur(12px)}
+        .mobile-settings-button,.mobile-print-button{min-height:43px;border-radius:9px;font-family:inherit;font-size:11px;font-weight:750;cursor:pointer}.mobile-settings-button{border:1px solid #dbe3ec;background:#f8fafc;color:#334155;text-align:left;padding:0 12px}.mobile-print-button{border:0;background:#1d4ed8;color:#fff}
+        .mobile-sheet-overlay{position:fixed;display:block;inset:0;z-index:8990;background:rgba(15,23,42,.42);opacity:0;visibility:hidden;transition:.18s}.mobile-sheet-overlay.open{opacity:1;visibility:visible}.mobile-settings-sheet{position:fixed;display:block;left:0;right:0;bottom:0;z-index:9000;max-height:78vh;padding:8px 12px 18px;border-radius:20px 20px 0 0;background:#fff;box-shadow:0 -18px 48px rgba(15,23,42,.18);transform:translateY(105%);transition:transform .2s;overflow:auto}.mobile-settings-sheet.open{transform:translateY(0)}
+        .mobile-sheet-handle{width:42px;height:4px;border-radius:999px;background:#cbd5e1;margin:2px auto 11px}.mobile-sheet-head{display:flex;align-items:center;justify-content:space-between;padding:0 2px 10px;border-bottom:1px solid #eef2f6}.mobile-sheet-head strong{font-size:13px}.mobile-sheet-head button{border:0;background:#f1f5f9;color:#475569;border-radius:8px;padding:7px 10px;font-weight:700}.mobile-sheet-list{display:flex;flex-direction:column;gap:4px;padding-top:8px}.mobile-sheet-item{display:grid;grid-template-columns:28px 1fr;gap:8px;align-items:center;width:100%;padding:9px 10px;border:0;border-radius:9px;background:#fff;color:#334155;text-align:left;font-family:inherit}.mobile-sheet-item strong{display:block;font-size:10.5px}.mobile-sheet-item small{display:block;margin-top:2px;font-size:8px;color:#94a3b8}.mobile-sheet-item.active{background:#eff6ff;color:#1d4ed8}body.mobile-sheet-open{overflow:hidden}}
 </style>
 </head>
 <body>
@@ -659,7 +688,7 @@
                         <div class="app-brand-title">Print Server Pro</div>
                         <div class="app-brand-subtitle">Network Printing Console</div>
                     </div>
-                    <span class="app-version">v4.5.28</span>
+                    <span class="app-version">v4.5.29</span>
                 </div>
                 <div class="install-row"><button id="installBtn" class="btn-block secondary">Install Aplikasi</button></div>
                 <div class="section-title">
@@ -1170,80 +1199,119 @@
         function uxMoveGroup(id,target){const g=uxGroupForControl(id);if(g&&target&&!target.contains(g))target.appendChild(g);return g;}
         function uxSelectText(id){const el=document.getElementById(id);if(!el)return '';if(el.tagName==='SELECT')return el.options[el.selectedIndex]?.text||el.value||'';return el.value||'';}
         function uxShort(value,max=34){const s=String(value||'');return s.length>max?s.slice(0,max-1)+'…':s;}
-        function uxAccordion(key,title,icon,priority='p23'){const d=document.createElement('details');d.className='ux-accordion';d.dataset.uxKey=key;try{d.open=localStorage.getItem(`uxAccordionV4527:${key}`)==='open';}catch(_){}d.innerHTML=`<summary><span class="ux-accordion-title"><strong>${icon} ${title} <span class="ux-priority-badge ${priority}">${priority==='p45'?'P4–P5':'P2–P3'}</span></strong><span class="ux-accordion-summary" id="uxSummary-${key}">Default</span></span><span class="ux-chevron">⌄</span></summary><div class="ux-accordion-body" id="uxBody-${key}"></div>`;d.addEventListener('toggle',()=>{try{localStorage.setItem(`uxAccordionV4527:${key}`,d.open?'open':'closed');}catch(_){}});return d;}
-        function uxBasicCard(title,subtitle,icon){const c=document.createElement('div');c.className='ux-basic-card';c.innerHTML=`<div class="ux-basic-card-title"><span>${icon} ${title} <span class="ux-priority-badge p1">P1–P2</span></span><small>${subtitle||''}</small></div><div class="ux-field-grid"></div>`;return c;}
-        function togglePresetManager(){const p=document.querySelector('.preset-actions');if(!p)return;const open=!p.classList.contains('ux-open');p.classList.toggle('ux-open',open);const b=document.getElementById('uxPresetManageBtn');if(b)b.textContent=open?'Tutup Pengelola Preset':'Kelola Preset';}
-        function openAdvancedSettings(){const s=document.getElementById('settingsViewMode');if(!s)return;s.value='advanced';applySettingsViewMode();updateAccordionSummaries();}
-        function openExpertSettings(){const s=document.getElementById('settingsViewMode');if(!s)return;s.value='expert';applySettingsViewMode();updateAccordionSummaries();}
-        function collapseAllAdvanced(){document.querySelectorAll('#advancedAccordionRoot details,#expertAccordionRoot details').forEach(d=>d.open=false);}
-        function buildConsolidatedSettingsUi(){
-            if(document.getElementById('uxSettingsRoot'))return;
-            const inline=document.getElementById('inlinePrintSettings');if(!inline)return;
-            const grids=[...inline.querySelectorAll(':scope > .settings-grid')],legacyGrid=grids[0];if(!legacyGrid)return;legacyGrid.id='uxLegacySettingsGrid';
-            if(grids[1])grids[1].id='uxLegacyJobGrid';
-            const sourceGroup=uxGroupForControl('sourceSizeInfo'),root=document.createElement('div');root.id='uxSettingsRoot';root.className='ux-settings-root';sourceGroup.insertAdjacentElement('afterend',root);
+        function togglePresetManager(){const p=document.querySelector('.preset-actions');if(!p)return;const open=!p.classList.contains('ux-open');p.classList.toggle('ux-open',open);const b=document.getElementById('uxPresetManageBtn');if(b)b.textContent=open?'Tutup Preset':'Kelola Preset';}
 
-            const docCard=uxBasicCard('Dokumen','paling sering dipakai','📄'),
-                  paperCard=uxBasicCard('Kertas & Layout','paling sering dipakai','📐'),
-                  duplexCard=uxBasicCard('Duplex & Jilid','paling sering dipakai','↔'),
-                  printerCard=uxBasicCard('Printer','paling sering dipakai','🖨️');
-            [docCard,paperCard,duplexCard,printerCard].forEach(c=>root.appendChild(c));
-            ['colorMode','pages','copies'].forEach(id=>uxMoveGroup(id,docCard.querySelector('.ux-field-grid')));
-            ['paperSize','orientation','scaleMode','pagesPerSheet'].forEach(id=>uxMoveGroup(id,paperCard.querySelector('.ux-field-grid')));
-            ['duplexMode','marginMode','bindingMode'].forEach(id=>uxMoveGroup(id,duplexCard.querySelector('.ux-field-grid')));
-            ['driverBin','driverQuality','driverExecutionMode'].forEach(id=>uxMoveGroup(id,printerCard.querySelector('.ux-field-grid')));
+        const PRINT_DIALOG_PANELS=[
+            {key:'basic',label:'Dasar',icon:'▣',hint:'Printer, dokumen, kertas, skala, copy'},
+            {key:'pages',label:'Halaman',icon:'☷',hint:'Rentang, urutan, collate, halaman kosong'},
+            {key:'layout',label:'Layout',icon:'▦',hint:'Margin, posisi, N-up, rotasi'},
+            {key:'duplex',label:'Duplex & Jilid',icon:'↔',hint:'Duplex, gutter, booklet'},
+            {key:'marks',label:'Tanda Dokumen',icon:'✎',hint:'Watermark, header, footer, nomor'},
+            {key:'poster',label:'Poster & Prepress',icon:'✂',hint:'Poster, crop, bleed, marks'},
+            {key:'printer',label:'Printer',icon:'▤',hint:'Tray, kualitas, driver, kalibrasi'},
+            {key:'expert',label:'Expert',icon:'⌘',hint:'Presisi dan produksi profesional'},
+            {key:'queue',label:'Antrean',icon:'≡',hint:'Queue, status, riwayat'}
+        ];
 
-            const advHead=document.createElement('div');advHead.id='advancedSettingsHeader';advHead.className='ux-advanced-head';
-            advHead.innerHTML=`<div><div class="ux-section-divider"><strong>Pengaturan Lanjutan</strong><span class="ux-priority-badge p23">P2–P3</span></div><div class="ux-mode-note" id="uxModeHint">Kontrol lanjutan yang masih cukup sering digunakan.</div></div><div style="display:flex;gap:6px;"><button type="button" class="mini-btn" onclick="openExpertSettings()">Expert</button><button type="button" class="mini-btn" onclick="collapseAllAdvanced()">Tutup Semua</button></div>`;
-            root.appendChild(advHead);
-            const adv=document.createElement('div');adv.id='advancedAccordionRoot';adv.className='ux-accordion-root';root.appendChild(adv);
-
-            [['position','Posisi & Rotasi','⌖'],['pages','Halaman & Urutan','☷'],['layout','Layout / N-up','▦'],['booklet','Booklet','📖'],['poster','Poster & Crop','✂'],['marks','Tanda Dokumen','✎'],['system','Kalibrasi, Safety & Job','🛠']].forEach(([k,t,i])=>adv.appendChild(uxAccordion(k,t,i,'p23')));
-
-            ['autoRotateMode','contentAlign','offsetXmm','pageRotationMode'].forEach(id=>uxMoveGroup(id,document.getElementById('uxBody-position')));
-            ['pageSubset','pageOrder','collateMode','blankPageMode'].forEach(id=>uxMoveGroup(id,document.getElementById('uxBody-pages')));
-            ['nupBorder','nupOrder','impositionMode','nupGapXmm'].forEach(id=>uxMoveGroup(id,document.getElementById('uxBody-layout')));
-            ['bookletMode','startCopyNewSheet'].forEach(id=>uxMoveGroup(id,document.getElementById('uxBody-booklet')));
-            ['posterMode','cropMode'].forEach(id=>uxMoveGroup(id,document.getElementById('uxBody-poster')));
-            ['watermarkMode','headerText','footerText','pageNumberMode','separatorMode'].forEach(id=>uxMoveGroup(id,document.getElementById('uxBody-marks')));
-            ['calibrationXmm','safetySheetLimit','jobSubmissionMode','jobPriority'].forEach(id=>uxMoveGroup(id,document.getElementById('uxBody-system')));
-
-            const expertHead=document.createElement('div');expertHead.id='expertSettingsHeader';expertHead.className='ux-advanced-head';
-            expertHead.innerHTML=`<div><div class="ux-section-divider"><strong>Pengaturan Expert</strong><span class="ux-priority-badge p45">P4–P5</span></div><div class="ux-expert-note" id="uxExpertModeHint">Untuk presisi, prepress, dan kebutuhan produksi khusus.</div></div><button type="button" class="mini-btn" onclick="collapseAllAdvanced()">Tutup Semua</button>`;
-            root.appendChild(expertHead);
-            const expert=document.createElement('div');expert.id='expertAccordionRoot';expert.className='ux-accordion-root';root.appendChild(expert);
-
-            [['precision','Presisi & Transformasi','⌗'],['signature','Booklet Profesional','📚'],['prepress','Prepress Profesional','✣'],['driver','Driver Vendor / Expert','⚙']].forEach(([k,t,i])=>expert.appendChild(uxAccordion(k,t,i,'p45')));
-
-            ['scaleXPercent','transformMode'].forEach(id=>uxMoveGroup(id,document.getElementById('uxBody-precision')));
-            ['signatureMode','creepMode'].forEach(id=>uxMoveGroup(id,document.getElementById('uxBody-signature')));
-            ['pdfPageBox','bleedMode','prepressMarks'].forEach(id=>uxMoveGroup(id,document.getElementById('uxBody-prepress')));
-            const driverPanel=document.getElementById('driverAdvancedPanel');if(driverPanel)document.getElementById('uxBody-driver').appendChild(driverPanel);
-
-            const presetActions=document.querySelector('.preset-actions'),toolbar=document.querySelector('.settings-toolbar');
-            if(presetActions&&toolbar&&!document.getElementById('uxPresetManageBtn')){const b=document.createElement('button');b.type='button';b.id='uxPresetManageBtn';b.className='mini-btn ux-preset-manage-toggle';b.textContent='Kelola Preset';b.onclick=togglePresetManager;toolbar.appendChild(b);}
-            const modeGroup=uxGroupForControl('settingsViewMode');if(modeGroup&&!document.getElementById('uxAdvancedQuickBtn')){const b=document.createElement('button');b.type='button';b.className='mini-btn';b.id='uxAdvancedQuickBtn';b.style.marginTop='7px';b.textContent='Buka Pengaturan Lanjutan';b.onclick=openAdvancedSettings;modeGroup.appendChild(b);}
-            updateAccordionSummaries();
+        function createDialogPanel(key,title,subtitle){
+            const p=document.createElement('section');p.className='print-panel';p.id=`printPanel-${key}`;p.dataset.panel=key;
+            p.innerHTML=`<div class="panel-heading"><div><div class="panel-eyebrow">PENGATURAN</div><h3>${title}</h3><p>${subtitle||''}</p></div><span class="panel-summary" id="panelSummary-${key}">Default</span></div><div class="panel-content" id="panelContent-${key}"></div>`;
+            return p;
         }
-        function updateAccordionSummaries(){
-            if(!document.getElementById('advancedAccordionRoot'))return;
-            const set=(k,parts)=>{const el=document.getElementById(`uxSummary-${k}`);if(el)el.textContent=parts.filter(Boolean).join(' • ')||'Default';};
-            const sx=Number(document.getElementById('scaleXPercent')?.value||100),sy=Number(document.getElementById('scaleYPercent')?.value||100),
-                  ox=Number(document.getElementById('offsetXmm')?.value||0)+Number(document.getElementById('calibrationXmm')?.value||0),
-                  oy=Number(document.getElementById('offsetYmm')?.value||0)+Number(document.getElementById('calibrationYmm')?.value||0);
-            set('position',[uxSelectText('autoRotateMode'),uxSelectText('contentAlign'),ox||oy?`Offset ${ox}/${oy} mm`:'',document.getElementById('pageRotationMode')?.value!=='none'?`Rotasi ${uxSelectText('pageRotationMode')}`:'']);
-            set('pages',[uxSelectText('pageSubset'),uxSelectText('pageOrder'),uxSelectText('collateMode'),document.getElementById('blankPageMode')?.value!=='preserve'?uxSelectText('blankPageMode'):'']);
-            set('layout',[document.getElementById('nupBorder')?.value!=='none'?uxSelectText('nupBorder'):'',uxSelectText('nupOrder'),document.getElementById('impositionMode')?.value!=='normal'?uxSelectText('impositionMode'):'',(Number(document.getElementById('nupGapXmm')?.value||0)||Number(document.getElementById('nupGapYmm')?.value||0))?'Gap aktif':'']);
-            set('booklet',[document.getElementById('bookletMode')?.value==='on'?'Booklet aktif':'Booklet off',document.getElementById('startCopyNewSheet')?.value==='on'?'Copy mulai lembar baru':'']);
-            set('poster',[document.getElementById('posterMode')?.value==='on'?`Poster ${document.getElementById('posterCols')?.value}×${document.getElementById('posterRows')?.value}`:'Poster off',document.getElementById('cropMode')?.value!=='off'?'Crop aktif':'']);
-            set('marks',[document.getElementById('watermarkMode')?.value==='on'?`Watermark: ${uxShort(document.getElementById('watermarkText')?.value||'DRAFT',18)}`:'',document.getElementById('headerText')?.value?'Header':'',document.getElementById('footerText')?.value?'Footer':'',document.getElementById('pageNumberMode')?.value!=='off'?'Nomor halaman':'',document.getElementById('separatorMode')?.value!=='off'?uxSelectText('separatorMode'):'']);
-            set('system',[(Number(document.getElementById('calibrationXmm')?.value||0)||Number(document.getElementById('calibrationYmm')?.value||0))?`Kal ${document.getElementById('calibrationXmm').value}/${document.getElementById('calibrationYmm').value} mm`:'Kalibrasi 0',`Limit ${document.getElementById('safetySheetLimit')?.value||0}`,uxSelectText('jobSubmissionMode'),uxSelectText('jobPriority')]);
-            set('precision',[sx!==100||sy!==100?`X ${sx}% / Y ${sy}%`:'Skala XY default',document.getElementById('transformMode')?.value!=='none'?uxSelectText('transformMode'):'']);
-            set('signature',[uxSelectText('signatureMode'),document.getElementById('creepMode')?.value!=='off'?`Creep ${uxSelectText('creepMode')}`:'Creep off']);
-            set('prepress',[uxSelectText('pdfPageBox'),document.getElementById('bleedMode')?.value!=='off'?`Bleed ${uxSelectText('bleedMode')}`:'Bleed off',document.getElementById('prepressMarks')?.value!=='off'?uxSelectText('prepressMarks'):'Marks off']);
-            set('driver',[uxSelectText('driverPaperKind'),document.getElementById('driverMediaType')?.value!=='default'?uxSelectText('driverMediaType'):'Media default',document.getElementById('driverBorderless')?.value!=='default'?`Borderless ${uxSelectText('driverBorderless')}`:'',document.getElementById('driverEconomy')?.value!=='default'?uxSelectText('driverEconomy'):'']);
-            const mode=document.getElementById('settingsViewMode')?.value||'compact';
-            const quick=document.getElementById('uxAdvancedQuickBtn');if(quick){quick.style.display=mode==='compact'?'inline-flex':'none';}
+        function createDialogNavItem(item){
+            const b=document.createElement('button');b.type='button';b.className='dialog-nav-item';b.dataset.panel=item.key;
+            b.innerHTML=`<span class="dialog-nav-icon">${item.icon}</span><span class="dialog-nav-copy"><strong>${item.label}</strong><small>${item.hint}</small></span>${item.key==='queue'?'<span id="navQueueBadge" class="dialog-nav-badge">0</span>':''}`;
+            b.addEventListener('click',()=>showPrintPanel(item.key,true));return b;
+        }
+        function showPrintPanel(key,scroll=false){
+            const wanted=PRINT_DIALOG_PANELS.some(p=>p.key===key)?key:'basic';
+            document.querySelectorAll('.print-panel').forEach(p=>p.classList.toggle('active',p.dataset.panel===wanted));
+            document.querySelectorAll('.dialog-nav-item').forEach(b=>b.classList.toggle('active',b.dataset.panel===wanted));
+            document.querySelectorAll('.mobile-sheet-item').forEach(b=>b.classList.toggle('active',b.dataset.panel===wanted));
+            try{localStorage.setItem('activePrintPanelV4529',wanted);}catch(_){}
+            const title=PRINT_DIALOG_PANELS.find(p=>p.key===wanted)?.label||'Pengaturan';
+            const mob=document.getElementById('mobileActivePanelLabel');if(mob)mob.textContent=title;
+            closeMobileSettingsSheet();
+            if(scroll&&window.innerWidth<820)document.getElementById('printDialogSettings')?.scrollIntoView({behavior:'smooth',block:'start'});
+        }
+        function openMobileSettingsSheet(){document.getElementById('mobileSettingsSheet')?.classList.add('open');document.getElementById('mobileSheetOverlay')?.classList.add('open');document.body.classList.add('mobile-sheet-open');}
+        function closeMobileSettingsSheet(){document.getElementById('mobileSettingsSheet')?.classList.remove('open');document.getElementById('mobileSheetOverlay')?.classList.remove('open');document.body.classList.remove('mobile-sheet-open');}
+        function updatePrintDialogSummaries(){
+            if(!document.getElementById('printDialogShell'))return;
+            const set=(k,v)=>{const e=document.getElementById(`panelSummary-${k}`);if(e)e.textContent=v||'Default';};
+            set('basic',[uxSelectText('paperSize'),uxSelectText('orientation'),uxSelectText('scaleMode'),`${document.getElementById('copies')?.value||1} copy`].filter(Boolean).join(' • '));
+            set('pages',[uxSelectText('pageSubset'),uxSelectText('pageOrder'),uxSelectText('collateMode')].filter(Boolean).join(' • '));
+            const margin=document.getElementById('marginMode')?.value!=='none'?uxSelectText('marginMode'):'Tanpa margin';
+            set('layout',[`${document.getElementById('pagesPerSheet')?.value||1} hal/lembar`,margin,uxSelectText('autoRotateMode')].filter(Boolean).join(' • '));
+            set('duplex',[uxSelectText('duplexMode'),document.getElementById('bindingMode')?.value!=='off'?uxSelectText('bindingMode'):'Tanpa jilid',document.getElementById('bookletMode')?.value==='on'?'Booklet':''].filter(Boolean).join(' • '));
+            set('marks',[document.getElementById('watermarkMode')?.value==='on'?'Watermark':'',document.getElementById('pageNumberMode')?.value!=='off'?'Nomor halaman':'',document.getElementById('headerText')?.value?'Header':''].filter(Boolean).join(' • ')||'Tidak ada tanda');
+            set('poster',[document.getElementById('posterMode')?.value==='on'?`Poster ${document.getElementById('posterCols')?.value}×${document.getElementById('posterRows')?.value}`:'Poster off',document.getElementById('cropMode')?.value!=='off'?'Crop':''].filter(Boolean).join(' • '));
+            set('printer',[uxSelectText('driverBin')||'Tray default',uxSelectText('driverQuality')||'Kualitas default'].filter(Boolean).join(' • '));
+            const sx=Number(document.getElementById('scaleXPercent')?.value||100),sy=Number(document.getElementById('scaleYPercent')?.value||100);
+            set('expert',[sx!==100||sy!==100?`X ${sx}% / Y ${sy}%`:'Presisi default',document.getElementById('signatureMode')?.value!=='auto'?uxSelectText('signatureMode'):''].filter(Boolean).join(' • '));
+            set('queue',document.getElementById('queueSummaryBadge')?.textContent||'0 antre');
+        }
+        function updateAccordionSummaries(){updatePrintDialogSummaries();}
+        function applySettingsViewMode(){try{localStorage.setItem('settingsViewModeV4529','dialog');}catch(_){}updatePrintDialogSummaries();}
+        function openAdvancedSettings(){showPrintPanel('layout',true);}
+        function openExpertSettings(){showPrintPanel('expert',true);}
+        function collapseAllAdvanced(){showPrintPanel('basic',false);}
+
+        function buildConsolidatedSettingsUi(){
+            if(document.getElementById('printDialogShell'))return;
+            const inline=document.getElementById('inlinePrintSettings');if(!inline)return;
+            document.querySelectorAll('.main-card > .section-title').forEach(t=>t.classList.add('legacy-section-title'));
+            [...inline.querySelectorAll(':scope > .settings-grid')].forEach((g,i)=>{g.id=i===0?'uxLegacySettingsGrid':'uxLegacyJobGrid';});
+
+            const shell=document.createElement('div');shell.id='printDialogShell';shell.className='print-dialog-shell';
+            const sidebar=document.createElement('aside');sidebar.className='dialog-sidebar';sidebar.id='printDialogSidebar';
+            sidebar.innerHTML=`<div class="dialog-sidebar-head"><div class="dialog-sidebar-title">Print Setup</div><div class="dialog-sidebar-sub">Pilih kategori pengaturan</div></div><nav id="dialogNav" class="dialog-nav"></nav>`;
+            const settings=document.createElement('main');settings.id='printDialogSettings';settings.className='dialog-settings';
+            settings.innerHTML=`<div class="dialog-settings-topbar" id="dialogSettingsTopbar"><div class="dialog-preset-slot" id="dialogPresetSlot"></div><div id="dialogQuickSummary" class="dialog-quick-summary"></div></div><div class="dialog-panels" id="dialogPanels"></div>`;
+            shell.append(sidebar,settings);
+            document.querySelector('.app-brand').insertAdjacentElement('afterend',shell);
+
+            const nav=document.getElementById('dialogNav'),panels=document.getElementById('dialogPanels');
+            PRINT_DIALOG_PANELS.forEach(item=>{nav.appendChild(createDialogNavItem(item));panels.appendChild(createDialogPanel(item.key,item.label,item.hint));});
+
+            const overlay=document.createElement('div');overlay.id='mobileSheetOverlay';overlay.className='mobile-sheet-overlay';overlay.onclick=closeMobileSettingsSheet;
+            const sheet=document.createElement('div');sheet.id='mobileSettingsSheet';sheet.className='mobile-settings-sheet';
+            sheet.innerHTML=`<div class="mobile-sheet-handle"></div><div class="mobile-sheet-head"><strong>Pengaturan Cetak</strong><button type="button" onclick="closeMobileSettingsSheet()">Tutup</button></div><div class="mobile-sheet-list" id="mobileSheetList"></div>`;
+            PRINT_DIALOG_PANELS.forEach(item=>{const b=document.createElement('button');b.type='button';b.className='mobile-sheet-item';b.dataset.panel=item.key;b.innerHTML=`<span>${item.icon}</span><span><strong>${item.label}</strong><small>${item.hint}</small></span>`;b.onclick=()=>showPrintPanel(item.key,true);sheet.querySelector('#mobileSheetList').appendChild(b);});
+            document.body.append(overlay,sheet);
+            const mobileBar=document.createElement('div');mobileBar.id='mobilePrintBar';mobileBar.className='mobile-print-bar';mobileBar.innerHTML=`<button type="button" class="mobile-settings-button" onclick="openMobileSettingsSheet()">☰ <span id="mobileActivePanelLabel">Dasar</span></button><button type="button" class="mobile-print-button" onclick="showPinModal()">Cetak</button>`;document.body.appendChild(mobileBar);
+
+            const presetGroup=uxGroupForControl('presetSelect'),presetSlot=document.getElementById('dialogPresetSlot');
+            if(presetGroup){presetSlot.appendChild(presetGroup);presetGroup.classList.add('dialog-preset-group');}
+            const presetActions=document.querySelector('.preset-actions');
+            if(presetActions){presetSlot.appendChild(presetActions);if(!document.getElementById('uxPresetManageBtn')){const b=document.createElement('button');b.type='button';b.id='uxPresetManageBtn';b.className='mini-btn';b.textContent='Kelola Preset';b.onclick=togglePresetManager;presetSlot.appendChild(b);}}
+            uxGroupForControl('settingsViewMode')?.classList.add('dialog-hidden-control');
+
+            ['sourceSizeInfo','ipAddress','printerSelect','fileInput','colorMode','pages','copies','paperSize','orientation','scaleMode'].forEach(id=>uxMoveGroup(id,document.getElementById('panelContent-basic')));
+            ['pageSubset','pageOrder','collateMode','blankPageMode','pageRotationMode'].forEach(id=>uxMoveGroup(id,document.getElementById('panelContent-pages')));
+            ['pagesPerSheet','marginMode','autoRotateMode','contentAlign','nupBorder','nupOrder','impositionMode','nupGapXmm','offsetXmm'].forEach(id=>uxMoveGroup(id,document.getElementById('panelContent-layout')));
+            ['duplexMode','bindingMode','bookletMode','startCopyNewSheet'].forEach(id=>uxMoveGroup(id,document.getElementById('panelContent-duplex')));
+            ['watermarkMode','headerText','footerText','pageNumberMode','separatorMode'].forEach(id=>uxMoveGroup(id,document.getElementById('panelContent-marks')));
+            ['posterMode','cropMode'].forEach(id=>uxMoveGroup(id,document.getElementById('panelContent-poster')));
+            ['driverBin','driverQuality','driverExecutionMode','calibrationXmm','safetySheetLimit','jobSubmissionMode','jobPriority'].forEach(id=>uxMoveGroup(id,document.getElementById('panelContent-printer')));
+            ['scaleXPercent','transformMode','signatureMode','creepMode','pdfPageBox','bleedMode','prepressMarks'].forEach(id=>uxMoveGroup(id,document.getElementById('panelContent-expert')));
+            const driverPanel=document.getElementById('driverAdvancedPanel');if(driverPanel)document.getElementById('panelContent-expert').appendChild(driverPanel);
+
+            const q=document.getElementById('queueCard'),h=document.querySelector('.history-card'),qp=document.getElementById('panelContent-queue');
+            if(q){q.classList.add('dialog-embedded-card');qp.appendChild(q);}
+            if(h){h.classList.add('dialog-embedded-card');qp.appendChild(h);}
+
+            ['sheetEstimate','preflightStatus'].forEach(id=>{const e=document.getElementById(id);if(e)document.getElementById('panelContent-basic').appendChild(e);});
+            const preflightBtn=[...inline.querySelectorAll('button')].find(b=>String(b.getAttribute('onclick')||'').includes('runPreflight(true)'));if(preflightBtn)document.getElementById('panelContent-basic').appendChild(preflightBtn);
+
+            const summary=document.getElementById('printSettingsSummary');if(summary)document.getElementById('dialogQuickSummary').appendChild(summary);
+            const oldToolbar=inline.querySelector('.settings-toolbar');if(oldToolbar)oldToolbar.classList.add('dialog-hidden-toolbar');
+            inline.classList.add('dialog-legacy-settings');
+
+            const sourceBadge=document.getElementById('queueSummaryBadge'),navBadge=document.getElementById('navQueueBadge');
+            if(sourceBadge&&navBadge){const syncBadge=()=>{const m=sourceBadge.textContent.match(/^(\d+)/);navBadge.textContent=m?m[1]:sourceBadge.textContent;updatePrintDialogSummaries();};new MutationObserver(syncBadge).observe(sourceBadge,{childList:true,characterData:true,subtree:true});syncBadge();}
+            showPrintPanel(localStorage.getItem('activePrintPanelV4529')||'basic',false);
+            updatePrintDialogSummaries();
         }
 
         function markAdvancedSettingGroups(){ ADVANCED_SETTING_IDS.forEach(id=>{const el=document.getElementById(id);if(!el)return;const group=el.closest('.input-group');if(group)group.classList.add('advanced-setting');}); }
@@ -2604,14 +2672,14 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
         document.getElementById('printerSelect').addEventListener('change', handlePrinterChanged);
         ['copies','pagesPerSheet','duplexMode','pageSubset','pageOrder','bookletMode','posterMode','posterCols','posterRows','pages'].forEach(id=>document.getElementById(id)?.addEventListener('change',estimateCurrentPrint));
         document.getElementById('presetSelect').addEventListener('change', applySelectedPreset);
-        document.getElementById('settingsViewMode').addEventListener('change', ()=>{applySettingsViewMode();updateAccordionSummaries();updateDynamicPreview();});
+        document.getElementById('settingsViewMode').addEventListener('change', ()=>{applySettingsViewMode();updatePrintDialogSummaries();updateDynamicPreview();});
         document.getElementById('rememberPrinterSettings').addEventListener('change', ()=>{if(document.getElementById('rememberPrinterSettings').checked)saveSettingsForCurrentPrinter();});
         document.getElementById('pages').addEventListener('blur', () => {
             validatePrintSettings(false);
             currentPreviewSheet = 0;
             updateDynamicPreview();
         });
-        window.addEventListener('load', () => { applyProfessionalUiPolish(); loadHistory(); setupPwaInstall(); startQueuePolling(); buildConsolidatedSettingsUi(); markAdvancedSettingGroups(); refreshPresetSelect(); const savedView=localStorage.getItem('settingsViewModeV4527')||localStorage.getItem('settingsViewModeV4526')||localStorage.getItem('settingsViewModeV4521')||'compact'; document.getElementById('settingsViewMode').value=savedView; applySettingsViewMode(); syncAdvancedPrintControls(); validatePrintSettings(false); updatePrintSettingsSummary(); updateAccordionSummaries(); restoreActiveServerFromSession(); });
+        window.addEventListener('load', () => { applyProfessionalUiPolish(); loadHistory(); setupPwaInstall(); startQueuePolling(); buildConsolidatedSettingsUi(); markAdvancedSettingGroups(); refreshPresetSelect(); document.getElementById('settingsViewMode').value='compact'; applySettingsViewMode(); syncAdvancedPrintControls(); validatePrintSettings(false); updatePrintSettingsSummary(); updateAccordionSummaries(); restoreActiveServerFromSession(); });
     </script>
 </body>
 </html>
