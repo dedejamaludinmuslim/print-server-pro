@@ -61,6 +61,13 @@
         .subnet-hint { font-size: 12px; color: var(--text-muted); line-height: 1.5; margin-top: 8px; }
         .install-row { display:flex; justify-content:center; margin-top:12px; }
         #installBtn { display:none; max-width:220px; }
+
+        .settings-inline { margin-top: 22px; padding-top: 4px; }
+        .settings-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+        .settings-inline .input-group { margin-bottom:12px; }
+        .settings-summary { font-size:11px; line-height:1.45; color:var(--text-muted); background:#f8fafc; border:1px solid var(--border-soft); border-radius:10px; padding:9px 11px; margin-bottom:12px; }
+        .settings-live { font-size:10px; font-weight:700; color:var(--success); text-transform:uppercase; letter-spacing:.4px; }
+        @media (max-width: 560px) { .settings-grid { grid-template-columns:1fr; gap:0; } }
     </style>
 </head>
 <body>
@@ -89,12 +96,11 @@
                     <label>🖨️ Pilih Mesin Printer:</label>
                     <div class="input-with-btn">
                         <select id="printerSelect"><option value="">Default Printer...</option></select>
-                        <button class="btn-icon" onclick="showConfigModal()" title="Pengaturan Cetak">⚙️</button>
                     </div>
                 </div>
-                <div class="section-title"><span>📁 Pilih File (PDF/Gambar)</span></div>
+                <div class="section-title"><span>📁 Pilih File (PDF/DOCX/Gambar)</span></div>
                 <div class="input-group">
-                    <input type="file" id="fileInput" class="input-standard" accept=".pdf, .png, .jpg, .jpeg" style="padding:10px; border:1px dashed #cbd5e1; cursor:pointer;" />
+                    <input type="file" id="fileInput" class="input-standard" accept=".pdf,.docx,.png,.jpg,.jpeg,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/jpeg,image/png" style="padding:10px; border:1px dashed #cbd5e1; cursor:pointer;" />
                 <div id="docxConversionPanel" style="display:none; margin-top:10px; padding:10px; border:1px solid var(--border); border-radius:10px; background:rgba(51,65,85,.05);">
                     <div id="docxConversionStatus" style="font-size:12px; line-height:1.5; color:var(--text-muted);">DOCX belum dikonversi.</div>
                     <button type="button" id="convertDocxBtn" class="btn-block" style="margin-top:8px; background:#475569;" onclick="convertSelectedDocx(true)">
@@ -103,6 +109,35 @@
                 </div>
 
                 </div>
+
+                <div class="settings-inline" id="inlinePrintSettings">
+                    <div class="section-title" style="margin-top:8px;">
+                        <span>⚙️ Pengaturan Cetak</span>
+                        <span class="settings-live">● Preview Langsung</span>
+                    </div>
+                    <div id="printSettingsSummary" class="settings-summary">Sama dengan dokumen • Otomatis • Perkecil jika perlu • 1 hal/lembar</div>
+                    <div class="input-group">
+                        <label>Ukuran Dokumen Sumber:</label>
+                        <input id="sourceSizeInfo" class="input-standard" value="Belum ada file" readonly style="color:var(--text-muted);">
+                    </div>
+                    <div class="settings-grid">
+                        <div class="input-group"><label>Warna:</label><select id="colorMode" class="input-standard"><option value="color">Warna</option><option value="monochrome">Hitam Putih</option></select></div>
+                        <div class="input-group"><label>Kertas Printer:</label>
+                            <select id="paperSize" class="input-standard"><option value="SOURCE">Sama dengan Dokumen</option><option value="A4">A4</option><option value="F4">F4 (210 × 330 mm)</option><option value="LETTER">Letter</option><option value="LEGAL">Legal</option></select>
+                        </div>
+                        <div class="input-group"><label>Orientasi Kertas:</label>
+                            <select id="orientation" class="input-standard"><option value="auto">Otomatis</option><option value="portrait">Portrait</option><option value="landscape">Landscape</option></select>
+                        </div>
+                        <div class="input-group"><label>Skala Cetak:</label>
+                            <select id="scaleMode" class="input-standard"><option value="shrink">Perkecil jika Perlu</option><option value="fit">Sesuaikan ke Kertas</option><option value="actual">Ukuran Asli</option><option value="fill">Isi Kertas (Bisa Terpotong)</option></select>
+                        </div>
+                        <div class="input-group"><label>Hal/Lembar:</label><select id="pagesPerSheet" class="input-standard"><option value="1">1</option><option value="2">2</option><option value="4">4</option><option value="6">6</option><option value="9">9</option><option value="16">16</option></select></div>
+                        <div class="input-group"><label>Jumlah Copy:</label><input type="number" id="copies" class="input-standard" value="1" min="1" max="50"></div>
+                    </div>
+                    <div class="input-group"><label>Rincian Halaman:</label><input type="text" id="pages" class="input-standard" placeholder="1,3,5-7"></div>
+                    <div style="font-size:11px; color:var(--text-muted); line-height:1.5;">Setiap perubahan pengaturan langsung diterapkan pada preview.</div>
+                </div>
+
                 <div id="realtimeStatus" style="display:none; margin-top:20px;">
                     <div id="statusMessage" style="font-size:12px; font-weight:600;">Menunggu...</div>
                     <div style="height:6px; background:#e2e8f0; margin-top:12px; border-radius:10px; overflow:hidden;">
@@ -153,57 +188,6 @@
             <div style="display:flex; gap:10px; margin-top:20px;">
                 <button class="btn-block secondary" onclick="closeScanModal()">Batal</button>
                 <button class="btn-block success" onclick="startNetworkScan()">Pindai Subnet</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="configModal" class="modal">
-        <div class="modal-content">
-            <h3 style="text-align:center; margin:0 0 20px 0;">⚙️ Pengaturan</h3>
-            <div class="input-group">
-                <label>Ukuran Dokumen Sumber:</label>
-                <input id="sourceSizeInfo" class="input-standard" value="Belum ada file" readonly style="color:var(--text-muted);">
-            </div>
-            <div style="display:flex; gap:12px;">
-                <div class="input-group" style="flex:1;"><label>Warna:</label><select id="colorMode" class="input-standard"><option value="color">Warna</option><option value="monochrome">Hitam Putih</option></select></div>
-                <div class="input-group" style="flex:1;"><label>Kertas Printer:</label>
-                    <select id="paperSize" class="input-standard">
-                        <option value="SOURCE">Sama dengan Dokumen</option>
-                        <option value="A4">A4</option>
-                        <option value="F4">F4 (210 × 330 mm)</option>
-                        <option value="LETTER">Letter</option>
-                        <option value="LEGAL">Legal</option>
-                    </select>
-                </div>
-            </div>
-            <div style="display:flex; gap:12px;">
-                <div class="input-group" style="flex:1;"><label>Orientasi Kertas:</label>
-                    <select id="orientation" class="input-standard">
-                        <option value="auto">Otomatis</option>
-                        <option value="portrait">Portrait</option>
-                        <option value="landscape">Landscape</option>
-                    </select>
-                </div>
-                <div class="input-group" style="flex:1;"><label>Skala Cetak:</label>
-                    <select id="scaleMode" class="input-standard">
-                        <option value="shrink">Perkecil jika Perlu</option>
-                        <option value="fit">Sesuaikan ke Kertas</option>
-                        <option value="actual">Ukuran Asli</option>
-                        <option value="fill">Isi Kertas (Bisa Terpotong)</option>
-                    </select>
-                </div>
-            </div>
-            <div style="display:flex; gap:12px;">
-                <div class="input-group" style="flex:1;"><label>Hal/Lembar:</label><select id="pagesPerSheet" class="input-standard"><option value="1">1</option><option value="2">2</option><option value="4">4</option><option value="6">6</option><option value="9">9</option><option value="16">16</option></select></div>
-                <div class="input-group" style="flex:1;"><label>Jumlah Copy:</label><input type="number" id="copies" class="input-standard" value="1" min="1" max="50"></div>
-            </div>
-            <div class="input-group"><label>Rincian Halaman:</label><input type="text" id="pages" class="input-standard" placeholder="1,3,5-7"></div>
-            <div style="font-size:12px; color:var(--text-muted); line-height:1.5; margin-top:-4px;">
-                Ukuran dokumen dibaca otomatis. Kertas printer menentukan media fisik. Mode <strong>Ukuran Asli</strong> mempertahankan skala 100%; mode <strong>Isi Kertas</strong> dapat memotong tepi.
-            </div>
-            <div style="display:flex; gap:10px; margin-top:20px;">
-                <button class="btn-block secondary" onclick="cancelConfigModal()">Batal</button>
-                <button class="btn-block" onclick="applyConfigModal()">Simpan</button>
             </div>
         </div>
     </div>
@@ -260,7 +244,7 @@
     </div>
 
     <script>
-        let currentPdfDoc = null, currentImgSrc = null, currentPreviewSheet = 0, totalPreviewSheets = 1, appliedConfig = {};
+        let currentPdfDoc = null, currentImgSrc = null, currentPreviewSheet = 0, totalPreviewSheets = 1;
         let currentSourceInfo = { kind: 'none', width: 595.28, height: 841.89, label: 'Belum ada file', standard: 'A4' };
         let currentPrintableFile = null;
         let currentOriginalFileName = '';
@@ -470,20 +454,6 @@
         function closeScanModal() { document.getElementById('scanModal').style.display='none'; }
         function showHelpModal() { document.getElementById('helpModal').style.display='flex'; }
         function closeHelpModal() { document.getElementById('helpModal').style.display='none'; }
-        function showConfigModal() {
-            appliedConfig = {
-                colorMode: document.getElementById('colorMode').value,
-                paperSize: document.getElementById('paperSize').value,
-                orientation: document.getElementById('orientation').value,
-                scaleMode: document.getElementById('scaleMode').value,
-                pagesPerSheet: document.getElementById('pagesPerSheet').value,
-                copies: document.getElementById('copies').value,
-                pages: document.getElementById('pages').value
-            };
-            document.getElementById('configModal').style.display='flex';
-        }
-        function cancelConfigModal() { Object.keys(appliedConfig).forEach(k => document.getElementById(k).value = appliedConfig[k]); document.getElementById('configModal').style.display='none'; }
-        function applyConfigModal() { document.getElementById('configModal').style.display='none'; currentPreviewSheet = 0; updateDynamicPreview(); showToast('Tersimpan', 'success'); }
         let pendingCompatibilityPrint = false;
         function showPinModal(useCompatibilityMode = false) {
             if(!document.getElementById('fileInput').files[0]) return showToast('Pilih file dokumen terlebih dahulu!', 'error');
@@ -992,7 +962,22 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
                 reader.readAsDataURL(file);
             }
         });
+        function updatePrintSettingsSummary() {
+            const el = document.getElementById('printSettingsSummary');
+            if (!el) return;
+            const paperMap = { SOURCE: 'Sama dengan dokumen', A4: 'A4', F4: 'F4', LETTER: 'Letter', LEGAL: 'Legal' };
+            const orientationMap = { auto: 'Otomatis', portrait: 'Portrait', landscape: 'Landscape' };
+            const scaleMap = { shrink: 'Perkecil jika perlu', fit: 'Sesuaikan ke kertas', actual: 'Ukuran asli', fill: 'Isi kertas' };
+            const paper = paperMap[document.getElementById('paperSize').value] || 'A4';
+            const orientation = orientationMap[document.getElementById('orientation').value] || 'Otomatis';
+            const scale = scaleMap[document.getElementById('scaleMode').value] || 'Perkecil jika perlu';
+            const pps = document.getElementById('pagesPerSheet').value || '1';
+            const copies = document.getElementById('copies').value || '1';
+            el.textContent = `${paper} • ${orientation} • ${scale} • ${pps} hal/lembar • ${copies} copy`;
+        }
+
         async function updateDynamicPreview() {
+            updatePrintSettingsSummary();
             const canvas = document.getElementById('mainPreviewCanvas');
             const emptyState = document.getElementById('emptyPreviewState');
             if (!currentPdfDoc && !currentImgSrc) {
@@ -1057,7 +1042,21 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
                 return;
             }
 
-            const pageArr = Array.from({ length: currentPdfDoc.numPages }, (_, idx) => idx + 1);
+            let pageArr = Array.from({ length: currentPdfDoc.numPages }, (_, idx) => idx + 1);
+            const pageSelection = parsePagesInput(document.getElementById('pages').value);
+            if (pageSelection.ok && pageSelection.normalized) {
+                const selected = [];
+                pageSelection.normalized.split(',').forEach(part => {
+                    if (part.includes('-')) {
+                        const [a, b] = part.split('-').map(Number);
+                        for (let n = a; n <= b; n += 1) if (n <= currentPdfDoc.numPages) selected.push(n);
+                    } else {
+                        const n = Number(part);
+                        if (n >= 1 && n <= currentPdfDoc.numPages) selected.push(n);
+                    }
+                });
+                if (selected.length) pageArr = [...new Set(selected)];
+            }
             totalPreviewSheets = Math.ceil(pageArr.length / safePps);
             document.getElementById('previewPagination').style.display = totalPreviewSheets > 1 ? 'flex' : 'none';
             document.getElementById('previewSheetText').innerText = `${currentPreviewSheet + 1} / ${totalPreviewSheets}`;
@@ -1133,16 +1132,22 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
             }
         }
 
-        ['copies', 'pages', 'pagesPerSheet', 'paperSize', 'orientation', 'scaleMode'].forEach((id) => {
+        ['copies', 'pages', 'pagesPerSheet', 'paperSize', 'orientation', 'scaleMode', 'colorMode'].forEach((id) => {
             const el = document.getElementById(id);
-            const eventName = id === 'pages' ? 'blur' : 'change';
+            const eventName = (id === 'pages' || id === 'copies') ? 'input' : 'change';
             el.addEventListener(eventName, () => {
-                if (id === 'pages' || id === 'copies' || id === 'pagesPerSheet') validatePrintSettings(false);
+                if (id === 'copies' || id === 'pagesPerSheet') validatePrintSettings(false);
                 currentPreviewSheet = 0;
+                updatePrintSettingsSummary();
                 updateDynamicPreview();
             });
         });
-        window.addEventListener('load', () => { loadHistory(); setupPwaInstall(); validatePrintSettings(false); restoreActiveServerFromSession(); });
+        document.getElementById('pages').addEventListener('blur', () => {
+            validatePrintSettings(false);
+            currentPreviewSheet = 0;
+            updateDynamicPreview();
+        });
+        window.addEventListener('load', () => { loadHistory(); setupPwaInstall(); validatePrintSettings(false); updatePrintSettingsSummary(); restoreActiveServerFromSession(); });
     </script>
 </body>
 </html>
