@@ -10,6 +10,10 @@ const { Server } = require('socket.io');
 const http = require('http');
 const { spawn } = require('child_process');
 const crypto = require('crypto');
+let Bonjour = null;
+let QRCode = null;
+try { ({ Bonjour } = require('bonjour-service')); } catch (_) {}
+try { QRCode = require('qrcode'); } catch (_) {}
 
 const app = express();
 const server = http.createServer(app);
@@ -81,16 +85,48 @@ const upload = multer({ dest: uploadDir, limits: { fileSize: MAX_UPLOAD_MB * 102
 const uploadDocument = upload.single('document');
 
 function getLocalIpList() {
+  return getLocalInterfaceDetails().map(item => item.address);
+}
+
+function getLocalInterfaceDetails() {
   let nets = {};
   try { nets = os.networkInterfaces() || {}; }
   catch (_) { return []; }
-  const ips = [];
-  Object.values(nets).forEach(entries => {
+  const interfaces = [];
+  Object.entries(nets).forEach(([name, entries]) => {
     (entries || []).forEach(net => {
-      if (net.family === 'IPv4' && !net.internal) ips.push(net.address);
+      if (net.family !== 'IPv4' || net.internal) return;
+      const prefix = String(net.address || '').split('.').slice(0, 3).join('.');
+      interfaces.push({
+        name,
+        address: net.address,
+        netmask: net.netmask || '',
+        cidr: net.cidr || '',
+        mac: net.mac || '',
+        scanPrefix: /^\d{1,3}(?:\.\d{1,3}){2}$/.test(prefix) ? prefix : '',
+      });
     });
   });
-  return [...new Set(ips)];
+  return interfaces.filter((item,index,list)=>list.findIndex(other=>other.address===item.address)===index);
+}
+
+function connectionInfoPayload() {
+  const interfaces = getLocalInterfaceDetails();
+  const localIps = interfaces.map(item => item.address);
+  const hostname = os.hostname();
+  const urls = localIps.map(ip => `http://${ip}:${port}/?server=${encodeURIComponent(ip)}`);
+  return {
+    hostname,
+    localIps,
+    interfaces,
+    hostnames: [`${hostname}.local`, hostname],
+    urls,
+    recommendedUrl: urls[0] || `http://localhost:${port}`,
+    allowedOrigins,
+    port,
+    discovery: { mdns: Boolean(Bonjour), qr: Boolean(QRCode), service: '_printserverpro._tcp.local' },
+    version: '4.5.34',
+  };
 }
 
 function updateStatus(message, type = 'info') {
@@ -321,17 +357,35 @@ app.get('/ping', (req, res) => {
     hostname: os.hostname(),
     ipHint: localIps[0] || '',
     localIps,
-    version: '4.5.33',
+    version: '4.5.34',
   });
 });
 
 app.get('/connection-info', (req, res) => {
-  res.json({
-    hostname: os.hostname(),
-    localIps: getLocalIpList(),
-    allowedOrigins,
-    port,
-  });
+  res.json(connectionInfoPayload());
+});
+
+app.get('/pairing-info', (req, res) => {
+  res.json(connectionInfoPayload());
+});
+
+app.get('/pairing-qr', async (req, res) => {
+  try {
+    if (!QRCode) return res.status(503).send('QR generator tidak tersedia. Jalankan npm install.');
+    const info = connectionInfoPayload();
+    const requested = String(req.query.host || '').trim().slice(0, 260);
+    const allowedHosts = new Set([...info.localIps, ...info.hostnames, 'localhost', '127.0.0.1']);
+    const host = allowedHosts.has(requested) ? requested : (info.localIps[0] || `${info.hostname}.local`);
+    const target = `http://${host}:${port}/?server=${encodeURIComponent(host)}`;
+    const png = await QRCode.toBuffer(target, { type: 'png', width: 340, margin: 2, errorCorrectionLevel: 'M' });
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Cache-Control', 'no-store');
+    res.setHeader('X-Pairing-Target', encodeURIComponent(target));
+    res.setHeader('Access-Control-Expose-Headers', 'X-Pairing-Target');
+    res.send(png);
+  } catch (error) {
+    res.status(500).send(`PAIRING_QR_FAILED: ${error.message}`);
+  }
 });
 
 app.get('/docx-converter-status', async (req, res) => {
@@ -352,7 +406,7 @@ app.get('/docx-converter-status', async (req, res) => {
       executable: libreOfficeExecutable || null,
       timeoutSeconds: Math.round(DOCX_CONVERT_TIMEOUT_MS / 1000),
     },
-    version: '4.5.33',
+    version: '4.5.34',
   });
 });
 
@@ -363,7 +417,7 @@ app.get('/limits', (req, res) => {
     largePdfThresholdMb: LARGE_PDF_THRESHOLD_MB,
     largePdfChunkPages: LARGE_PDF_CHUNK_PAGES,
     supportedFileTypes: ['pdf', 'png', 'jpg', 'jpeg', 'docx'],
-    version: '4.5.33',
+    version: '4.5.34',
   });
 });
 
@@ -1147,7 +1201,7 @@ app.post('/convert-docx',
 );
 
 
-// ===== v4.5.33 Central Print Queue & Job Management =====
+// ===== v4.5.34 Central Print Queue & Job Management =====
 const JOB_RETENTION_MS = Math.max(60 * 60 * 1000, parseInt(process.env.JOB_RETENTION_MS || String(24 * 60 * 60 * 1000), 10));
 const DUPLICATE_WINDOW_MS = Math.max(3000, parseInt(process.env.DUPLICATE_WINDOW_MS || '15000', 10));
 const MAX_JOB_HISTORY = Math.max(20, parseInt(process.env.MAX_JOB_HISTORY || '100', 10));
@@ -1453,4 +1507,59 @@ server.requestTimeout = 0;
 server.headersTimeout = 0;
 server.timeout = 0;
 
-server.listen(port, '0.0.0.0', () => console.log(`Print Server V4.5.33 Ready on ${port}`));
+let bonjourInstances = [];
+let bonjourServices = [];
+
+function startLocalDiscovery() {
+  if (!Bonjour) {
+    console.warn('[DISCOVERY] mDNS tidak aktif. Jalankan npm install untuk memasang bonjour-service.');
+    return;
+  }
+  const interfaces = getLocalInterfaceDetails();
+  if (!interfaces.length) {
+    console.warn('[DISCOVERY] mDNS dilewati karena tidak ada interface IPv4 non-loopback yang dapat dibaca.');
+    return;
+  }
+  try {
+    const hostname = os.hostname();
+    const txt = { version: '4.5.34', path: '/', role: 'print-server-pro' };
+    interfaces.forEach(item => {
+      const instance = new Bonjour({ interface: item.address, bind: '0.0.0.0' }, error => {
+        console.warn(`[DISCOVERY] mDNS ${item.address}: ${error.message}`);
+      });
+      instance.server?.mdns?.on?.('warning', error => console.warn(`[DISCOVERY] mDNS warning ${item.address}: ${error.message}`));
+      instance.server?.mdns?.on?.('error', error => console.warn(`[DISCOVERY] mDNS error ${item.address}: ${error.message}`));
+      bonjourInstances.push(instance);
+      bonjourServices.push(
+        instance.publish({ name: `Print Server Pro - ${hostname}`, type: 'printserverpro', protocol: 'tcp', port, host: `${hostname}.local`, txt }),
+        instance.publish({ name: `Print Server Pro - ${hostname}`, type: 'http', protocol: 'tcp', port, host: `${hostname}.local`, txt }),
+      );
+    });
+    console.log(`[DISCOVERY] mDNS aktif pada ${interfaces.length} interface: ${hostname}.local:${port}`);
+  } catch (error) {
+    console.warn(`[DISCOVERY] mDNS gagal: ${error.message}`);
+    stopLocalDiscovery();
+  }
+}
+
+function stopLocalDiscovery() {
+  for (const service of bonjourServices) { try { service.stop?.(); } catch (_) {} }
+  bonjourServices = [];
+  for (const instance of bonjourInstances) { try { instance.destroy?.(); } catch (_) {} }
+  bonjourInstances = [];
+}
+
+server.listen(port, '0.0.0.0', () => {
+  console.log(`Print Server V4.5.34 Ready on ${port}`);
+  const info = connectionInfoPayload();
+  info.urls.forEach(url => console.log(`[NETWORK] ${url}`));
+  startLocalDiscovery();
+});
+
+for (const signal of ['SIGINT','SIGTERM']) {
+  process.on(signal, () => {
+    stopLocalDiscovery();
+    server.close(() => process.exit(0));
+    setTimeout(() => process.exit(0), 1500).unref?.();
+  });
+}

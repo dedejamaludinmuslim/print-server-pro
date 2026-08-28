@@ -383,6 +383,22 @@
             font-size:10px !important;
         }
         #connectionDot { width:7px !important; height:7px !important; }
+        .network-discovery-actions { display:flex; flex-wrap:wrap; gap:7px; margin-top:8px; }
+        .network-discovery-actions .mini-btn { font-size:10px; padding:6px 9px; }
+        .discovery-diagnostics {
+            display:none;
+            margin-top:8px;
+            padding:8px 10px;
+            border:1px solid #fde68a;
+            border-radius:9px;
+            background:#fffbeb;
+            color:#92400e;
+            font-size:10px;
+            line-height:1.5;
+        }
+        .scan-progress { display:none; margin-top:12px; padding:9px 10px; border-radius:9px; background:#eff6ff; color:#1e40af; font-size:11px; line-height:1.5; }
+        .pairing-qr { width:210px; max-width:72vw; aspect-ratio:1; object-fit:contain; border:1px solid #e2e8f0; border-radius:12px; background:#fff; }
+        .pairing-urls { margin:12px 0 0; padding:10px; text-align:left; border-radius:9px; background:#f8fafc; font-size:11px; line-height:1.55; word-break:break-all; }
         .printer-tools {
             margin-top:9px;
             padding:8px 9px;
@@ -817,7 +833,7 @@
                         <div class="app-brand-title">Print Server Pro</div>
                         <div class="app-brand-subtitle">Network Printing Console</div>
                     </div>
-                    <span class="app-version">v4.5.33</span>
+                    <span class="app-version">v4.5.34</span>
                 </div>
                 <div class="install-row"><button id="installBtn" class="btn-block secondary">Install Aplikasi</button></div>
                 <div class="section-title">
@@ -834,6 +850,11 @@
                         <span id="connectionDot" style="width:10px; height:10px; border-radius:999px; background:#94a3b8; display:inline-block;"></span>
                         <span id="connectionStatusText">Belum terhubung</span>
                     </div>
+                    <div class="network-discovery-actions">
+                        <button type="button" class="mini-btn" onclick="startQuickDiscovery()">⚡ Cari Cepat</button>
+                        <button type="button" class="mini-btn" id="pairingNetworkBtn" onclick="openPairingModal()" style="display:none;">▦ QR Koneksi</button>
+                    </div>
+                    <div id="discoveryDiagnostics" class="discovery-diagnostics"></div>
                     <select id="ipSelect" class="input-standard" style="display:none; margin-top: 8px;" onchange="document.getElementById('ipAddress').value = this.value; updateIpAndFetchPrinters();"></select>
                 </div>
                 <div class="input-group">
@@ -1227,14 +1248,25 @@
 
     <div id="scanModal" class="modal">
         <div class="modal-content" style="text-align:center;">
-            <h3 style="margin:0 0 10px 0;">🔎 Pindai Subnet Manual</h3>
-            <p style="font-size:13px; color:var(--text-muted); margin-bottom:12px; line-height:1.5;">Masukkan 3 blok IP Wi‑Fi, misalnya <strong>192.168.1</strong>, lalu aplikasi akan mencoba <strong>.1 s/d .254</strong>.</p>
-            <div class="input-group" style="margin-bottom:12px;"><input type="text" id="scanIpInput" class="input-standard" value="192.168.1" style="text-align:center; font-weight:bold;"></div>
-            <div class="subnet-hint">Gunakan subnet lain yang masih tertaut/reachable bila perlu, misalnya <strong>192.168.4</strong>.</div>
+            <h3 style="margin:0 0 10px 0;">🔎 Pindai Multi-Subnet</h3>
+            <p style="font-size:13px; color:var(--text-muted); margin-bottom:12px; line-height:1.5;">Masukkan hingga 4 prefix /24, dipisahkan koma. Contoh: <strong>192.168.1, 192.168.0</strong>. Host langsung seperti <strong>printer-pc.local</strong> juga boleh.</p>
+            <div class="input-group" style="margin-bottom:12px;"><input type="text" id="scanIpInput" class="input-standard" value="192.168.1, 192.168.0" style="text-align:center; font-weight:bold;"></div>
+            <div class="subnet-hint">Pemindaian browser hanya dapat menemukan alamat yang bisa dirutekan dan tidak diblokir firewall/VLAN.</div>
+            <div id="scanProgress" class="scan-progress">Menyiapkan pemindaian...</div>
             <div style="display:flex; gap:10px; margin-top:20px;">
-                <button class="btn-block secondary" onclick="closeScanModal()">Batal</button>
-                <button class="btn-block success" onclick="startNetworkScan()">Pindai Subnet</button>
+                <button class="btn-block secondary" id="scanCancelBtn" onclick="cancelNetworkScan()">Batal</button>
+                <button class="btn-block success" id="scanStartBtn" onclick="startNetworkScan()">Mulai Pindai</button>
             </div>
+        </div>
+    </div>
+
+    <div id="pairingModal" class="modal">
+        <div class="modal-content" style="text-align:center;">
+            <h3 style="margin:0 0 8px 0;">▦ QR Koneksi Server</h3>
+            <p style="font-size:12px; color:var(--text-muted); line-height:1.5;">Pindai dari perangkat yang berada pada jaringan yang dapat menjangkau PC server.</p>
+            <img id="pairingQrImage" class="pairing-qr" alt="QR alamat Print Server Pro">
+            <div id="pairingUrls" class="pairing-urls">Memuat alamat server...</div>
+            <button class="btn-block secondary" style="margin-top:16px;" onclick="closePairingModal()">Tutup</button>
         </div>
     </div>
 
@@ -1263,14 +1295,14 @@
     <div id="helpModal" class="modal">
         <div class="modal-content" style="text-align:left;">
             <h3 style="text-align:center; margin:0 0 15px 0;">Bantu Cari IP Server</h3>
-            <p style="font-size:13px; color:var(--text-muted); line-height:1.5;">Tombol langsung ke pengaturan Wi‑Fi tidak bisa dijamin bekerja di semua browser, HP, dan Windows. Karena itu, aplikasi hanya menampilkan panduan cepat berikut.</p>
+            <p style="font-size:13px; color:var(--text-muted); line-height:1.5;">Mulai dengan <strong>Cari Cepat</strong>. Jika belum ditemukan, pindai prefix jaringan Wi-Fi dan LAN. Deteksi tidak dapat menembus firewall, VLAN, client isolation, atau jaringan yang tidak memiliki rute.</p>
             <div style="font-size:13px; line-height:1.6; color:var(--text-main); margin-top:12px;">
                 <strong>Windows</strong>
                 <ol style="padding-left:20px; margin:6px 0 12px 0;">
                     <li>Tekan <strong>Windows + R</strong>.</li>
                     <li>Ketik <strong>cmd</strong>, lalu Enter.</li>
                     <li>Ketik <strong>ipconfig</strong>.</li>
-                    <li>Lihat <strong>IPv4 Address</strong> Wi‑Fi.</li>
+                    <li>Lihat <strong>IPv4 Address</strong> pada adapter Wi-Fi maupun Ethernet.</li>
                 </ol>
                 <strong>Android</strong>
                 <ol style="padding-left:20px; margin:6px 0 12px 0;">
@@ -1283,6 +1315,12 @@
                     <li>Buka <strong>Settings</strong> → <strong>Wi‑Fi</strong>.</li>
                     <li>Ketuk ikon <strong>i</strong> pada jaringan aktif.</li>
                     <li>Lihat <strong>IP Address</strong> dan <strong>Router</strong>.</li>
+                </ol>
+                <strong>Jika Wi-Fi terdeteksi tetapi kabel tidak</strong>
+                <ol style="padding-left:20px; margin:6px 0 0 0;">
+                    <li>Bandingkan tiga blok awal IP kedua perangkat.</li>
+                    <li>Pastikan profil Windows PC server adalah Private/Domain dan TCP 3000 diizinkan.</li>
+                    <li>Periksa VLAN, AP/client isolation, dan routing antar-subnet pada router/switch.</li>
                 </ol>
             </div>
             <button class="btn-block secondary" style="margin-top:20px;" onclick="closeHelpModal()">Tutup</button>
@@ -1593,6 +1631,8 @@ function buildConsolidatedSettingsUi(){
         let socket;
         let currentSocketIp = '';
         let deferredPrompt = null;
+        let discoveryRunId = 0;
+        const activeDiscoveryControllers = new Set();
         const CONNECTION_STATUS = {
             idle: { text: 'Belum terhubung', color: '#94a3b8' },
             scanning: { text: 'Sedang memindai subnet...', color: '#f59e0b' },
@@ -1946,8 +1986,15 @@ function buildConsolidatedSettingsUi(){
             container.appendChild(toast);
             setTimeout(() => toast.remove(), 4000);
         }
-        function showScanModal() { document.getElementById('scanModal').style.display='flex'; }
+        function showScanModal() {
+            const input = document.getElementById('scanIpInput');
+            if (!input.value.trim()) input.value = suggestDiscoveryPrefixes().join(', ');
+            document.getElementById('scanProgress').style.display = 'none';
+            document.getElementById('scanStartBtn').disabled = false;
+            document.getElementById('scanModal').style.display='flex';
+        }
         function closeScanModal() { document.getElementById('scanModal').style.display='none'; }
+        function closePairingModal() { document.getElementById('pairingModal').style.display='none'; }
         function showHelpModal() { document.getElementById('helpModal').style.display='flex'; }
         function closeHelpModal() { document.getElementById('helpModal').style.display='none'; }
         let pendingCompatibilityPrint = false;
@@ -2084,28 +2131,120 @@ function buildConsolidatedSettingsUi(){
                 document.getElementById('progressBar').style.width = (steps[data.type] || 0) + '%';
             });
         }
-        async function pingServer(ip, timeoutMs = 1500, retryCount = 1) {
+        function isSafeDiscoveryHost(value) {
+            const host = String(value || '').trim().toLowerCase();
+            if (!host || host.length > 253 || /[:/\\?#\s]/.test(host)) return false;
+            if (/^\d+(?:\.\d+){3}$/.test(host)) return host.split('.').every(part => Number(part) >= 0 && Number(part) <= 255);
+            return /^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(host);
+        }
+        function getKnownServers() {
+            try {
+                const items = JSON.parse(localStorage.getItem('knownPrintServersV4534') || '[]');
+                return Array.isArray(items) ? items.filter(item => isSafeDiscoveryHost(item?.ip)).slice(0, 12) : [];
+            } catch (_) { return []; }
+        }
+        function rememberPrintServer(data = {}, requestedHost = '') {
+            const ip = String(data.ip || requestedHost || '').trim().toLowerCase();
+            if (!isSafeDiscoveryHost(ip)) return;
+            const item = { ip, name: String(data.hostname || data.name || ip).slice(0, 100), lastSeen: Date.now(), localIps: Array.isArray(data.localIps) ? data.localIps.filter(isSafeDiscoveryHost).slice(0, 8) : [] };
+            const items = [item, ...getKnownServers().filter(old => old.ip !== ip)].slice(0, 12);
+            localStorage.setItem('knownPrintServersV4534', JSON.stringify(items));
+        }
+        function suggestDiscoveryPrefixes() {
+            const prefixes = [];
+            const add = value => {
+                const parts = String(value || '').split('.');
+                if (parts.length !== 4 || !parts.every(part => /^\d+$/.test(part) && Number(part) <= 255)) return;
+                const prefix = parts.slice(0, 3).join('.');
+                if (!prefixes.includes(prefix)) prefixes.push(prefix);
+            };
+            add(document.getElementById('ipAddress')?.value);
+            getKnownServers().forEach(item => { add(item.ip); item.localIps.forEach(add); });
+            ['192.168.1.1', '192.168.0.1'].forEach(add);
+            return prefixes.slice(0, 4);
+        }
+        async function getLocalNetworkPermissionState() {
+            if (!navigator.permissions?.query) return 'unknown';
+            try { return (await navigator.permissions.query({ name: 'local-network-access' })).state || 'unknown'; }
+            catch (_) { return 'unknown'; }
+        }
+        function setDiscoveryDiagnostics(message = '') {
+            const box = document.getElementById('discoveryDiagnostics');
+            box.textContent = message;
+            box.style.display = message ? 'block' : 'none';
+        }
+        function setScanProgress(message) {
+            const box = document.getElementById('scanProgress');
+            box.textContent = message;
+            box.style.display = 'block';
+        }
+        function parseDiscoveryInput(raw) {
+            const prefixes = [], directHosts = [];
+            const values = String(raw || '').split(/[;,\n]+/).map(value => value.trim().toLowerCase()).filter(Boolean);
+            for (const value of values) {
+                const normalized = value.replace(/\.x$/i, '').replace(/\/24$/i, '');
+                const prefixParts = normalized.split('.');
+                if (prefixParts.length === 3 && prefixParts.every(part => /^\d+$/.test(part) && Number(part) >= 0 && Number(part) <= 255)) {
+                    if (!prefixes.includes(normalized)) prefixes.push(normalized);
+                } else if (isSafeDiscoveryHost(normalized)) {
+                    if (!directHosts.includes(normalized)) directHosts.push(normalized);
+                } else {
+                    throw new Error(`Alamat tidak valid: ${value}`);
+                }
+            }
+            if (prefixes.length > 4) throw new Error('Maksimal 4 subnet /24 per pemindaian.');
+            if (!prefixes.length && !directHosts.length) throw new Error('Masukkan minimal satu prefix atau alamat host.');
+            return { prefixes, directHosts };
+        }
+        async function probePrintServer(host, timeoutMs = 1200, runId = discoveryRunId) {
+            if (!isSafeDiscoveryHost(host) || runId !== discoveryRunId) return null;
             const controller = new AbortController();
+            activeDiscoveryControllers.add(controller);
             const timer = setTimeout(() => controller.abort(), timeoutMs);
             try {
-                const res = await fetchWithRetry(`http://${ip}:3000/ping`, { signal: controller.signal, cache: 'no-store' }, retryCount, 250);
-                if (!res.ok) return null;
+                const res = await fetch(`http://${host}:3000/ping?_t=${Date.now()}`, { signal: controller.signal, cache: 'no-store' });
+                if (!res.ok || runId !== discoveryRunId) return null;
                 const data = await res.json();
-                if (data && data.status === 'PrintServerActive') return { ip, name: data.hostname || ip };
-                return null;
+                if (data?.status !== 'PrintServerActive') return null;
+                const result = { ip: host, name: data.hostname || host, data };
+                rememberPrintServer(data, host);
+                return result;
             } catch (_) { return null; }
-            finally { clearTimeout(timer); }
+            finally { clearTimeout(timer); activeDiscoveryControllers.delete(controller); }
         }
-        async function scanSubnet(base, timeoutMs = 1500) {
-            const found = [];
-            const chunkSize = 20;
-            for (let start = 1; start <= 254; start += chunkSize) {
-                const tasks = [];
-                for (let i = start; i < Math.min(start + chunkSize, 255); i++) tasks.push(pingServer(`${base}.${i}`, timeoutMs, 1));
-                const results = await Promise.all(tasks);
-                results.filter(Boolean).forEach(item => found.push(item));
+        async function mapWithConcurrency(items, limit, worker, onProgress) {
+            const results = [];
+            let nextIndex = 0, completed = 0;
+            async function runWorker() {
+                while (nextIndex < items.length) {
+                    const index = nextIndex++;
+                    const result = await worker(items[index], index);
+                    if (result) results.push(result);
+                    completed += 1;
+                    onProgress?.(completed, items.length, results.length);
+                }
             }
-            return found;
+            await Promise.all(Array.from({ length: Math.min(limit, items.length) }, runWorker));
+            return results;
+        }
+        function cancelNetworkScan() {
+            discoveryRunId += 1;
+            activeDiscoveryControllers.forEach(controller => controller.abort());
+            activeDiscoveryControllers.clear();
+            document.getElementById('scanStartBtn').disabled = false;
+            document.getElementById('scanBtn').disabled = false;
+            document.getElementById('scanBtn').textContent = '🔎';
+            closeScanModal();
+            setConnectionStatus('idle', 'Pemindaian dibatalkan');
+        }
+        async function discoverCandidates(candidates, timeoutMs, runId, progressLabel) {
+            const unique = [...new Set(candidates.filter(isSafeDiscoveryHost))];
+            return mapWithConcurrency(unique, 32, host => probePrintServer(host, timeoutMs, runId), (done, total, found) => {
+                if (runId !== discoveryRunId) return;
+                const message = `${progressLabel}: ${done}/${total} alamat · ${found} server ditemukan`;
+                setScanProgress(message);
+                setConnectionStatus('scanning', message);
+            });
         }
         function processFoundServers(servers) {
             const unique = [];
@@ -2116,30 +2255,88 @@ function buildConsolidatedSettingsUi(){
                 sel.style.display = 'block';
                 sel.innerHTML = '';
                 if(unique.length > 1) sel.add(new Option(`Pilih dari ${unique.length} Server...`, ''));
-                unique.forEach(srv => sel.add(new Option(`${srv.name} (${srv.ip})`, srv.ip)));
+                unique.forEach(srv => { rememberPrintServer(srv.data || srv, srv.ip); sel.add(new Option(`${srv.name} (${srv.ip})`, srv.ip)); });
                 document.getElementById('ipAddress').value = unique[0].ip;
                 if(unique.length === 1) sel.value = unique[0].ip;
                 updateIpAndFetchPrinters();
                 showToast(`Ditemukan ${unique.length} server print.`, 'success');
             } else {
-                setConnectionStatus('failed', 'Server tidak ditemukan di subnet ini');
+                setConnectionStatus('failed', 'Server tidak ditemukan');
                 showToast('Server print tidak ditemukan.', 'error');
             }
         }
-        async function startNetworkScan() {
-            const base = document.getElementById('scanIpInput').value.trim();
-            if (!/^\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(base)) return showToast('Masukkan 3 blok IP, contoh 192.168.1', 'error');
-            closeScanModal();
+        async function startQuickDiscovery() {
+            const runId = ++discoveryRunId;
+            setDiscoveryDiagnostics('');
             const btn = document.getElementById('scanBtn');
-            btn.innerHTML = '⏳';
-            btn.disabled = true;
-            setConnectionStatus('scanning', `Memindai subnet ${base}.x ...`);
-            try { processFoundServers(await scanSubnet(base, 1500)); }
-            finally { btn.innerHTML = '🔎'; btn.disabled = false; }
+            btn.textContent = '⏳'; btn.disabled = true;
+            const queryHost = new URLSearchParams(location.search).get('server');
+            const candidates = [queryHost, document.getElementById('ipAddress').value, sessionStorage.getItem('activePrintServerIp'), ...getKnownServers().map(item => item.ip)].filter(Boolean);
+            setConnectionStatus('scanning', 'Mencari server yang pernah dikenal...');
+            try {
+                const found = await discoverCandidates(candidates, 1200, runId, 'Pencarian cepat');
+                if (runId !== discoveryRunId) return;
+                if (found.length) return processFoundServers(found);
+                const suggested = suggestDiscoveryPrefixes();
+                document.getElementById('scanIpInput').value = suggested.join(', ');
+                setDiscoveryDiagnostics('Server tersimpan belum merespons. Lanjutkan pemindaian subnet, atau masukkan alamat server secara langsung.');
+                showScanModal();
+            } finally {
+                if (runId === discoveryRunId) { btn.textContent = '🔎'; btn.disabled = false; }
+            }
+        }
+        async function startNetworkScan() {
+            let parsed;
+            try { parsed = parseDiscoveryInput(document.getElementById('scanIpInput').value); }
+            catch (error) { return showToast(error.message, 'error'); }
+            const runId = ++discoveryRunId;
+            const btn = document.getElementById('scanBtn');
+            const startBtn = document.getElementById('scanStartBtn');
+            btn.textContent = '⏳'; btn.disabled = true; startBtn.disabled = true;
+            setDiscoveryDiagnostics('');
+            const directCandidates = [...parsed.directHosts, ...getKnownServers().map(item => item.ip)];
+            const subnetCandidates = parsed.prefixes.flatMap(prefix => Array.from({ length: 254 }, (_, index) => `${prefix}.${index + 1}`));
+            const candidates = [...directCandidates, ...subnetCandidates];
+            const permission = await getLocalNetworkPermissionState();
+            setConnectionStatus('scanning', `Memindai ${parsed.prefixes.length} subnet...`);
+            try {
+                const found = await discoverCandidates(candidates, 1300, runId, 'Pemindaian LAN');
+                if (runId !== discoveryRunId) return;
+                if (found.length) { closeScanModal(); processFoundServers(found); return; }
+                const contextNote = location.protocol === 'https:' ? 'Halaman HTTPS sedang mengakses LAN HTTP; browser mungkin meminta izin Local Network Access.' : 'Halaman berjalan melalui HTTP lokal.';
+                const permissionNote = permission === 'denied' ? 'Izin Local Network Access ditolak—aktifkan kembali pada pengaturan situs browser.' : permission === 'prompt' ? 'Setujui permintaan Local Network Access bila browser menampilkannya.' : 'Status izin Local Network Access tidak tersedia pada browser ini.';
+                setDiscoveryDiagnostics(`${contextNote} ${permissionNote} Jika Wi-Fi berhasil tetapi LAN kabel gagal, periksa subnet/VLAN, routing, profil Windows Private/Domain, dan firewall TCP 3000.`);
+                setScanProgress(`Selesai: ${candidates.length} alamat diperiksa, tidak ada server yang merespons.`);
+                setConnectionStatus('failed', 'Server tidak ditemukan; lihat diagnosis jaringan');
+                showToast('Server tidak ditemukan. Diagnosis jaringan ditampilkan.', 'error');
+            } finally {
+                if (runId === discoveryRunId) { btn.textContent = '🔎'; btn.disabled = false; startBtn.disabled = false; }
+            }
+        }
+        async function openPairingModal() {
+            const host = document.getElementById('ipAddress').value.trim();
+            if (!isSafeDiscoveryHost(host)) return showToast('Hubungkan ke server terlebih dahulu.', 'error');
+            const modal = document.getElementById('pairingModal');
+            const urls = document.getElementById('pairingUrls');
+            const qr = document.getElementById('pairingQrImage');
+            modal.style.display = 'flex'; urls.textContent = 'Memuat alamat server...'; qr.removeAttribute('src');
+            try {
+                const response = await fetch(`http://${host}:3000/pairing-info?_t=${Date.now()}`, { cache: 'no-store' });
+                if (!response.ok) throw new Error('Pairing info tidak tersedia');
+                const info = await response.json();
+                qr.src = `http://${host}:3000/pairing-qr?host=${encodeURIComponent(host)}&_t=${Date.now()}`;
+                const lines = [`Server: ${info.hostname || host}`, `Alamat aktif: http://${host}:3000/`];
+                if (Array.isArray(info.urls)) lines.push(...info.urls.map(url => `LAN: ${url}`));
+                if (Array.isArray(info.hostnames)) lines.push(`mDNS: http://${info.hostnames[0]}:3000/`);
+                urls.textContent = lines.join('\n');
+            } catch (error) {
+                urls.textContent = `QR tidak dapat dimuat: ${error.message}`;
+            }
         }
         async function updateIpAndFetchPrinters() {
             const ip = document.getElementById('ipAddress').value.trim();
             if (!ip) return;
+            if (!isSafeDiscoveryHost(ip)) return showToast('Alamat server tidak valid. Gunakan IPv4 atau hostname tanpa http:// dan tanpa port.', 'error');
             const sel = document.getElementById('printerSelect');
             sel.innerHTML = '<option value="">⏳ Memuat...</option>';
             sel.disabled = true;
@@ -2155,12 +2352,20 @@ function buildConsolidatedSettingsUi(){
                 sel.disabled = false;
                 setConnectionStatus('connected', `Server terhubung: ${ip}`);
                 sessionStorage.setItem('activePrintServerIp', ip);
+                document.getElementById('pairingNetworkBtn').style.display = 'inline-block';
+                setDiscoveryDiagnostics('');
+                try {
+                    const infoResponse = await fetch(`http://${ip}:3000/connection-info?_t=${Date.now()}`, { cache: 'no-store' });
+                    if (infoResponse.ok) rememberPrintServer(await infoResponse.json(), ip);
+                    else rememberPrintServer({ ip, name: ip }, ip);
+                } catch (_) { rememberPrintServer({ ip, name: ip }, ip); }
                 showToast(`Printer Server ${ip} siap!`, 'success');
                 loadSettingsForCurrentPrinter();
                 refreshPrinterCapabilities();
             } catch (e) {
                 sel.innerHTML = '<option value="">⚠️ Gagal terhubung</option>';
                 sel.disabled = false;
+                document.getElementById('pairingNetworkBtn').style.display = 'none';
                 setConnectionStatus('failed', `Gagal terhubung ke ${ip}`);
             }
         }
@@ -2836,7 +3041,8 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
             }
         }
         function restoreActiveServerFromSession() {
-            const ip = sessionStorage.getItem('activePrintServerIp');
+            const pairedHost = new URLSearchParams(location.search).get('server');
+            const ip = isSafeDiscoveryHost(pairedHost) ? pairedHost : sessionStorage.getItem('activePrintServerIp');
             if (!ip) return;
             const ipInput = document.getElementById('ipAddress');
             if (!ipInput.value.trim()) {
