@@ -155,9 +155,9 @@ function getGrid(pps = 1, orientation = 'portrait') {
 }
 function getEffectiveScaleMode(scaleMode, pps) {
   if ((scaleMode === 'actual' || scaleMode === 'fill') && pps > 1) return 'shrink';
-  return ['fit', 'shrink', 'actual', 'fill'].includes(scaleMode) ? scaleMode : 'shrink';
+  return ['fit', 'shrink', 'actual', 'custom', 'fill'].includes(scaleMode) ? scaleMode : 'shrink';
 }
-function computePlacement(sourceWidth, sourceHeight, cellWidth, cellHeight, padding, scaleMode, allowRotate = true) {
+function computePlacement(sourceWidth, sourceHeight, cellWidth, cellHeight, padding, scaleMode, allowRotate = true, customScalePercent = 100) {
   const rotate = allowRotate && ((cellWidth > cellHeight && sourceWidth < sourceHeight) || (cellWidth < cellHeight && sourceWidth > sourceHeight));
   const placedSourceW = rotate ? sourceHeight : sourceWidth;
   const placedSourceH = rotate ? sourceWidth : sourceHeight;
@@ -168,6 +168,7 @@ function computePlacement(sourceWidth, sourceHeight, cellWidth, cellHeight, padd
   let scale = fitScale;
   if (scaleMode === 'shrink') scale = Math.min(1, fitScale);
   else if (scaleMode === 'actual') scale = 1;
+  else if (scaleMode === 'custom') scale = Math.max(0.1, Math.min(4, Number(customScalePercent || 100) / 100));
   else if (scaleMode === 'fill') scale = fillScale;
   return { rotate, scale, width: placedSourceW * scale, height: placedSourceH * scale };
 }
@@ -192,18 +193,29 @@ function parsePagesInput(pagesInput, total) {
 function sanitizePrintOptions(body) {
   const orientation = ['auto', 'portrait', 'landscape'].includes(body.orientation) ? body.orientation : 'auto';
   const paperSize = ['SOURCE', 'A4', 'F4', 'LETTER', 'LEGAL'].includes(body.paperSize) ? body.paperSize : 'SOURCE';
-  const scaleMode = ['fit', 'shrink', 'actual', 'fill'].includes(body.scaleMode) ? body.scaleMode : 'shrink';
+  const scaleMode = ['fit', 'shrink', 'actual', 'custom', 'fill'].includes(body.scaleMode) ? body.scaleMode : 'shrink';
+  const customScale = Math.min(400, Math.max(10, parseFloat(body.customScale) || 100));
   const colorMode = body.colorMode === 'monochrome' ? 'monochrome' : 'color';
   const copies = Math.min(MAX_COPIES, Math.max(1, parseInt(body.copies, 10) || 1));
   const pagesPerSheetRaw = parseInt(body.pagesPerSheet, 10) || 1;
   const pagesPerSheet = SUPPORTED_PPS.has(pagesPerSheetRaw) ? pagesPerSheetRaw : 1;
+  const duplexMode = ['simplex', 'duplexlong', 'duplexshort'].includes(body.duplexMode) ? body.duplexMode : 'simplex';
+  const pageSubset = ['all', 'odd', 'even'].includes(body.pageSubset) ? body.pageSubset : 'all';
+  const pageOrder = body.pageOrder === 'reverse' ? 'reverse' : 'normal';
+  let collate = body.collateMode !== 'uncollated';
+  if (duplexMode !== 'simplex') collate = true;
   return {
     orientation,
     paperSize,
     scaleMode,
+    customScale,
     colorMode,
     copies,
     pagesPerSheet,
+    duplexMode,
+    pageSubset,
+    pageOrder,
+    collate,
     pages: String(body.pages || '').trim(),
     printerName: body.printerName || ''
   };
@@ -226,10 +238,10 @@ function getCellPadding(outputSize, cellW, cellH) {
   return Math.max(6, Math.min(preferred, cellW * 0.35, cellH * 0.35));
 }
 
-function drawImageInPdfCell(page, image, cellX, cellY, cellW, cellH, padding, scaleMode) {
+function drawImageInPdfCell(page, image, cellX, cellY, cellW, cellH, padding, scaleMode, customScalePercent = 100) {
   const sourceWPt = image.width * 72 / 96;
   const sourceHPt = image.height * 72 / 96;
-  const placement = computePlacement(sourceWPt, sourceHPt, cellW, cellH, padding, scaleMode, true);
+  const placement = computePlacement(sourceWPt, sourceHPt, cellW, cellH, padding, scaleMode, true, customScalePercent);
   const centerX = cellX + cellW / 2;
   const centerY = cellY + cellH / 2;
   const rawDrawW = image.width * 72 / 96 * placement.scale;
@@ -262,7 +274,7 @@ async function convertImageToPdf(imagePath, mimeType, originalName, options) {
   const cellW = outputSize.width / cols;
   const cellH = outputSize.height / rows;
   const padding = getCellPadding(outputSize, cellW, cellH);
-  drawImageInPdfCell(page, image, 0, outputSize.height - cellH, cellW, cellH, padding, scaleMode);
+  drawImageInPdfCell(page, image, 0, outputSize.height - cellH, cellW, cellH, padding, scaleMode, options.customScale);
 
   const pdfBytes = await pdfDoc.save();
   const newPdfPath = imagePath + '_converted.pdf';
@@ -309,7 +321,7 @@ app.get('/docx-converter-status', async (req, res) => {
       executable: libreOfficeExecutable || null,
       timeoutSeconds: Math.round(DOCX_CONVERT_TIMEOUT_MS / 1000),
     },
-    version: '4.5.17',
+    version: '4.5.18',
   });
 });
 
@@ -320,7 +332,7 @@ app.get('/limits', (req, res) => {
     largePdfThresholdMb: LARGE_PDF_THRESHOLD_MB,
     largePdfChunkPages: LARGE_PDF_CHUNK_PAGES,
     supportedFileTypes: ['pdf', 'png', 'jpg', 'jpeg', 'docx'],
-    version: '4.5.17',
+    version: '4.5.18',
   });
 });
 
@@ -337,19 +349,25 @@ function shouldProcessPdf(options) {
     || options.pagesPerSheet !== 1
     || options.orientation !== 'auto'
     || options.paperSize !== 'SOURCE'
-    || options.scaleMode !== 'shrink';
+    || options.scaleMode !== 'shrink'
+    || options.pageSubset !== 'all'
+    || options.pageOrder !== 'normal';
 }
 
 async function processPdf(filePath, options) {
   const bytes = fs.readFileSync(filePath);
-  let pdfDoc = await PDFDocument.load(bytes, { ignoreEncryption: true });
-  const keep = parsePagesInput(options.pages, pdfDoc.getPageCount());
-  if (keep.length) {
-    const newDoc = await PDFDocument.create();
-    const copied = await newDoc.copyPages(pdfDoc, keep);
-    copied.forEach(pg => newDoc.addPage(pg));
-    pdfDoc = newDoc;
-  }
+  const sourceDoc = await PDFDocument.load(bytes, { ignoreEncryption: true });
+  const totalPages = sourceDoc.getPageCount();
+  let indices = parsePagesInput(options.pages, totalPages);
+  if (!indices.length) indices = Array.from({ length: totalPages }, (_, i) => i);
+  if (options.pageSubset === 'odd') indices = indices.filter(i => (i + 1) % 2 === 1);
+  else if (options.pageSubset === 'even') indices = indices.filter(i => (i + 1) % 2 === 0);
+  if (options.pageOrder === 'reverse') indices.reverse();
+  if (!indices.length) throw new Error('Tidak ada halaman yang sesuai dengan pilihan cetak.');
+
+  const pdfDoc = await PDFDocument.create();
+  const selectedPages = await pdfDoc.copyPages(sourceDoc, indices);
+  selectedPages.forEach(pg => pdfDoc.addPage(pg));
 
   const pages = pdfDoc.getPages();
   if (!pages.length) throw new Error('PDF tidak memiliki halaman.');
@@ -370,7 +388,7 @@ async function processPdf(filePath, options) {
   for (let i = 0; i < pages.length; i += 1) {
     if (i % safePps === 0) curPage = final.addPage([outputSize.width, outputSize.height]);
     const emb = await final.embedPage(pages[i]);
-    const placement = computePlacement(emb.width, emb.height, cellW, cellH, padding, scaleMode, true);
+    const placement = computePlacement(emb.width, emb.height, cellW, cellH, padding, scaleMode, true, options.customScale);
     const slot = i % safePps;
     const cellX = (slot % cols) * cellW;
     const cellY = outputSize.height - (Math.floor(slot / cols) + 1) * cellH;
@@ -426,18 +444,48 @@ async function splitPdfToChunkFiles(filePath, chunkSize) {
   return chunks;
 }
 
-async function printPdfInChunks(filePath, opts, chunkSize) {
+async function printOneDocument(filePath, baseOpts, options) {
+  const copies = Math.max(1, options.copies || 1);
+  if (copies === 1) {
+    await ptp.print(filePath, { ...baseOpts, copies: 1 });
+    return;
+  }
+
+  if (options.collate) {
+    for (let c = 1; c <= copies; c += 1) {
+      updateStatus(`Mencetak copy ${c}/${copies} (Collate)...`, 'printing');
+      await ptp.print(filePath, { ...baseOpts, copies: 1 });
+    }
+    return;
+  }
+
+  const pageCount = await getPdfPageCount(filePath);
+  for (let p = 1; p <= pageCount; p += 1) {
+    updateStatus(`Mencetak halaman ${p}/${pageCount}, ${copies} copy (Uncollated)...`, 'printing');
+    await ptp.print(filePath, { ...baseOpts, pages: String(p), copies });
+  }
+}
+
+async function printPdfInChunks(filePath, baseOpts, chunkSize, options) {
   const chunks = await splitPdfToChunkFiles(filePath, chunkSize);
   const cleanup = chunks.map(c => c.path);
-
   try {
-    for (let i = 0; i < chunks.length; i += 1) {
-      const chunk = chunks[i];
-      updateStatus(
-        `Mencetak bagian ${i + 1}/${chunks.length} halaman ${chunk.start}-${chunk.end} dari ${chunk.totalPages}...`,
-        'printing'
-      );
-      await ptp.print(chunk.path, opts);
+    if (options.collate && options.copies > 1) {
+      for (let c = 1; c <= options.copies; c += 1) {
+        for (let i = 0; i < chunks.length; i += 1) {
+          const chunk = chunks[i];
+          updateStatus(`Copy ${c}/${options.copies} • bagian ${i + 1}/${chunks.length} • halaman ${chunk.start}-${chunk.end}...`, 'printing');
+          await ptp.print(chunk.path, { ...baseOpts, copies: 1 });
+        }
+      }
+    } else if (!options.collate && options.copies > 1) {
+      await printOneDocument(filePath, baseOpts, options);
+    } else {
+      for (let i = 0; i < chunks.length; i += 1) {
+        const chunk = chunks[i];
+        updateStatus(`Mencetak bagian ${i + 1}/${chunks.length} halaman ${chunk.start}-${chunk.end} dari ${chunk.totalPages}...`, 'printing');
+        await ptp.print(chunk.path, { ...baseOpts, copies: 1 });
+      }
     }
   } finally {
     cleanup.forEach(p => {
@@ -867,7 +915,7 @@ app.post('/print',
     const opts = {
       printer: options.printerName,
       monochrome: options.colorMode === 'monochrome',
-      copies: options.copies,
+      side: options.duplexMode,
       paperSize: outputPaperKey === 'F4'
         ? '210x330mm'
         : outputPaperKey === 'LETTER'
@@ -881,10 +929,10 @@ app.post('/print',
 
     if (isPdfFile && shouldChunkPdf) {
       updateStatus(`PDF besar terdeteksi. Mencetak per ${LARGE_PDF_CHUNK_PAGES} halaman agar spooler/printer lebih stabil...`, 'printing');
-      await printPdfInChunks(fPath, opts, LARGE_PDF_CHUNK_PAGES);
+      await printPdfInChunks(fPath, opts, options.duplexMode === 'simplex' ? LARGE_PDF_CHUNK_PAGES : Math.max(2, LARGE_PDF_CHUNK_PAGES - (LARGE_PDF_CHUNK_PAGES % 2)), options);
     } else {
       updateStatus('Mencetak ke mesin fisik...', 'printing');
-      await ptp.print(fPath, opts);
+      await printOneDocument(fPath, opts, options);
     }
     updateStatus('Cetak Sukses!', 'success');
     res.send('OK');
@@ -903,4 +951,4 @@ server.requestTimeout = 0;
 server.headersTimeout = 0;
 server.timeout = 0;
 
-server.listen(port, '0.0.0.0', () => console.log(`Print Server V4.5.17 Ready on ${port}`));
+server.listen(port, '0.0.0.0', () => console.log(`Print Server V4.5.18 Ready on ${port}`));

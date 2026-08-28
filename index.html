@@ -129,13 +129,29 @@
                             <select id="orientation" class="input-standard"><option value="auto">Otomatis</option><option value="portrait">Portrait</option><option value="landscape">Landscape</option></select>
                         </div>
                         <div class="input-group"><label>Skala Cetak:</label>
-                            <select id="scaleMode" class="input-standard"><option value="shrink">Perkecil jika Perlu</option><option value="fit">Sesuaikan ke Kertas</option><option value="actual">Ukuran Asli</option><option value="fill">Isi Kertas (Bisa Terpotong)</option></select>
+                            <select id="scaleMode" class="input-standard"><option value="shrink">Perkecil jika Perlu</option><option value="fit">Sesuaikan ke Kertas</option><option value="actual">Ukuran Asli (100%)</option><option value="custom">Skala Kustom (%)</option><option value="fill">Isi Kertas (Bisa Terpotong)</option></select>
+                            <div id="customScaleWrap" style="display:none; margin-top:7px; align-items:center; gap:7px;">
+                                <input type="number" id="customScale" class="input-standard" value="100" min="10" max="400" step="1" style="flex:1;">
+                                <span style="font-size:12px; font-weight:700;">%</span>
+                            </div>
                         </div>
                         <div class="input-group"><label>Hal/Lembar:</label><select id="pagesPerSheet" class="input-standard"><option value="1">1</option><option value="2">2</option><option value="4">4</option><option value="6">6</option><option value="9">9</option><option value="16">16</option></select></div>
                         <div class="input-group"><label>Jumlah Copy:</label><input type="number" id="copies" class="input-standard" value="1" min="1" max="50"></div>
+                        <div class="input-group"><label>Duplex / Bolak-balik:</label>
+                            <select id="duplexMode" class="input-standard"><option value="simplex">Satu Sisi</option><option value="duplexlong">Bolak-balik • Sisi Panjang</option><option value="duplexshort">Bolak-balik • Sisi Pendek</option></select>
+                        </div>
+                        <div class="input-group"><label>Cetak Halaman:</label>
+                            <select id="pageSubset" class="input-standard"><option value="all">Semua</option><option value="odd">Ganjil Saja</option><option value="even">Genap Saja</option></select>
+                        </div>
+                        <div class="input-group"><label>Urutan Halaman:</label>
+                            <select id="pageOrder" class="input-standard"><option value="normal">Normal</option><option value="reverse">Terbalik</option></select>
+                        </div>
+                        <div class="input-group"><label>Pengelompokan Copy:</label>
+                            <select id="collateMode" class="input-standard"><option value="collated">Tersusun / Collate</option><option value="uncollated">Per Halaman / Uncollated</option></select>
+                        </div>
                     </div>
                     <div class="input-group"><label>Rincian Halaman:</label><input type="text" id="pages" class="input-standard" placeholder="1,3,5-7"></div>
-                    <div style="font-size:11px; color:var(--text-muted); line-height:1.5;">Setiap perubahan pengaturan langsung diterapkan pada preview.</div>
+                    <div style="font-size:11px; color:var(--text-muted); line-height:1.5;">Setiap perubahan pengaturan langsung diterapkan pada preview. Duplex bergantung pada kemampuan printer. Uncollated otomatis dinonaktifkan saat duplex aktif.</div>
                 </div>
 
                 <div id="realtimeStatus" style="display:none; margin-top:20px;">
@@ -337,9 +353,9 @@
         }
         function getEffectiveScaleMode(scaleMode, pps) {
             if ((scaleMode === 'actual' || scaleMode === 'fill') && pps > 1) return 'shrink';
-            return ['fit', 'shrink', 'actual', 'fill'].includes(scaleMode) ? scaleMode : 'shrink';
+            return ['fit', 'shrink', 'actual', 'custom', 'fill'].includes(scaleMode) ? scaleMode : 'shrink';
         }
-        function computePlacement(sourceWidth, sourceHeight, cellWidth, cellHeight, padding, scaleMode, allowRotate = true) {
+        function computePlacement(sourceWidth, sourceHeight, cellWidth, cellHeight, padding, scaleMode, allowRotate = true, customScalePercent = 100) {
             const rotate = allowRotate && ((cellWidth > cellHeight && sourceWidth < sourceHeight) || (cellWidth < cellHeight && sourceWidth > sourceHeight));
             const placedSourceW = rotate ? sourceHeight : sourceWidth;
             const placedSourceH = rotate ? sourceWidth : sourceHeight;
@@ -350,6 +366,7 @@
             let scale = fitScale;
             if (scaleMode === 'shrink') scale = Math.min(1, fitScale);
             else if (scaleMode === 'actual') scale = 1;
+            else if (scaleMode === 'custom') scale = Math.max(0.1, Math.min(4, Number(customScalePercent || 100) / 100));
             else if (scaleMode === 'fill') scale = fillScale;
             return {
                 rotate,
@@ -407,9 +424,24 @@
             }
             pagesEl.setCustomValidity('');
             pagesEl.value = pageCheck.normalized;
+            const scaleMode = document.getElementById('scaleMode').value;
+            const customScaleEl = document.getElementById('customScale');
+            const customScale = Number(customScaleEl.value);
+            if (scaleMode === 'custom' && (!Number.isFinite(customScale) || customScale < 10 || customScale > 400)) {
+                customScaleEl.setCustomValidity('Skala kustom harus 10% sampai 400%.');
+                if (showFeedback) { customScaleEl.reportValidity(); showToast('Skala kustom harus 10% sampai 400%.', 'error'); }
+                return false;
+            }
+            customScaleEl.setCustomValidity('');
+            const duplex = document.getElementById('duplexMode').value;
+            const collate = document.getElementById('collateMode');
+            if (duplex !== 'simplex' && collate.value === 'uncollated') {
+                collate.value = 'collated';
+                if (showFeedback) showToast('Duplex memakai mode Collate agar pasangan sisi depan/belakang tetap benar.', 'info');
+            }
             return true;
         }
-        function drawImageInCell(ctx, imgObj, cellX, cellY, cellW, cellH, padding, scaleMode, paperScale) {
+        function drawImageInCell(ctx, imgObj, cellX, cellY, cellW, cellH, padding, scaleMode, paperScale, customScalePercent = 100) {
             const sourceWPt = imgObj.width * 72 / 96;
             const sourceHPt = imgObj.height * 72 / 96;
             const placement = computePlacement(
@@ -419,7 +451,8 @@
                 cellH,
                 padding,
                 scaleMode,
-                true
+                true,
+                customScalePercent
             );
             const centerX = cellX + cellW / 2;
             const centerY = cellY + cellH / 2;
@@ -575,21 +608,31 @@
         
         function getSelectedPdfPages(totalPages) {
             const raw = (document.getElementById('pages').value || '').trim();
-            if (!raw) return Array.from({ length: totalPages }, (_, i) => i + 1);
-            const parsed = parsePagesInput(raw);
-            if (!parsed.ok || !parsed.normalized) return Array.from({ length: totalPages }, (_, i) => i + 1);
-            const selected = [];
-            parsed.normalized.split(',').forEach(part => {
-                if (part.includes('-')) {
-                    let [a, b] = part.split('-').map(n => parseInt(n, 10));
-                    if (a > b) [a, b] = [b, a];
-                    for (let n = a; n <= b; n += 1) if (n >= 1 && n <= totalPages) selected.push(n);
-                } else {
-                    const n = parseInt(part, 10);
-                    if (n >= 1 && n <= totalPages) selected.push(n);
+            let selected = [];
+            if (!raw) {
+                selected = Array.from({ length: totalPages }, (_, i) => i + 1);
+            } else {
+                const parsed = parsePagesInput(raw);
+                if (!parsed.ok || !parsed.normalized) selected = Array.from({ length: totalPages }, (_, i) => i + 1);
+                else {
+                    parsed.normalized.split(',').forEach(part => {
+                        if (part.includes('-')) {
+                            let [a, b] = part.split('-').map(n => parseInt(n, 10));
+                            if (a > b) [a, b] = [b, a];
+                            for (let n = a; n <= b; n += 1) if (n >= 1 && n <= totalPages) selected.push(n);
+                        } else {
+                            const n = parseInt(part, 10);
+                            if (n >= 1 && n <= totalPages) selected.push(n);
+                        }
+                    });
+                    selected = [...new Set(selected)];
                 }
-            });
-            return [...new Set(selected)];
+            }
+            const subset = document.getElementById('pageSubset').value;
+            if (subset === 'odd') selected = selected.filter(n => n % 2 === 1);
+            else if (subset === 'even') selected = selected.filter(n => n % 2 === 0);
+            if (document.getElementById('pageOrder').value === 'reverse') selected.reverse();
+            return selected;
         }
 
         async function buildCompatibilityPdfFromCurrentPdf() {
@@ -641,8 +684,13 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
             fd.append('paperSize', document.getElementById('paperSize').value);
             fd.append('orientation', document.getElementById('orientation').value);
             fd.append('scaleMode', document.getElementById('scaleMode').value);
+            fd.append('customScale', document.getElementById('customScale').value);
             fd.append('pagesPerSheet', document.getElementById('pagesPerSheet').value);
             fd.append('copies', document.getElementById('copies').value);
+            fd.append('duplexMode', document.getElementById('duplexMode').value);
+            fd.append('pageSubset', useCompatibilityMode ? 'all' : document.getElementById('pageSubset').value);
+            fd.append('pageOrder', useCompatibilityMode ? 'normal' : document.getElementById('pageOrder').value);
+            fd.append('collateMode', document.getElementById('collateMode').value);
             fd.append('pages', useCompatibilityMode ? '' : document.getElementById('pages').value);
             return await fetchWithRetry(`http://${ip}:3000/print`, { method: 'POST', body: fd }, 1, 400);
         }
@@ -967,13 +1015,19 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
             if (!el) return;
             const paperMap = { SOURCE: 'Sama dengan dokumen', A4: 'A4', F4: 'F4', LETTER: 'Letter', LEGAL: 'Legal' };
             const orientationMap = { auto: 'Otomatis', portrait: 'Portrait', landscape: 'Landscape' };
-            const scaleMap = { shrink: 'Perkecil jika perlu', fit: 'Sesuaikan ke kertas', actual: 'Ukuran asli', fill: 'Isi kertas' };
+            const scaleMap = { shrink: 'Shrink', fit: 'Fit', actual: '100%', custom: `${document.getElementById('customScale').value || 100}%`, fill: 'Fill' };
+            const duplexMap = { simplex: '1 sisi', duplexlong: 'Duplex panjang', duplexshort: 'Duplex pendek' };
+            const subsetMap = { all: 'Semua hlm', odd: 'Ganjil', even: 'Genap' };
             const paper = paperMap[document.getElementById('paperSize').value] || 'A4';
             const orientation = orientationMap[document.getElementById('orientation').value] || 'Otomatis';
-            const scale = scaleMap[document.getElementById('scaleMode').value] || 'Perkecil jika perlu';
+            const scale = scaleMap[document.getElementById('scaleMode').value] || 'Shrink';
             const pps = document.getElementById('pagesPerSheet').value || '1';
             const copies = document.getElementById('copies').value || '1';
-            el.textContent = `${paper} • ${orientation} • ${scale} • ${pps} hal/lembar • ${copies} copy`;
+            const duplex = duplexMap[document.getElementById('duplexMode').value] || '1 sisi';
+            const subset = subsetMap[document.getElementById('pageSubset').value] || 'Semua hlm';
+            const reverse = document.getElementById('pageOrder').value === 'reverse' ? 'Terbalik' : 'Normal';
+            const collate = document.getElementById('collateMode').value === 'collated' ? 'Collate' : 'Uncollated';
+            el.textContent = `${paper} • ${orientation} • ${scale} • ${pps} hal/lembar • ${copies} copy • ${duplex} • ${subset} • ${reverse} • ${collate}`;
         }
 
         async function updateDynamicPreview() {
@@ -995,6 +1049,7 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
             const requestedOrientation = document.getElementById('orientation').value;
             const paperSize = document.getElementById('paperSize').value;
             const requestedScaleMode = document.getElementById('scaleMode').value;
+            const customScalePercent = Number(document.getElementById('customScale').value || 100);
             const pps = parseInt(document.getElementById('pagesPerSheet').value, 10) || 1;
             const resolvedOrientation = resolveOrientation(requestedOrientation, currentSourceInfo.width, currentSourceInfo.height, pps);
             const scaleMode = getEffectiveScaleMode(requestedScaleMode, pps);
@@ -1019,7 +1074,7 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
             const paperLabel = paperSize === 'SOURCE'
                 ? `Sama dengan Dokumen (${currentSourceInfo.standard === 'CUSTOM' ? 'Kustom' : (PAPER_DIMENSIONS[currentSourceInfo.standard]?.label || 'A4')})`
                 : PAPER_DIMENSIONS[paperSize].label;
-            const scaleLabels = { fit: 'Fit', shrink: 'Shrink', actual: '100%', fill: 'Fill' };
+            const scaleLabels = { fit: 'Fit', shrink: 'Shrink', actual: '100%', custom: `${customScalePercent}%`, fill: 'Fill' };
             document.getElementById('previewBadge').textContent =
                 `${paperLabel} • ${resolvedOrientation === 'landscape' ? 'Landscape' : 'Portrait'} • ${scaleLabels[scaleMode]} • ${document.getElementById('colorMode').value === 'monochrome' ? 'Hitam Putih' : 'Warna'}`;
 
@@ -1038,25 +1093,12 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
                 await new Promise((resolve, reject) => { imgObj.onload = resolve; imgObj.onerror = reject; });
                 const cellW = canvas.width / cols;
                 const cellH = canvas.height / rows;
-                drawImageInCell(ctx, imgObj, 0, 0, cellW, cellH, paddingPx, scaleMode, paperScale);
+                drawImageInCell(ctx, imgObj, 0, 0, cellW, cellH, paddingPx, scaleMode, paperScale, customScalePercent);
                 return;
             }
 
-            let pageArr = Array.from({ length: currentPdfDoc.numPages }, (_, idx) => idx + 1);
-            const pageSelection = parsePagesInput(document.getElementById('pages').value);
-            if (pageSelection.ok && pageSelection.normalized) {
-                const selected = [];
-                pageSelection.normalized.split(',').forEach(part => {
-                    if (part.includes('-')) {
-                        const [a, b] = part.split('-').map(Number);
-                        for (let n = a; n <= b; n += 1) if (n <= currentPdfDoc.numPages) selected.push(n);
-                    } else {
-                        const n = Number(part);
-                        if (n >= 1 && n <= currentPdfDoc.numPages) selected.push(n);
-                    }
-                });
-                if (selected.length) pageArr = [...new Set(selected)];
-            }
+            let pageArr = getSelectedPdfPages(currentPdfDoc.numPages);
+            if (!pageArr.length) pageArr = [];
             totalPreviewSheets = Math.ceil(pageArr.length / safePps);
             document.getElementById('previewPagination').style.display = totalPreviewSheets > 1 ? 'flex' : 'none';
             document.getElementById('previewSheetText').innerText = `${currentPreviewSheet + 1} / ${totalPreviewSheets}`;
@@ -1078,7 +1120,8 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
                     cellH,
                     paddingPx,
                     scaleMode,
-                    true
+                    true,
+                    customScalePercent
                 );
                 const renderScale = placement.scale * paperScale;
                 const renderVp = page.getViewport({ scale: renderScale, rotation: placement.rotate ? 90 : 0 });
@@ -1132,11 +1175,21 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
             }
         }
 
-        ['copies', 'pages', 'pagesPerSheet', 'paperSize', 'orientation', 'scaleMode', 'colorMode'].forEach((id) => {
+        function syncAdvancedPrintControls() {
+            const scaleMode = document.getElementById('scaleMode').value;
+            document.getElementById('customScaleWrap').style.display = scaleMode === 'custom' ? 'flex' : 'none';
+            const duplex = document.getElementById('duplexMode').value;
+            const collate = document.getElementById('collateMode');
+            if (duplex !== 'simplex' && collate.value === 'uncollated') collate.value = 'collated';
+            collate.querySelector('option[value="uncollated"]').disabled = duplex !== 'simplex';
+        }
+
+        ['copies', 'pages', 'pagesPerSheet', 'paperSize', 'orientation', 'scaleMode', 'customScale', 'colorMode', 'duplexMode', 'pageSubset', 'pageOrder', 'collateMode'].forEach((id) => {
             const el = document.getElementById(id);
-            const eventName = (id === 'pages' || id === 'copies') ? 'input' : 'change';
+            const eventName = (id === 'pages' || id === 'copies' || id === 'customScale') ? 'input' : 'change';
             el.addEventListener(eventName, () => {
-                if (id === 'copies' || id === 'pagesPerSheet') validatePrintSettings(false);
+                syncAdvancedPrintControls();
+                if (id === 'copies' || id === 'pagesPerSheet' || id === 'customScale' || id === 'duplexMode') validatePrintSettings(false);
                 currentPreviewSheet = 0;
                 updatePrintSettingsSummary();
                 updateDynamicPreview();
@@ -1147,7 +1200,7 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
             currentPreviewSheet = 0;
             updateDynamicPreview();
         });
-        window.addEventListener('load', () => { loadHistory(); setupPwaInstall(); validatePrintSettings(false); updatePrintSettingsSummary(); restoreActiveServerFromSession(); });
+        window.addEventListener('load', () => { loadHistory(); setupPwaInstall(); syncAdvancedPrintControls(); validatePrintSettings(false); updatePrintSettingsSummary(); restoreActiveServerFromSession(); });
     </script>
 </body>
 </html>
