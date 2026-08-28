@@ -5,7 +5,7 @@ const ptp = require('pdf-to-printer');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const { PDFDocument, degrees } = require('pdf-lib');
+const { PDFDocument, degrees, rgb } = require('pdf-lib');
 const { Server } = require('socket.io');
 const http = require('http');
 const { spawn } = require('child_process');
@@ -158,20 +158,20 @@ function getEffectiveScaleMode(scaleMode, pps) {
   return ['fit', 'shrink', 'actual', 'custom', 'fill'].includes(scaleMode) ? scaleMode : 'shrink';
 }
 function computePlacement(sourceWidth, sourceHeight, cellWidth, cellHeight, padding, scaleMode, allowRotate = true, customScalePercent = 100) {
-  const rotate = allowRotate && ((cellWidth > cellHeight && sourceWidth < sourceHeight) || (cellWidth < cellHeight && sourceWidth > sourceHeight));
-  const placedSourceW = rotate ? sourceHeight : sourceWidth;
-  const placedSourceH = rotate ? sourceWidth : sourceHeight;
-  const availableW = Math.max(1, cellWidth - padding);
-  const availableH = Math.max(1, cellHeight - padding);
-  const fitScale = Math.min(availableW / placedSourceW, availableH / placedSourceH);
-  const fillScale = Math.max(availableW / placedSourceW, availableH / placedSourceH);
-  let scale = fitScale;
-  if (scaleMode === 'shrink') scale = Math.min(1, fitScale);
-  else if (scaleMode === 'actual') scale = 1;
-  else if (scaleMode === 'custom') scale = Math.max(0.1, Math.min(4, Number(customScalePercent || 100) / 100));
-  else if (scaleMode === 'fill') scale = fillScale;
-  return { rotate, scale, width: placedSourceW * scale, height: placedSourceH * scale };
+  const rotate=allowRotate&&((cellWidth>cellHeight&&sourceWidth<sourceHeight)||(cellWidth<cellHeight&&sourceWidth>sourceHeight));
+  const placedSourceW=rotate?sourceHeight:sourceWidth, placedSourceH=rotate?sourceWidth:sourceHeight;
+  const availableW=Math.max(1,cellWidth-padding), availableH=Math.max(1,cellHeight-padding);
+  const fitScale=Math.min(availableW/placedSourceW,availableH/placedSourceH), fillScale=Math.max(availableW/placedSourceW,availableH/placedSourceH);
+  let scale=fitScale; if(scaleMode==='shrink')scale=Math.min(1,fitScale); else if(scaleMode==='actual')scale=1; else if(scaleMode==='custom')scale=Math.max(.1,Math.min(4,Number(customScalePercent||100)/100)); else if(scaleMode==='fill')scale=fillScale;
+  return {rotate,scale,width:placedSourceW*scale,height:placedSourceH*scale};
 }
+function marginModeToPoints(options){
+  const mmToPt=72/25.4, presets={none:{top:0,right:0,bottom:0,left:0},narrow:{top:6.35,right:6.35,bottom:6.35,left:6.35},normal:{top:12.7,right:12.7,bottom:12.7,left:12.7},wide:{top:25.4,right:25.4,bottom:25.4,left:25.4}};
+  const mm=options.marginMode==='custom'?{top:options.marginTop,right:options.marginRight,bottom:options.marginBottom,left:options.marginLeft}:(presets[options.marginMode]||presets.none);
+  return {top:mm.top*mmToPt,right:mm.right*mmToPt,bottom:mm.bottom*mmToPt,left:mm.left*mmToPt};
+}
+function getSlotPosition(slot,cols,rows,order){ if(order==='column-ttb')return{col:Math.floor(slot/rows),row:slot%rows}; if(order==='row-rtl')return{col:cols-1-(slot%cols),row:Math.floor(slot/cols)}; return{col:slot%cols,row:Math.floor(slot/cols)}; }
+function makeBookletSequence(indices){ const seq=[...indices]; while(seq.length%4!==0)seq.push(null); const out=[]; let left=0,right=seq.length-1; while(left<right){out.push(seq[right],seq[left]);left++;right--;out.push(seq[left],seq[right]);left++;right--;} return out; }
 function parsePagesInput(pagesInput, total) {
   if (!pagesInput || !String(pagesInput).trim()) return [];
   const keep = [];
@@ -204,6 +204,14 @@ function sanitizePrintOptions(body) {
   const pageOrder = body.pageOrder === 'reverse' ? 'reverse' : 'normal';
   let collate = body.collateMode !== 'uncollated';
   if (duplexMode !== 'simplex') collate = true;
+  const marginMode=['none','narrow','normal','wide','custom'].includes(body.marginMode)?body.marginMode:'none';
+  const clampMargin=v=>Math.min(80,Math.max(0,parseFloat(v)||0));
+  const marginTop=clampMargin(body.marginTop),marginRight=clampMargin(body.marginRight),marginBottom=clampMargin(body.marginBottom),marginLeft=clampMargin(body.marginLeft);
+  const autoRotate=body.autoRotateMode!=='off';
+  const contentAlign=body.contentAlign==='top-left'?'top-left':'center';
+  const nupBorder=['none','thin','medium'].includes(body.nupBorder)?body.nupBorder:'none';
+  const nupOrder=['row-ltr','column-ttb','row-rtl'].includes(body.nupOrder)?body.nupOrder:'row-ltr';
+  const booklet=body.bookletMode==='on';
   return {
     orientation,
     paperSize,
@@ -216,6 +224,8 @@ function sanitizePrintOptions(body) {
     pageSubset,
     pageOrder,
     collate,
+    marginMode, marginTop, marginRight, marginBottom, marginLeft,
+    autoRotate, contentAlign, nupBorder, nupOrder, booklet,
     pages: String(body.pages || '').trim(),
     printerName: body.printerName || ''
   };
@@ -238,49 +248,28 @@ function getCellPadding(outputSize, cellW, cellH) {
   return Math.max(6, Math.min(preferred, cellW * 0.35, cellH * 0.35));
 }
 
-function drawImageInPdfCell(page, image, cellX, cellY, cellW, cellH, padding, scaleMode, customScalePercent = 100) {
-  const sourceWPt = image.width * 72 / 96;
-  const sourceHPt = image.height * 72 / 96;
-  const placement = computePlacement(sourceWPt, sourceHPt, cellW, cellH, padding, scaleMode, true, customScalePercent);
-  const centerX = cellX + cellW / 2;
-  const centerY = cellY + cellH / 2;
-  const rawDrawW = image.width * 72 / 96 * placement.scale;
-  const rawDrawH = image.height * 72 / 96 * placement.scale;
-  page.drawImage(image, {
-    x: placement.rotate ? centerX + rawDrawH / 2 : centerX - rawDrawW / 2,
-    y: placement.rotate ? centerY - rawDrawW / 2 : centerY - rawDrawH / 2,
-    width: rawDrawW,
-    height: rawDrawH,
-    rotate: placement.rotate ? degrees(90) : degrees(0),
-  });
+function drawImageInPdfCell(page,image,cellX,cellY,cellW,cellH,padding,scaleMode,customScalePercent=100,allowRotate=true,contentAlign='center'){
+  const sourceWPt=image.width*72/96,sourceHPt=image.height*72/96;
+  const placement=computePlacement(sourceWPt,sourceHPt,cellW,cellH,padding,scaleMode,allowRotate,customScalePercent);
+  const rawW=image.width*72/96*placement.scale,rawH=image.height*72/96*placement.scale;
+  let centerX=cellX+cellW/2,centerY=cellY+cellH/2;
+  if(contentAlign==='top-left'){const placedW=placement.rotate?rawH:rawW,placedH=placement.rotate?rawW:rawH;centerX=cellX+placedW/2;centerY=cellY+cellH-placedH/2;}
+  page.drawImage(image,{x:placement.rotate?centerX+rawH/2:centerX-rawW/2,y:placement.rotate?centerY-rawW/2:centerY-rawH/2,width:rawW,height:rawH,rotate:placement.rotate?degrees(90):degrees(0)});
 }
 
-async function convertImageToPdf(imagePath, mimeType, originalName, options) {
-  const pdfDoc = await PDFDocument.create();
-  const image = await loadEmbeddedImage(pdfDoc, imagePath, mimeType, originalName);
-  const sourceWPt = image.width * 72 / 96;
-  const sourceHPt = image.height * 72 / 96;
-  const resolvedOrientation = resolveOrientation(options.orientation, sourceWPt, sourceHPt, options.pagesPerSheet);
-  const outputSize = resolvePaperSize(
-    options.paperSize,
-    resolvedOrientation,
-    sourceWPt,
-    sourceHPt,
-    options.paperSize === 'SOURCE' ? 'A4' : options.paperSize
-  );
-  const scaleMode = getEffectiveScaleMode(options.scaleMode, options.pagesPerSheet);
-  const { cols, rows } = getGrid(options.pagesPerSheet, resolvedOrientation);
-  const page = pdfDoc.addPage([outputSize.width, outputSize.height]);
-  const cellW = outputSize.width / cols;
-  const cellH = outputSize.height / rows;
-  const padding = getCellPadding(outputSize, cellW, cellH);
-  drawImageInPdfCell(page, image, 0, outputSize.height - cellH, cellW, cellH, padding, scaleMode, options.customScale);
-
-  const pdfBytes = await pdfDoc.save();
-  const newPdfPath = imagePath + '_converted.pdf';
-  fs.writeFileSync(newPdfPath, pdfBytes);
-  try { fs.unlinkSync(imagePath); } catch (_) {}
-  return { filePath: newPdfPath, outputPaperKey: outputSize.key, resolvedOrientation };
+async function convertImageToPdf(imagePath,mimeType,originalName,options){
+  if(options.booklet) throw new Error('Booklet hanya tersedia untuk PDF/DOCX.');
+  const pdfDoc=await PDFDocument.create(),image=await loadEmbeddedImage(pdfDoc,imagePath,mimeType,originalName);
+  const sourceWPt=image.width*72/96,sourceHPt=image.height*72/96;
+  const resolvedOrientation=resolveOrientation(options.orientation,sourceWPt,sourceHPt,options.pagesPerSheet);
+  const outputSize=resolvePaperSize(options.paperSize,resolvedOrientation,sourceWPt,sourceHPt,options.paperSize==='SOURCE'?'A4':options.paperSize);
+  const scaleMode=getEffectiveScaleMode(options.scaleMode,options.pagesPerSheet),{cols,rows}=getGrid(options.pagesPerSheet,resolvedOrientation),page=pdfDoc.addPage([outputSize.width,outputSize.height]);
+  const margins=marginModeToPoints(options),contentW=Math.max(1,outputSize.width-margins.left-margins.right),contentH=Math.max(1,outputSize.height-margins.top-margins.bottom);
+  const cellW=contentW/cols,cellH=contentH/rows,pos=getSlotPosition(0,cols,rows,options.nupOrder),cellX=margins.left+pos.col*cellW,cellY=margins.bottom+(rows-1-pos.row)*cellH;
+  drawImageInPdfCell(page,image,cellX,cellY,cellW,cellH,0,scaleMode,options.customScale,options.autoRotate,options.contentAlign);
+  if(options.nupBorder!=='none'&&options.pagesPerSheet>1) page.drawRectangle({x:cellX,y:cellY,width:cellW,height:cellH,borderWidth:options.nupBorder==='medium'?1.5:.7,borderColor:rgb(.6,.6,.6)});
+  const newPdfPath=imagePath+'_converted.pdf'; fs.writeFileSync(newPdfPath,await pdfDoc.save()); try{fs.unlinkSync(imagePath)}catch(_){}
+  return{filePath:newPdfPath,outputPaperKey:outputSize.key,resolvedOrientation};
 }
 
 app.get('/ping', (req, res) => {
@@ -321,7 +310,7 @@ app.get('/docx-converter-status', async (req, res) => {
       executable: libreOfficeExecutable || null,
       timeoutSeconds: Math.round(DOCX_CONVERT_TIMEOUT_MS / 1000),
     },
-    version: '4.5.18',
+    version: '4.5.19',
   });
 });
 
@@ -332,7 +321,7 @@ app.get('/limits', (req, res) => {
     largePdfThresholdMb: LARGE_PDF_THRESHOLD_MB,
     largePdfChunkPages: LARGE_PDF_CHUNK_PAGES,
     supportedFileTypes: ['pdf', 'png', 'jpg', 'jpeg', 'docx'],
-    version: '4.5.18',
+    version: '4.5.19',
   });
 });
 
@@ -344,68 +333,30 @@ app.get('/printers', async (req, res) => {
   }
 });
 
-function shouldProcessPdf(options) {
-  return Boolean(options.pages)
-    || options.pagesPerSheet !== 1
-    || options.orientation !== 'auto'
-    || options.paperSize !== 'SOURCE'
-    || options.scaleMode !== 'shrink'
-    || options.pageSubset !== 'all'
-    || options.pageOrder !== 'normal';
+function shouldProcessPdf(options){
+  return Boolean(options.pages)||options.pagesPerSheet!==1||options.orientation!=='auto'||options.paperSize!=='SOURCE'||options.scaleMode!=='shrink'||options.pageSubset!=='all'||options.pageOrder!=='normal'||options.marginMode!=='none'||!options.autoRotate||options.contentAlign!=='center'||options.nupBorder!=='none'||options.nupOrder!=='row-ltr'||options.booklet;
 }
 
-async function processPdf(filePath, options) {
-  const bytes = fs.readFileSync(filePath);
-  const sourceDoc = await PDFDocument.load(bytes, { ignoreEncryption: true });
-  const totalPages = sourceDoc.getPageCount();
-  let indices = parsePagesInput(options.pages, totalPages);
-  if (!indices.length) indices = Array.from({ length: totalPages }, (_, i) => i);
-  if (options.pageSubset === 'odd') indices = indices.filter(i => (i + 1) % 2 === 1);
-  else if (options.pageSubset === 'even') indices = indices.filter(i => (i + 1) % 2 === 0);
-  if (options.pageOrder === 'reverse') indices.reverse();
-  if (!indices.length) throw new Error('Tidak ada halaman yang sesuai dengan pilihan cetak.');
-
-  const pdfDoc = await PDFDocument.create();
-  const selectedPages = await pdfDoc.copyPages(sourceDoc, indices);
-  selectedPages.forEach(pg => pdfDoc.addPage(pg));
-
-  const pages = pdfDoc.getPages();
-  if (!pages.length) throw new Error('PDF tidak memiliki halaman.');
-  const first = pages[0];
-  const firstSize = first.getSize();
-  const sourceStandard = detectStandardPaper(firstSize.width, firstSize.height);
-  const resolvedOrientation = resolveOrientation(options.orientation, firstSize.width, firstSize.height, options.pagesPerSheet);
-  const outputSize = resolvePaperSize(options.paperSize, resolvedOrientation, firstSize.width, firstSize.height, sourceStandard);
-  const scaleMode = getEffectiveScaleMode(options.scaleMode, options.pagesPerSheet);
-  const { cols, rows, safePps } = getGrid(options.pagesPerSheet, resolvedOrientation);
-
-  const final = await PDFDocument.create();
-  const cellW = outputSize.width / cols;
-  const cellH = outputSize.height / rows;
-  const padding = getCellPadding(outputSize, cellW, cellH);
-  let curPage;
-
-  for (let i = 0; i < pages.length; i += 1) {
-    if (i % safePps === 0) curPage = final.addPage([outputSize.width, outputSize.height]);
-    const emb = await final.embedPage(pages[i]);
-    const placement = computePlacement(emb.width, emb.height, cellW, cellH, padding, scaleMode, true, options.customScale);
-    const slot = i % safePps;
-    const cellX = (slot % cols) * cellW;
-    const cellY = outputSize.height - (Math.floor(slot / cols) + 1) * cellH;
-    const x = cellX + (cellW - placement.width) / 2;
-    const y = cellY + (cellH - placement.height) / 2;
-
-    curPage.drawPage(emb, {
-      x: x + (placement.rotate ? emb.height * placement.scale : 0),
-      y,
-      width: emb.width * placement.scale,
-      height: emb.height * placement.scale,
-      rotate: placement.rotate ? degrees(90) : degrees(0),
-    });
+async function processPdf(filePath,options){
+  const bytes=fs.readFileSync(filePath),sourceDoc=await PDFDocument.load(bytes,{ignoreEncryption:true}),totalPages=sourceDoc.getPageCount();
+  let indices=parsePagesInput(options.pages,totalPages); if(!indices.length)indices=Array.from({length:totalPages},(_,i)=>i);
+  if(options.booklet) indices=makeBookletSequence(indices); else { if(options.pageSubset==='odd')indices=indices.filter(i=>(i+1)%2===1); else if(options.pageSubset==='even')indices=indices.filter(i=>(i+1)%2===0); if(options.pageOrder==='reverse')indices.reverse(); }
+  if(!indices.length)throw new Error('Tidak ada halaman yang sesuai dengan pilihan cetak.');
+  const firstIndex=indices.find(i=>i!==null)??0,firstSize=sourceDoc.getPage(firstIndex).getSize(),sourceStandard=detectStandardPaper(firstSize.width,firstSize.height);
+  const resolvedOrientation=resolveOrientation(options.orientation,firstSize.width,firstSize.height,options.pagesPerSheet),outputSize=resolvePaperSize(options.paperSize,resolvedOrientation,firstSize.width,firstSize.height,sourceStandard);
+  const scaleMode=getEffectiveScaleMode(options.scaleMode,options.pagesPerSheet),{cols,rows,safePps}=getGrid(options.pagesPerSheet,resolvedOrientation),margins=marginModeToPoints(options);
+  const contentW=Math.max(1,outputSize.width-margins.left-margins.right),contentH=Math.max(1,outputSize.height-margins.top-margins.bottom),cellW=contentW/cols,cellH=contentH/rows;
+  const final=await PDFDocument.create(); let curPage;
+  for(let i=0;i<indices.length;i++){
+    if(i%safePps===0)curPage=final.addPage([outputSize.width,outputSize.height]);
+    const slot=i%safePps,pos=getSlotPosition(slot,cols,rows,options.nupOrder),cellX=margins.left+pos.col*cellW,cellY=margins.bottom+(rows-1-pos.row)*cellH;
+    if(options.nupBorder!=='none'&&options.pagesPerSheet>1)curPage.drawRectangle({x:cellX,y:cellY,width:cellW,height:cellH,borderWidth:options.nupBorder==='medium'?1.5:.7,borderColor:rgb(.6,.6,.6)});
+    const sourceIndex=indices[i]; if(sourceIndex===null)continue;
+    const emb=await final.embedPage(sourceDoc.getPage(sourceIndex)),placement=computePlacement(emb.width,emb.height,cellW,cellH,0,scaleMode,options.autoRotate,options.customScale);
+    let x=cellX+(cellW-placement.width)/2,y=cellY+(cellH-placement.height)/2; if(options.contentAlign==='top-left'){x=cellX;y=cellY+cellH-placement.height;}
+    curPage.drawPage(emb,{x:x+(placement.rotate?emb.height*placement.scale:0),y,width:emb.width*placement.scale,height:emb.height*placement.scale,rotate:placement.rotate?degrees(90):degrees(0)});
   }
-
-  fs.writeFileSync(filePath, await final.save());
-  return { outputPaperKey: outputSize.key, resolvedOrientation };
+  fs.writeFileSync(filePath,await final.save()); return{outputPaperKey:outputSize.key,resolvedOrientation};
 }
 
 async function getPdfPageCount(filePath) {
@@ -874,6 +825,9 @@ app.post('/print',
   const mimeType = req.file ? req.file.mimetype : '';
   const originalName = req.file ? req.file.originalname : '';
   const options = sanitizePrintOptions(req.body);
+  if (options.booklet) {
+    options.pagesPerSheet=2; options.orientation='landscape'; options.duplexMode='duplexshort'; options.collate=true; options.pageSubset='all'; options.pageOrder='normal'; options.nupOrder='row-ltr';
+  }
   fPath = preserveUploadedExtension(fPath, originalName);
 
   try {
@@ -951,4 +905,4 @@ server.requestTimeout = 0;
 server.headersTimeout = 0;
 server.timeout = 0;
 
-server.listen(port, '0.0.0.0', () => console.log(`Print Server V4.5.18 Ready on ${port}`));
+server.listen(port, '0.0.0.0', () => console.log(`Print Server V4.5.19 Ready on ${port}`));

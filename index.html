@@ -149,9 +149,44 @@
                         <div class="input-group"><label>Pengelompokan Copy:</label>
                             <select id="collateMode" class="input-standard"><option value="collated">Tersusun / Collate</option><option value="uncollated">Per Halaman / Uncollated</option></select>
                         </div>
+                        <div class="input-group"><label>Margin Cetak:</label>
+                            <select id="marginMode" class="input-standard">
+                                <option value="none">Tanpa Margin Aplikasi</option>
+                                <option value="narrow">Sempit (6,35 mm)</option>
+                                <option value="normal">Normal (12,7 mm)</option>
+                                <option value="wide">Lebar (25,4 mm)</option>
+                                <option value="custom">Custom</option>
+                            </select>
+                            <div id="customMarginWrap" style="display:none; margin-top:7px; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px;">
+                                <input type="number" id="marginTop" class="input-standard" value="12.7" min="0" max="80" step="0.1" placeholder="Atas mm">
+                                <input type="number" id="marginRight" class="input-standard" value="12.7" min="0" max="80" step="0.1" placeholder="Kanan mm">
+                                <input type="number" id="marginBottom" class="input-standard" value="12.7" min="0" max="80" step="0.1" placeholder="Bawah mm">
+                                <input type="number" id="marginLeft" class="input-standard" value="12.7" min="0" max="80" step="0.1" placeholder="Kiri mm">
+                            </div>
+                        </div>
+                        <div class="input-group"><label>Rotasi Otomatis:</label>
+                            <select id="autoRotateMode" class="input-standard"><option value="auto">Aktif</option><option value="off">Nonaktif</option></select>
+                        </div>
+                        <div class="input-group"><label>Posisi Konten:</label>
+                            <select id="contentAlign" class="input-standard"><option value="center">Tengah</option><option value="top-left">Kiri Atas</option></select>
+                        </div>
+                        <div class="input-group"><label>Border Hal/Lembar:</label>
+                            <select id="nupBorder" class="input-standard"><option value="none">Tanpa Border</option><option value="thin">Garis Tipis</option><option value="medium">Garis Sedang</option></select>
+                        </div>
+                        <div class="input-group"><label>Urutan N-up:</label>
+                            <select id="nupOrder" class="input-standard">
+                                <option value="row-ltr">Kiri → Kanan, Atas → Bawah</option>
+                                <option value="column-ttb">Atas → Bawah, Kiri → Kanan</option>
+                                <option value="row-rtl">Kanan → Kiri, Atas → Bawah</option>
+                            </select>
+                        </div>
+                        <div class="input-group"><label>Booklet:</label>
+                            <select id="bookletMode" class="input-standard"><option value="off">Nonaktif</option><option value="on">Aktif • Lipat Tengah</option></select>
+                            <div style="font-size:10px; color:var(--text-muted); margin-top:5px; line-height:1.35;">Booklet otomatis memakai Landscape, 2 hal/lembar, Duplex sisi pendek, dan Collate.</div>
+                        </div>
                     </div>
                     <div class="input-group"><label>Rincian Halaman:</label><input type="text" id="pages" class="input-standard" placeholder="1,3,5-7"></div>
-                    <div style="font-size:11px; color:var(--text-muted); line-height:1.5;">Setiap perubahan pengaturan langsung diterapkan pada preview. Duplex bergantung pada kemampuan printer. Uncollated otomatis dinonaktifkan saat duplex aktif.</div>
+                    <div style="font-size:11px; color:var(--text-muted); line-height:1.5;">Setiap perubahan langsung diterapkan pada preview. Duplex bergantung pada kemampuan printer. Booklet mengunci pengaturan yang diperlukan agar urutan lipatan benar.</div>
                 </div>
 
                 <div id="realtimeStatus" style="display:none; margin-top:20px;">
@@ -368,12 +403,50 @@
             else if (scaleMode === 'actual') scale = 1;
             else if (scaleMode === 'custom') scale = Math.max(0.1, Math.min(4, Number(customScalePercent || 100) / 100));
             else if (scaleMode === 'fill') scale = fillScale;
+            return { rotate, scale, width: placedSourceW * scale, height: placedSourceH * scale };
+        }
+        function getMarginMm() {
+            const mode = document.getElementById('marginMode').value;
+            if (mode === 'none') return { top:0, right:0, bottom:0, left:0 };
+            if (mode === 'narrow') return { top:6.35, right:6.35, bottom:6.35, left:6.35 };
+            if (mode === 'normal') return { top:12.7, right:12.7, bottom:12.7, left:12.7 };
+            if (mode === 'wide') return { top:25.4, right:25.4, bottom:25.4, left:25.4 };
             return {
-                rotate,
-                scale,
-                width: placedSourceW * scale,
-                height: placedSourceH * scale
+                top:Number(document.getElementById('marginTop').value || 0),
+                right:Number(document.getElementById('marginRight').value || 0),
+                bottom:Number(document.getElementById('marginBottom').value || 0),
+                left:Number(document.getElementById('marginLeft').value || 0)
             };
+        }
+        function getSlotPosition(slot, cols, rows, order) {
+            if (order === 'column-ttb') return { col:Math.floor(slot / rows), row:slot % rows };
+            if (order === 'row-rtl') return { col:cols - 1 - (slot % cols), row:Math.floor(slot / cols) };
+            return { col:slot % cols, row:Math.floor(slot / cols) };
+        }
+        function makeBookletSequence(pageNumbers) {
+            const seq=[...pageNumbers];
+            while (seq.length % 4 !== 0) seq.push(0);
+            const out=[]; let left=0, right=seq.length-1;
+            while (left < right) {
+                out.push(seq[right], seq[left]); left++; right--;
+                out.push(seq[left], seq[right]); left++; right--;
+            }
+            return out;
+        }
+        function syncLayoutFinishingControls() {
+            document.getElementById('customMarginWrap').style.display = document.getElementById('marginMode').value === 'custom' ? 'grid' : 'none';
+            const booklet = document.getElementById('bookletMode').value === 'on';
+            const ids=['pagesPerSheet','orientation','duplexMode','collateMode','pageSubset','pageOrder','nupOrder'];
+            if (booklet) {
+                document.getElementById('pagesPerSheet').value='2';
+                document.getElementById('orientation').value='landscape';
+                document.getElementById('duplexMode').value='duplexshort';
+                document.getElementById('collateMode').value='collated';
+                document.getElementById('pageSubset').value='all';
+                document.getElementById('pageOrder').value='normal';
+                document.getElementById('nupOrder').value='row-ltr';
+            }
+            ids.forEach(id => document.getElementById(id).disabled = booklet);
         }
         function parsePagesInput(value) {
             const raw = (value || '').trim();
@@ -433,6 +506,22 @@
                 return false;
             }
             customScaleEl.setCustomValidity('');
+            if (document.getElementById('marginMode').value === 'custom') {
+                for (const id of ['marginTop','marginRight','marginBottom','marginLeft']) {
+                    const el=document.getElementById(id); const v=Number(el.value);
+                    if (!Number.isFinite(v) || v < 0 || v > 80) {
+                        el.setCustomValidity('Margin custom harus 0 sampai 80 mm.');
+                        if (showFeedback) { el.reportValidity(); showToast('Margin custom harus 0 sampai 80 mm.', 'error'); }
+                        return false;
+                    }
+                    el.setCustomValidity('');
+                }
+            }
+            syncLayoutFinishingControls();
+            if (document.getElementById('bookletMode').value === 'on' && currentImgSrc) {
+                if (showFeedback) showToast('Booklet hanya tersedia untuk PDF atau DOCX yang sudah dikonversi ke PDF.', 'error');
+                return false;
+            }
             const duplex = document.getElementById('duplexMode').value;
             const collate = document.getElementById('collateMode');
             if (duplex !== 'simplex' && collate.value === 'uncollated') {
@@ -441,31 +530,18 @@
             }
             return true;
         }
-        function drawImageInCell(ctx, imgObj, cellX, cellY, cellW, cellH, padding, scaleMode, paperScale, customScalePercent = 100) {
-            const sourceWPt = imgObj.width * 72 / 96;
-            const sourceHPt = imgObj.height * 72 / 96;
-            const placement = computePlacement(
-                sourceWPt * paperScale,
-                sourceHPt * paperScale,
-                cellW,
-                cellH,
-                padding,
-                scaleMode,
-                true,
-                customScalePercent
-            );
-            const centerX = cellX + cellW / 2;
-            const centerY = cellY + cellH / 2;
-            ctx.save();
-            ctx.beginPath();
-            ctx.rect(cellX, cellY, cellW, cellH);
-            ctx.clip();
-            ctx.translate(centerX, centerY);
-            if (placement.rotate) ctx.rotate(Math.PI / 2);
-            const rawDrawW = imgObj.width * (placement.scale * paperScale * 72 / 96);
-            const rawDrawH = imgObj.height * (placement.scale * paperScale * 72 / 96);
-            ctx.drawImage(imgObj, -rawDrawW / 2, -rawDrawH / 2, rawDrawW, rawDrawH);
-            ctx.restore();
+        function drawImageInCell(ctx, imgObj, cellX, cellY, cellW, cellH, padding, scaleMode, paperScale, customScalePercent = 100, allowRotate = true, contentAlign = 'center') {
+            const sourceWPt=imgObj.width*72/96, sourceHPt=imgObj.height*72/96;
+            const placement=computePlacement(sourceWPt*paperScale,sourceHPt*paperScale,cellW,cellH,padding,scaleMode,allowRotate,customScalePercent);
+            const rawW=imgObj.width*(placement.scale*paperScale*72/96), rawH=imgObj.height*(placement.scale*paperScale*72/96);
+            let centerX=cellX+cellW/2, centerY=cellY+cellH/2;
+            if (contentAlign === 'top-left') {
+                const placedW=placement.rotate?rawH:rawW, placedH=placement.rotate?rawW:rawH;
+                centerX=cellX+placedW/2; centerY=cellY+placedH/2;
+            }
+            ctx.save(); ctx.beginPath(); ctx.rect(cellX,cellY,cellW,cellH); ctx.clip();
+            ctx.translate(centerX,centerY); if (placement.rotate) ctx.rotate(Math.PI/2);
+            ctx.drawImage(imgObj,-rawW/2,-rawH/2,rawW,rawH); ctx.restore();
         }
         function showToast(message, type = 'info') {
             let container = document.getElementById('toastContainer');
@@ -606,33 +682,28 @@
             }
         }
         
-        function getSelectedPdfPages(totalPages) {
-            const raw = (document.getElementById('pages').value || '').trim();
-            let selected = [];
-            if (!raw) {
-                selected = Array.from({ length: totalPages }, (_, i) => i + 1);
-            } else {
-                const parsed = parsePagesInput(raw);
-                if (!parsed.ok || !parsed.normalized) selected = Array.from({ length: totalPages }, (_, i) => i + 1);
+        function getSelectedPdfPages(totalPages, forCompatibility = false) {
+            const raw=(document.getElementById('pages').value||'').trim(); let selected=[];
+            if (!raw) selected=Array.from({length:totalPages},(_,i)=>i+1);
+            else {
+                const parsed=parsePagesInput(raw);
+                if (!parsed.ok || !parsed.normalized) selected=Array.from({length:totalPages},(_,i)=>i+1);
                 else {
-                    parsed.normalized.split(',').forEach(part => {
-                        if (part.includes('-')) {
-                            let [a, b] = part.split('-').map(n => parseInt(n, 10));
-                            if (a > b) [a, b] = [b, a];
-                            for (let n = a; n <= b; n += 1) if (n >= 1 && n <= totalPages) selected.push(n);
-                        } else {
-                            const n = parseInt(part, 10);
-                            if (n >= 1 && n <= totalPages) selected.push(n);
-                        }
+                    parsed.normalized.split(',').forEach(part=>{
+                        if (part.includes('-')) { let [a,b]=part.split('-').map(Number); if(a>b)[a,b]=[b,a]; for(let n=a;n<=b;n++) if(n>=1&&n<=totalPages) selected.push(n); }
+                        else { const n=Number(part); if(n>=1&&n<=totalPages) selected.push(n); }
                     });
-                    selected = [...new Set(selected)];
+                    selected=[...new Set(selected)];
                 }
             }
-            const subset = document.getElementById('pageSubset').value;
-            if (subset === 'odd') selected = selected.filter(n => n % 2 === 1);
-            else if (subset === 'even') selected = selected.filter(n => n % 2 === 0);
-            if (document.getElementById('pageOrder').value === 'reverse') selected.reverse();
-            return selected;
+            const booklet=document.getElementById('bookletMode').value==='on';
+            if (!booklet || forCompatibility) {
+                const subset=document.getElementById('pageSubset').value;
+                if (subset==='odd') selected=selected.filter(n=>n%2===1);
+                else if (subset==='even') selected=selected.filter(n=>n%2===0);
+                if (document.getElementById('pageOrder').value==='reverse') selected.reverse();
+            }
+            return booklet && !forCompatibility ? makeBookletSequence(selected) : selected;
         }
 
         async function buildCompatibilityPdfFromCurrentPdf() {
@@ -641,7 +712,7 @@
             }
             const { PDFDocument } = window.PDFLib;
             const outPdf = await PDFDocument.create();
-            const selectedPages = getSelectedPdfPages(currentPdfDoc.numPages);
+            const selectedPages = getSelectedPdfPages(currentPdfDoc.numPages, true);
             if (selectedPages.length > 120) {
                 const ok = confirm(`Mode kompatibilitas akan merender ${selectedPages.length} halaman. Proses bisa lama. Lanjutkan?`);
                 if (!ok) throw new Error('Dibatalkan pengguna.');
@@ -691,6 +762,16 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
             fd.append('pageSubset', useCompatibilityMode ? 'all' : document.getElementById('pageSubset').value);
             fd.append('pageOrder', useCompatibilityMode ? 'normal' : document.getElementById('pageOrder').value);
             fd.append('collateMode', document.getElementById('collateMode').value);
+            fd.append('marginMode', document.getElementById('marginMode').value);
+            fd.append('marginTop', document.getElementById('marginTop').value);
+            fd.append('marginRight', document.getElementById('marginRight').value);
+            fd.append('marginBottom', document.getElementById('marginBottom').value);
+            fd.append('marginLeft', document.getElementById('marginLeft').value);
+            fd.append('autoRotateMode', document.getElementById('autoRotateMode').value);
+            fd.append('contentAlign', document.getElementById('contentAlign').value);
+            fd.append('nupBorder', document.getElementById('nupBorder').value);
+            fd.append('nupOrder', document.getElementById('nupOrder').value);
+            fd.append('bookletMode', document.getElementById('bookletMode').value);
             fd.append('pages', useCompatibilityMode ? '' : document.getElementById('pages').value);
             return await fetchWithRetry(`http://${ip}:3000/print`, { method: 'POST', body: fd }, 1, 400);
         }
@@ -1011,133 +1092,77 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
             }
         });
         function updatePrintSettingsSummary() {
-            const el = document.getElementById('printSettingsSummary');
-            if (!el) return;
-            const paperMap = { SOURCE: 'Sama dengan dokumen', A4: 'A4', F4: 'F4', LETTER: 'Letter', LEGAL: 'Legal' };
-            const orientationMap = { auto: 'Otomatis', portrait: 'Portrait', landscape: 'Landscape' };
-            const scaleMap = { shrink: 'Shrink', fit: 'Fit', actual: '100%', custom: `${document.getElementById('customScale').value || 100}%`, fill: 'Fill' };
-            const duplexMap = { simplex: '1 sisi', duplexlong: 'Duplex panjang', duplexshort: 'Duplex pendek' };
-            const subsetMap = { all: 'Semua hlm', odd: 'Ganjil', even: 'Genap' };
-            const paper = paperMap[document.getElementById('paperSize').value] || 'A4';
-            const orientation = orientationMap[document.getElementById('orientation').value] || 'Otomatis';
-            const scale = scaleMap[document.getElementById('scaleMode').value] || 'Shrink';
-            const pps = document.getElementById('pagesPerSheet').value || '1';
-            const copies = document.getElementById('copies').value || '1';
-            const duplex = duplexMap[document.getElementById('duplexMode').value] || '1 sisi';
-            const subset = subsetMap[document.getElementById('pageSubset').value] || 'Semua hlm';
-            const reverse = document.getElementById('pageOrder').value === 'reverse' ? 'Terbalik' : 'Normal';
-            const collate = document.getElementById('collateMode').value === 'collated' ? 'Collate' : 'Uncollated';
-            el.textContent = `${paper} • ${orientation} • ${scale} • ${pps} hal/lembar • ${copies} copy • ${duplex} • ${subset} • ${reverse} • ${collate}`;
+            const el=document.getElementById('printSettingsSummary'); if(!el)return;
+            const paperMap={SOURCE:'Sama dengan dokumen',A4:'A4',F4:'F4',LETTER:'Letter',LEGAL:'Legal'};
+            const orientationMap={auto:'Otomatis',portrait:'Portrait',landscape:'Landscape'};
+            const scaleMap={shrink:'Shrink',fit:'Fit',actual:'100%',custom:`${document.getElementById('customScale').value||100}%`,fill:'Fill'};
+            const duplexMap={simplex:'1 sisi',duplexlong:'Duplex panjang',duplexshort:'Duplex pendek'};
+            const subsetMap={all:'Semua hlm',odd:'Ganjil',even:'Genap'};
+            const marginMap={none:'Tanpa margin',narrow:'Margin sempit',normal:'Margin normal',wide:'Margin lebar',custom:'Margin custom'};
+            const parts=[
+                paperMap[document.getElementById('paperSize').value], orientationMap[document.getElementById('orientation').value],
+                scaleMap[document.getElementById('scaleMode').value], `${document.getElementById('pagesPerSheet').value} hal/lembar`,
+                `${document.getElementById('copies').value} copy`, duplexMap[document.getElementById('duplexMode').value],
+                subsetMap[document.getElementById('pageSubset').value], document.getElementById('pageOrder').value==='reverse'?'Terbalik':'Normal',
+                document.getElementById('collateMode').value==='collated'?'Collate':'Uncollated', marginMap[document.getElementById('marginMode').value],
+                document.getElementById('autoRotateMode').value==='auto'?'Auto rotate':'Tanpa rotate',
+                document.getElementById('contentAlign').value==='center'?'Tengah':'Kiri atas'
+            ];
+            if (document.getElementById('nupBorder').value!=='none') parts.push(document.getElementById('nupBorder').value==='thin'?'Border tipis':'Border sedang');
+            if (document.getElementById('bookletMode').value==='on') parts.push('BOOKLET');
+            el.textContent=parts.filter(Boolean).join(' • ');
         }
 
         async function updateDynamicPreview() {
-            updatePrintSettingsSummary();
-            const canvas = document.getElementById('mainPreviewCanvas');
-            const emptyState = document.getElementById('emptyPreviewState');
+            syncLayoutFinishingControls(); updatePrintSettingsSummary();
+            const canvas=document.getElementById('mainPreviewCanvas'), emptyState=document.getElementById('emptyPreviewState');
             if (!currentPdfDoc && !currentImgSrc) {
-                canvas.style.display = 'none';
-                emptyState.style.display = 'block';
-                document.getElementById('previewPagination').style.display = 'none';
-                document.getElementById('previewBadge').textContent = document.getElementById('colorMode').value === 'monochrome' ? 'Hitam Putih' : 'Warna';
-                return;
+                canvas.style.display='none'; emptyState.style.display='block'; document.getElementById('previewPagination').style.display='none';
+                document.getElementById('previewBadge').textContent=document.getElementById('colorMode').value==='monochrome'?'Hitam Putih':'Warna'; return;
             }
-
-            validatePrintSettings(false);
-            emptyState.style.display = 'none';
-            canvas.style.display = 'block';
-
-            const requestedOrientation = document.getElementById('orientation').value;
-            const paperSize = document.getElementById('paperSize').value;
-            const requestedScaleMode = document.getElementById('scaleMode').value;
-            const customScalePercent = Number(document.getElementById('customScale').value || 100);
-            const pps = parseInt(document.getElementById('pagesPerSheet').value, 10) || 1;
-            const resolvedOrientation = resolveOrientation(requestedOrientation, currentSourceInfo.width, currentSourceInfo.height, pps);
-            const scaleMode = getEffectiveScaleMode(requestedScaleMode, pps);
-            const paperViewport = resolvePaperViewport(
-                paperSize,
-                resolvedOrientation,
-                currentSourceInfo.width,
-                currentSourceInfo.height,
-                currentSourceInfo.standard
-            );
-            const { cols, rows, safePps } = getGrid(pps, resolvedOrientation);
-
-            const baseHeight = 1000;
-            const ratio = paperViewport.width / paperViewport.height;
-            canvas.height = baseHeight;
-            canvas.width = Math.max(650, Math.round(baseHeight * ratio));
-            const paperScale = canvas.width / paperViewport.width;
-            const paddingPt = Math.max(6, paperViewport.height * 0.04);
-            const paddingPx = paddingPt * paperScale;
-            canvas.style.filter = document.getElementById('colorMode').value === 'monochrome' ? 'grayscale(100%)' : 'none';
-
-            const paperLabel = paperSize === 'SOURCE'
-                ? `Sama dengan Dokumen (${currentSourceInfo.standard === 'CUSTOM' ? 'Kustom' : (PAPER_DIMENSIONS[currentSourceInfo.standard]?.label || 'A4')})`
-                : PAPER_DIMENSIONS[paperSize].label;
-            const scaleLabels = { fit: 'Fit', shrink: 'Shrink', actual: '100%', custom: `${customScalePercent}%`, fill: 'Fill' };
-            document.getElementById('previewBadge').textContent =
-                `${paperLabel} • ${resolvedOrientation === 'landscape' ? 'Landscape' : 'Portrait'} • ${scaleLabels[scaleMode]} • ${document.getElementById('colorMode').value === 'monochrome' ? 'Hitam Putih' : 'Warna'}`;
-
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = 'white';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
+            validatePrintSettings(false); emptyState.style.display='none'; canvas.style.display='block';
+            const requestedOrientation=document.getElementById('orientation').value, paperSize=document.getElementById('paperSize').value;
+            const requestedScaleMode=document.getElementById('scaleMode').value, customScalePercent=Number(document.getElementById('customScale').value||100);
+            const pps=parseInt(document.getElementById('pagesPerSheet').value,10)||1;
+            const autoRotate=document.getElementById('autoRotateMode').value==='auto', contentAlign=document.getElementById('contentAlign').value;
+            const nupBorder=document.getElementById('nupBorder').value, nupOrder=document.getElementById('nupOrder').value, marginMm=getMarginMm();
+            const resolvedOrientation=resolveOrientation(requestedOrientation,currentSourceInfo.width,currentSourceInfo.height,pps);
+            const scaleMode=getEffectiveScaleMode(requestedScaleMode,pps);
+            const paperViewport=resolvePaperViewport(paperSize,resolvedOrientation,currentSourceInfo.width,currentSourceInfo.height,currentSourceInfo.standard);
+            const {cols,rows,safePps}=getGrid(pps,resolvedOrientation);
+            const baseHeight=1000, ratio=paperViewport.width/paperViewport.height; canvas.height=baseHeight; canvas.width=Math.max(650,Math.round(baseHeight*ratio));
+            const paperScale=canvas.width/paperViewport.width, mmToPt=72/25.4;
+            const m={top:marginMm.top*mmToPt*paperScale,right:marginMm.right*mmToPt*paperScale,bottom:marginMm.bottom*mmToPt*paperScale,left:marginMm.left*mmToPt*paperScale};
+            const contentX=m.left, contentY=m.top, contentW=Math.max(1,canvas.width-m.left-m.right), contentH=Math.max(1,canvas.height-m.top-m.bottom);
+            canvas.style.filter=document.getElementById('colorMode').value==='monochrome'?'grayscale(100%)':'none';
+            const paperLabel=paperSize==='SOURCE'?`Sama dengan Dokumen (${currentSourceInfo.standard==='CUSTOM'?'Kustom':(PAPER_DIMENSIONS[currentSourceInfo.standard]?.label||'A4')})`:PAPER_DIMENSIONS[paperSize].label;
+            const scaleLabels={fit:'Fit',shrink:'Shrink',actual:'100%',custom:`${customScalePercent}%`,fill:'Fill'};
+            document.getElementById('previewBadge').textContent=`${paperLabel} • ${resolvedOrientation==='landscape'?'Landscape':'Portrait'} • ${scaleLabels[scaleMode]}${document.getElementById('bookletMode').value==='on'?' • Booklet':''}`;
+            const ctx=canvas.getContext('2d'); ctx.fillStyle='white'; ctx.fillRect(0,0,canvas.width,canvas.height);
+            const strokeCell=(x,y,w,h)=>{ if(nupBorder!=='none'&&pps>1){ctx.save();ctx.strokeStyle='#999';ctx.lineWidth=nupBorder==='medium'?2:1;ctx.strokeRect(x,y,w,h);ctx.restore();} };
             if (currentImgSrc) {
-                totalPreviewSheets = 1;
-                currentPreviewSheet = 0;
-                document.getElementById('previewPagination').style.display = 'none';
-                document.getElementById('btnPrevPage').disabled = true;
-                document.getElementById('btnNextPage').disabled = true;
-                const imgObj = new Image();
-                imgObj.src = currentImgSrc;
-                await new Promise((resolve, reject) => { imgObj.onload = resolve; imgObj.onerror = reject; });
-                const cellW = canvas.width / cols;
-                const cellH = canvas.height / rows;
-                drawImageInCell(ctx, imgObj, 0, 0, cellW, cellH, paddingPx, scaleMode, paperScale, customScalePercent);
-                return;
+                totalPreviewSheets=1; currentPreviewSheet=0; document.getElementById('previewPagination').style.display='none';
+                const imgObj=new Image(); imgObj.src=currentImgSrc; await new Promise((resolve,reject)=>{imgObj.onload=resolve;imgObj.onerror=reject;});
+                const cellW=contentW/cols,cellH=contentH/rows,pos=getSlotPosition(0,cols,rows,nupOrder),cellX=contentX+pos.col*cellW,cellY=contentY+pos.row*cellH;
+                strokeCell(cellX,cellY,cellW,cellH); drawImageInCell(ctx,imgObj,cellX,cellY,cellW,cellH,0,scaleMode,paperScale,customScalePercent,autoRotate,contentAlign); return;
             }
-
-            let pageArr = getSelectedPdfPages(currentPdfDoc.numPages);
-            if (!pageArr.length) pageArr = [];
-            totalPreviewSheets = Math.ceil(pageArr.length / safePps);
-            document.getElementById('previewPagination').style.display = totalPreviewSheets > 1 ? 'flex' : 'none';
-            document.getElementById('previewSheetText').innerText = `${currentPreviewSheet + 1} / ${totalPreviewSheets}`;
-            document.getElementById('btnPrevPage').disabled = currentPreviewSheet <= 0;
-            document.getElementById('btnNextPage').disabled = currentPreviewSheet >= totalPreviewSheets - 1;
-
-            const startPage = currentPreviewSheet * safePps;
-            for (let slot = 0; slot < Math.min(safePps, pageArr.length - startPage); slot += 1) {
-                const page = await currentPdfDoc.getPage(pageArr[startPage + slot]);
-                const cellW = canvas.width / cols;
-                const cellH = canvas.height / rows;
-                const cellX = (slot % cols) * cellW;
-                const cellY = Math.floor(slot / cols) * cellH;
-                const baseVp = page.getViewport({ scale: 1 });
-                const placement = computePlacement(
-                    baseVp.width * paperScale,
-                    baseVp.height * paperScale,
-                    cellW,
-                    cellH,
-                    paddingPx,
-                    scaleMode,
-                    true,
-                    customScalePercent
-                );
-                const renderScale = placement.scale * paperScale;
-                const renderVp = page.getViewport({ scale: renderScale, rotation: placement.rotate ? 90 : 0 });
-                const off = document.createElement('canvas');
-                off.width = Math.max(1, Math.ceil(renderVp.width));
-                off.height = Math.max(1, Math.ceil(renderVp.height));
-                await page.render({ canvasContext: off.getContext('2d'), viewport: renderVp }).promise;
-
-                ctx.save();
-                ctx.beginPath();
-                ctx.rect(cellX, cellY, cellW, cellH);
-                ctx.clip();
-                const x = cellX + (cellW - renderVp.width) / 2;
-                const y = cellY + (cellH - renderVp.height) / 2;
-                ctx.drawImage(off, x, y);
-                ctx.restore();
+            let pageArr=getSelectedPdfPages(currentPdfDoc.numPages); totalPreviewSheets=Math.ceil(pageArr.length/safePps);
+            if (currentPreviewSheet>=totalPreviewSheets) currentPreviewSheet=Math.max(0,totalPreviewSheets-1);
+            document.getElementById('previewPagination').style.display=totalPreviewSheets>1?'flex':'none';
+            document.getElementById('previewSheetText').innerText=`${currentPreviewSheet+1} / ${Math.max(1,totalPreviewSheets)}`;
+            document.getElementById('btnPrevPage').disabled=currentPreviewSheet<=0; document.getElementById('btnNextPage').disabled=currentPreviewSheet>=totalPreviewSheets-1;
+            const startPage=currentPreviewSheet*safePps, cellW=contentW/cols, cellH=contentH/rows;
+            for(let slot=0;slot<Math.min(safePps,pageArr.length-startPage);slot++){
+                const pos=getSlotPosition(slot,cols,rows,nupOrder),cellX=contentX+pos.col*cellW,cellY=contentY+pos.row*cellH; strokeCell(cellX,cellY,cellW,cellH);
+                const pageNumber=pageArr[startPage+slot]; if(!pageNumber) continue;
+                const page=await currentPdfDoc.getPage(pageNumber), baseVp=page.getViewport({scale:1});
+                const placement=computePlacement(baseVp.width*paperScale,baseVp.height*paperScale,cellW,cellH,0,scaleMode,autoRotate,customScalePercent);
+                const renderScale=placement.scale*paperScale, renderVp=page.getViewport({scale:renderScale,rotation:placement.rotate?90:0});
+                const off=document.createElement('canvas'); off.width=Math.max(1,Math.ceil(renderVp.width)); off.height=Math.max(1,Math.ceil(renderVp.height));
+                await page.render({canvasContext:off.getContext('2d'),viewport:renderVp}).promise;
+                ctx.save();ctx.beginPath();ctx.rect(cellX,cellY,cellW,cellH);ctx.clip();
+                const x=contentAlign==='top-left'?cellX:cellX+(cellW-renderVp.width)/2, y=contentAlign==='top-left'?cellY:cellY+(cellH-renderVp.height)/2;
+                ctx.drawImage(off,x,y);ctx.restore();
             }
         }
         function changePreviewSheet(dir) { currentPreviewSheet = Math.max(0, Math.min(totalPreviewSheets-1, currentPreviewSheet + dir)); updateDynamicPreview(); }
@@ -1176,20 +1201,19 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
         }
 
         function syncAdvancedPrintControls() {
-            const scaleMode = document.getElementById('scaleMode').value;
-            document.getElementById('customScaleWrap').style.display = scaleMode === 'custom' ? 'flex' : 'none';
-            const duplex = document.getElementById('duplexMode').value;
-            const collate = document.getElementById('collateMode');
-            if (duplex !== 'simplex' && collate.value === 'uncollated') collate.value = 'collated';
-            collate.querySelector('option[value="uncollated"]').disabled = duplex !== 'simplex';
+            const scaleMode=document.getElementById('scaleMode').value; document.getElementById('customScaleWrap').style.display=scaleMode==='custom'?'flex':'none';
+            syncLayoutFinishingControls();
+            const duplex=document.getElementById('duplexMode').value, collate=document.getElementById('collateMode');
+            if(duplex!=='simplex'&&collate.value==='uncollated') collate.value='collated';
+            collate.querySelector('option[value="uncollated"]').disabled=duplex!=='simplex';
         }
 
-        ['copies', 'pages', 'pagesPerSheet', 'paperSize', 'orientation', 'scaleMode', 'customScale', 'colorMode', 'duplexMode', 'pageSubset', 'pageOrder', 'collateMode'].forEach((id) => {
+        ['copies','pages','pagesPerSheet','paperSize','orientation','scaleMode','customScale','colorMode','duplexMode','pageSubset','pageOrder','collateMode','marginMode','marginTop','marginRight','marginBottom','marginLeft','autoRotateMode','contentAlign','nupBorder','nupOrder','bookletMode'].forEach((id) => {
             const el = document.getElementById(id);
             const eventName = (id === 'pages' || id === 'copies' || id === 'customScale') ? 'input' : 'change';
             el.addEventListener(eventName, () => {
                 syncAdvancedPrintControls();
-                if (id === 'copies' || id === 'pagesPerSheet' || id === 'customScale' || id === 'duplexMode') validatePrintSettings(false);
+                if (['copies','pagesPerSheet','customScale','duplexMode','marginMode','marginTop','marginRight','marginBottom','marginLeft','bookletMode'].includes(id)) validatePrintSettings(false);
                 currentPreviewSheet = 0;
                 updatePrintSettingsSummary();
                 updateDynamicPreview();

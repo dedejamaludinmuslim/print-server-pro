@@ -1,6 +1,6 @@
 {
   "name": "print-server-v456",
-  "version": "4.5.18",
+  "version": "4.5.19",
   "description": "Print Server with refined print settings",
   "main": "server.js",
   "scripts": {
