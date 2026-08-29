@@ -10,7 +10,7 @@ $ProgressPreference = 'SilentlyContinue'
 
 $RepositoryOwner = 'dedejamaludinmuslim'
 $RepositoryName = 'print-server-pro'
-$InstallerRevision = '4.5.35-H2'
+$InstallerRevision = '4.5.35-H3'
 $ManifestUrl = "https://github.com/$RepositoryOwner/$RepositoryName/releases/latest/download/manifest.json"
 $InstallRoot = Join-Path $env:ProgramData 'PrintServerPro'
 $AppDirectory = Join-Path $InstallRoot 'app'
@@ -98,6 +98,19 @@ function Ensure-NodeJs {
     return $nodeCommand.Source
 }
 
+function Test-PrintServerEndpoint {
+    try {
+        $response = Invoke-RestMethod -Uri "http://127.0.0.1:$Port/ping" -Method Get -TimeoutSec 2
+        return ($response.status -eq 'PrintServerActive')
+    } catch {
+        return $false
+    }
+}
+
+function Get-PrintServerPortListeners {
+    return @(Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue)
+}
+
 function Stop-ExistingServer {
     $existingTask = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
     if ($existingTask) {
@@ -123,15 +136,35 @@ function Stop-ExistingServer {
     }
 
     for ($attempt = 1; $attempt -le 10; $attempt++) {
-        $listener = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue |
-            Select-Object -First 1
-        if (-not $listener) {
+        $listeners = @(Get-PrintServerPortListeners)
+        if ($listeners.Count -eq 0) {
             return
         }
         Start-Sleep -Seconds 1
     }
 
-    throw "Port $Port masih dipakai proses PID $($listener.OwningProcess). Hentikan proses tersebut lalu jalankan installer kembali."
+    # Wrapper tersembunyi versi sebelumnya dapat berhenti lebih dahulu dan
+    # meninggalkan node.exe sebagai proses yatim. Hentikan hanya bila endpoint
+    # membuktikan bahwa port ini memang Print Server Pro dan pemiliknya Node.js.
+    if (Test-PrintServerEndpoint) {
+        $listenerProcessIds = @($listeners | Select-Object -ExpandProperty OwningProcess -Unique)
+        foreach ($processId in $listenerProcessIds) {
+            $listenerProcess = Get-Process -Id $processId -ErrorAction SilentlyContinue
+            if ($listenerProcess -and $listenerProcess.ProcessName -eq 'node') {
+                Stop-Process -Id $processId -Force -ErrorAction SilentlyContinue
+            }
+        }
+        Start-Sleep -Seconds 2
+        $listeners = @(Get-PrintServerPortListeners)
+        if ($listeners.Count -eq 0) {
+            Write-Success 'Proses Node.js yatim milik Print Server Pro dihentikan'
+            return
+        }
+    }
+
+    $listenerProcessIds = @($listeners | Select-Object -ExpandProperty OwningProcess -Unique)
+    $processList = $listenerProcessIds -join ', '
+    throw "Port $Port masih dipakai proses PID $processList yang tidak aman dihentikan otomatis. Periksa proses tersebut lalu jalankan installer kembali."
 }
 
 function Remove-ManagedComponents {

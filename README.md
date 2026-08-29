@@ -2,11 +2,14 @@
 
 Print Server Pro menghubungkan printer Windows dengan perangkat lain melalui jaringan lokal.
 
-Installer saat ini: **v4.5.35-H2**. Hotfix ini menjalankan server secara
+Installer saat ini: **v4.5.35-H3**. Hotfix ini menjalankan server secara
 tersembunyi melalui Task Scheduler dan WScript. Tidak ada terminal Node.js yang
 perlu dibiarkan terbuka, dan menutup PowerShell/Terminal tidak menghentikan server.
 H2 juga memperbaiki pemasangan pada PC yang memiliki perintah PM2 tetapi tidak
 memiliki proses lama bernama `print-server`.
+H3 menangani proses `node.exe` yatim pada port 3000. Proses hanya dihentikan
+otomatis jika endpoint `/ping` mengenalinya sebagai Print Server Pro dan pemilik
+port benar-benar Node.js; aplikasi lain tidak akan dihentikan.
 
 ## Instalasi online
 
