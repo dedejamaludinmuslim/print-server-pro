@@ -2,9 +2,11 @@
 
 Print Server Pro menghubungkan printer Windows dengan perangkat lain melalui jaringan lokal.
 
-Installer saat ini: **v4.5.35-H1**. Hotfix ini menjalankan server secara
+Installer saat ini: **v4.5.35-H2**. Hotfix ini menjalankan server secara
 tersembunyi melalui Task Scheduler dan WScript. Tidak ada terminal Node.js yang
 perlu dibiarkan terbuka, dan menutup PowerShell/Terminal tidak menghentikan server.
+H2 juga memperbaiki pemasangan pada PC yang memiliki perintah PM2 tetapi tidak
+memiliki proses lama bernama `print-server`.
 
 ## Instalasi online
 
@@ -57,3 +59,6 @@ dan tidak mengubahnya secara otomatis. Pada jaringan kantor yang benar-benar
 tepercaya, ubah profil ke Private agar port 3000 dapat diakses perangkat lain.
 
 Setelah instalasi selesai, proses cetak berjalan melalui jaringan lokal.
+Jangan hapus folder `C:\ProgramData\PrintServerPro` karena folder tersebut adalah
+lokasi aplikasi aktif, launcher startup, dan log server. Folder proyek lama di
+lokasi lain tidak lagi diperlukan setelah instalasi berhasil.

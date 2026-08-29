@@ -10,7 +10,7 @@ $ProgressPreference = 'SilentlyContinue'
 
 $RepositoryOwner = 'dedejamaludinmuslim'
 $RepositoryName = 'print-server-pro'
-$InstallerRevision = '4.5.35-H1'
+$InstallerRevision = '4.5.35-H2'
 $ManifestUrl = "https://github.com/$RepositoryOwner/$RepositoryName/releases/latest/download/manifest.json"
 $InstallRoot = Join-Path $env:ProgramData 'PrintServerPro'
 $AppDirectory = Join-Path $InstallRoot 'app'
@@ -26,6 +26,7 @@ $WorkDirectory = $null
 $TranscriptStarted = $false
 $HadExistingApp = $false
 $AppMutationStarted = $false
+$ExistingTaskStopped = $false
 
 function Test-Administrator {
     $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
@@ -100,14 +101,37 @@ function Ensure-NodeJs {
 function Stop-ExistingServer {
     $existingTask = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
     if ($existingTask) {
+        $script:ExistingTaskStopped = $true
         Stop-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
         Start-Sleep -Seconds 2
     }
 
     $pm2 = Get-Command pm2.cmd -ErrorAction SilentlyContinue
     if ($pm2) {
-        & $pm2.Source delete print-server *> $null
+        try {
+            # PM2 hanya dipakai versi lama. Exit code nonzero saat proses tidak
+            # ditemukan adalah kondisi normal dan tidak boleh menggagalkan installer.
+            $pm2Process = Start-Process -FilePath $pm2.Source -ArgumentList @('delete', 'print-server') -WindowStyle Hidden -Wait -PassThru
+            if ($pm2Process.ExitCode -eq 0) {
+                Write-Success 'Proses PM2 lama dihentikan'
+            } else {
+                Write-Host '[INFO] Proses PM2 lama tidak aktif; dilewati.' -ForegroundColor DarkGray
+            }
+        } catch {
+            Write-Warning "Pembersihan PM2 lama dilewati: $($_.Exception.Message)"
+        }
     }
+
+    for ($attempt = 1; $attempt -le 10; $attempt++) {
+        $listener = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue |
+            Select-Object -First 1
+        if (-not $listener) {
+            return
+        }
+        Start-Sleep -Seconds 1
+    }
+
+    throw "Port $Port masih dipakai proses PID $($listener.OwningProcess). Hentikan proses tersebut lalu jalankan installer kembali."
 }
 
 function Remove-ManagedComponents {
@@ -346,6 +370,12 @@ catch {
             Remove-NetFirewallRule -Name $FirewallRuleName -ErrorAction SilentlyContinue
             if (Test-Path -LiteralPath $AppDirectory) {
                 Remove-Item -LiteralPath $AppDirectory -Recurse -Force
+            }
+        } elseif (-not $AppMutationStarted -and $ExistingTaskStopped) {
+            $previousTask = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
+            if ($previousTask) {
+                Start-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
+                Write-Host '[ROLLBACK] Task server sebelumnya dinyalakan kembali.' -ForegroundColor Yellow
             }
         }
     } catch {
