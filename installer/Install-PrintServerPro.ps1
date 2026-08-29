@@ -10,12 +10,14 @@ $ProgressPreference = 'SilentlyContinue'
 
 $RepositoryOwner = 'dedejamaludinmuslim'
 $RepositoryName = 'print-server-pro'
+$InstallerRevision = '4.5.35-H1'
 $ManifestUrl = "https://github.com/$RepositoryOwner/$RepositoryName/releases/latest/download/manifest.json"
 $InstallRoot = Join-Path $env:ProgramData 'PrintServerPro'
 $AppDirectory = Join-Path $InstallRoot 'app'
 $BackupDirectory = Join-Path $InstallRoot 'backup'
 $LogsDirectory = Join-Path $InstallRoot 'logs'
 $LauncherPath = Join-Path $InstallRoot 'Start-PrintServerPro.cmd'
+$HiddenLauncherPath = Join-Path $InstallRoot 'Start-PrintServerPro-Hidden.vbs'
 $TaskName = 'Print Server Pro'
 $FirewallRuleName = 'PrintServerPro-TCP-3000'
 $FirewallDisplayName = 'Print Server Pro TCP 3000'
@@ -155,14 +157,36 @@ cd /d "$AppDirectory"
 "@
     Set-Content -LiteralPath $LauncherPath -Value $launcher -Encoding ASCII
 
+    # WScript menjalankan launcher tanpa jendela terminal. Parameter True membuat
+    # Task Scheduler tetap memantau proses dan dapat memulai ulang jika server gagal.
+    $escapedLauncherPath = $LauncherPath.Replace('"', '""')
+    $hiddenLauncher = @"
+Set Shell = CreateObject("WScript.Shell")
+Launcher = "$escapedLauncherPath"
+ExitCode = Shell.Run(Chr(34) & Launcher & Chr(34), 0, True)
+WScript.Quit ExitCode
+"@
+    Set-Content -LiteralPath $HiddenLauncherPath -Value $hiddenLauncher -Encoding ASCII
+
     $currentUser = [Security.Principal.WindowsIdentity]::GetCurrent().Name
-    $taskArgument = '/d /c ""{0}""' -f $LauncherPath
-    $action = New-ScheduledTaskAction -Execute $env:ComSpec -Argument $taskArgument
+    $wscriptExecutable = Join-Path $env:SystemRoot 'System32\wscript.exe'
+    $taskArgument = '"{0}"' -f $HiddenLauncherPath
+    $action = New-ScheduledTaskAction -Execute $wscriptExecutable -Argument $taskArgument -WorkingDirectory $InstallRoot
     $trigger = New-ScheduledTaskTrigger -AtLogOn -User $currentUser
     $principal = New-ScheduledTaskPrincipal -UserId $currentUser -LogonType Interactive -RunLevel Highest
-    $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -RestartCount 5 -RestartInterval (New-TimeSpan -Minutes 1) -ExecutionTimeLimit (New-TimeSpan -Days 3650)
-    Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Description 'Menjalankan Print Server Pro saat pengguna pemasang login.' -Force | Out-Null
+    $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -RestartCount 10 -RestartInterval (New-TimeSpan -Minutes 1) -ExecutionTimeLimit (New-TimeSpan -Days 3650)
+    Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Description 'Menjalankan Print Server Pro tersembunyi saat pengguna pemasang login.' -Force | Out-Null
     Start-ScheduledTask -TaskName $TaskName
+}
+
+function Show-NetworkProfileWarning {
+    $publicProfiles = @(Get-NetConnectionProfile -ErrorAction SilentlyContinue |
+        Where-Object { $_.NetworkCategory -eq 'Public' })
+
+    if ($publicProfiles.Count -gt 0) {
+        $interfaces = ($publicProfiles | Select-Object -ExpandProperty InterfaceAlias -Unique) -join ', '
+        Write-Warning "Profil jaringan Public terdeteksi: $interfaces. Firewall installer hanya membuka port $Port pada Private/Domain. Jika ini jaringan kantor yang tepercaya, ubah profilnya ke Private agar perangkat lain dapat mengakses server."
+    }
 }
 
 function Wait-ForServer {
@@ -186,13 +210,13 @@ function Show-ConnectionInformation {
     Write-Host "`n======================================================" -ForegroundColor Green
     Write-Host " PRINT SERVER PRO $($PingResponse.version) SIAP DIGUNAKAN" -ForegroundColor Green
     Write-Host "======================================================" -ForegroundColor Green
-    Write-Host "PC ini : http://localhost:$Port"
+    Write-Host "PC ini : http://localhost:$Port/?server=localhost"
 
     $addresses = Get-NetIPAddress -AddressFamily IPv4 -AddressState Preferred -ErrorAction SilentlyContinue |
         Where-Object { $_.IPAddress -ne '127.0.0.1' -and $_.IPAddress -notlike '169.254.*' } |
         Select-Object -ExpandProperty IPAddress -Unique
     foreach ($address in $addresses) {
-        Write-Host "Jaringan: http://$address`:$Port"
+        Write-Host "Jaringan: http://$address`:$Port/?server=$address"
     }
 
     Write-Host "`nTask startup : $TaskName"
@@ -227,7 +251,7 @@ try {
         exit 0
     }
 
-    Write-Host "Print Server Pro Online Installer" -ForegroundColor White
+    Write-Host "Print Server Pro Online Installer $InstallerRevision" -ForegroundColor White
     Write-Host "Repository: https://github.com/$RepositoryOwner/$RepositoryName"
     Write-Host "Mode: $Mode"
 
@@ -291,6 +315,7 @@ try {
     Write-Step 'Mengatur Windows Firewall untuk Private/Domain'
     Remove-NetFirewallRule -Name $FirewallRuleName -ErrorAction SilentlyContinue
     New-NetFirewallRule -Name $FirewallRuleName -DisplayName $FirewallDisplayName -Direction Inbound -Action Allow -Protocol TCP -LocalPort $Port -Profile Private,Domain -Description 'Akses Print Server Pro dari jaringan terpercaya.' | Out-Null
+    Show-NetworkProfileWarning
 
     Write-Step 'Mendaftarkan startup otomatis untuk pengguna pemasang'
     Register-PrintServerTask -NodeExecutable $nodeExecutable
@@ -303,7 +328,7 @@ try {
 
     Write-Success 'Instalasi dan smoke test berhasil'
     Show-ConnectionInformation -PingResponse $pingResponse
-    Start-Process "http://localhost:$Port"
+    Start-Process "http://localhost:$Port/?server=localhost"
 }
 catch {
     Write-Host "`n[INSTALLER GAGAL] $($_.Exception.Message)" -ForegroundColor Red

@@ -2,6 +2,10 @@
 
 Print Server Pro menghubungkan printer Windows dengan perangkat lain melalui jaringan lokal.
 
+Installer saat ini: **v4.5.35-H1**. Hotfix ini menjalankan server secara
+tersembunyi melalui Task Scheduler dan WScript. Tidak ada terminal Node.js yang
+perlu dibiarkan terbuka, dan menutup PowerShell/Terminal tidak menghentikan server.
+
 ## Instalasi online
 
 Buka Windows PowerShell atau Terminal, lalu jalankan:
@@ -13,6 +17,8 @@ $u="https://raw.githubusercontent.com/dedejamaludinmuslim/print-server-pro/main/
 Installer akan meminta hak Administrator, mengunduh Release stabil terbaru,
 memverifikasi SHA-256, memasang dependensi, mengatur firewall TCP 3000 untuk
 profil Private/Domain, dan membuat startup otomatis melalui Task Scheduler.
+Task berjalan memakai akun pengguna yang memasang aplikasi agar printer Windows,
+termasuk printer USB yang tersedia pada sesi pengguna tersebut, tetap dapat dibaca.
 
 ## Repair
 
@@ -45,5 +51,9 @@ menggunakan URL `releases/latest/download`.
 - Internet saat instalasi atau pembaruan
 - WinGet jika Node.js belum terpasang
 - Profil jaringan Private/Domain agar akses dari perangkat lain dibuka
+
+Jika jaringan Windows masih berprofil **Public**, installer menampilkan peringatan
+dan tidak mengubahnya secara otomatis. Pada jaringan kantor yang benar-benar
+tepercaya, ubah profil ke Private agar port 3000 dapat diakses perangkat lain.
 
 Setelah instalasi selesai, proses cetak berjalan melalui jaringan lokal.
