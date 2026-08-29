@@ -2,6 +2,9 @@
 
 Print Server Pro menghubungkan printer Windows dengan perangkat lain melalui jaringan lokal.
 
+Rilis aplikasi saat ini: **v4.5.36**, dengan tipografi lebih besar pada desktop
+dan perangkat seluler.
+
 Installer saat ini: **v4.5.35-H3**. Hotfix ini menjalankan server secara
 tersembunyi melalui Task Scheduler dan WScript. Tidak ada terminal Node.js yang
 perlu dibiarkan terbuka, dan menutup PowerShell/Terminal tidak menghentikan server.
