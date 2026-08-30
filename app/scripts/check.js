@@ -23,7 +23,7 @@ if (index.includes('addPrintOptionExpansion')) throw new Error('Placeholder opsi
 if (index.includes('Auto sesuai ukuran halaman')) throw new Error('Opsi tray semu masih tersisa pada UI aktif.');
 if (!index.includes('refreshPrinterCapabilities(force=false)')) throw new Error('Deteksi kemampuan dinamis tidak ditemukan.');
 if (!server.includes('assertPrintOptionsSupported')) throw new Error('Validasi kemampuan di backend tidak ditemukan.');
-if (!index.includes('startQuickDiscovery()')) throw new Error('Pencarian cepat server tidak ditemukan.');
+if (index.includes('startQuickDiscovery') || index.includes('Cari Cepat')) throw new Error('Fitur Cari Cepat masih ditemukan.');
 if (!index.includes("const DEFAULT_DISCOVERY_PREFIX = '192.168.1'")) throw new Error('Prefix pencarian server default belum ditetapkan.');
 if (!index.includes('Array.from({ length: 254 }')) throw new Error('Pemindaian 254 alamat pada prefix default tidak ditemukan.');
 if (index.includes('192.168.0')) throw new Error('Prefix kedua masih aktif pada pencarian server.');
@@ -40,6 +40,11 @@ if (index.includes("['sourceSizeInfo','printerSelect'")) throw new Error('Printe
 if (!index.includes("uxGroupForControl('ipAddress'),serverSlot=document.getElementById('appSettingsConnection')")) throw new Error('Alamat server belum dipindahkan ke Pengaturan Aplikasi.');
 if (!index.includes("uxGroupForControl('printerSelect'),printerSlot=document.getElementById('appSettingsPrinter')")) throw new Error('Printer belum dipindahkan ke Pengaturan Aplikasi.');
 if (!index.includes("uxGroupForControl('presetSelect'),presetSlot=document.getElementById('appSettingsPreset')")) throw new Error('Preset belum dipindahkan ke Pengaturan Aplikasi.');
+if (!index.includes("['fileInput','sourceSizeInfo','colorMode'")) throw new Error('Pilih File belum ditempatkan tepat sebelum Ukuran Dokumen Sumber.');
+if (/preflight/i.test(index)) throw new Error('Fitur Preflight masih ditemukan.');
+if (!index.includes('function setupBackNavigation()')) throw new Error('Pelindung tombol Kembali tidak ditemukan.');
+if (!index.includes("showToast('Tekan tombol Kembali sekali lagi untuk keluar.'")) throw new Error('Pesan konfirmasi keluar dua kali tidak ditemukan.');
+if (!index.includes("if (activePanel && activePanel !== 'basic')")) throw new Error('Tombol Kembali belum mengembalikan panel cetak ke Dasar.');
 if (!index.includes('parseDiscoveryInput')) throw new Error('Pemindaian multi-subnet tidak ditemukan.');
 if (!index.includes("local-network-access")) throw new Error('Diagnosis izin Local Network Access tidak ditemukan.');
 if (!server.includes("app.get('/pairing-qr'")) throw new Error('Endpoint QR pairing tidak ditemukan.');

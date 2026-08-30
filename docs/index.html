@@ -556,11 +556,6 @@
             font-size:10px;
         }
 
-        #preflightStatus {
-            border-left:3px solid #94a3b8;
-            font-size:10px;
-        }
-
         .queue-card,.history-card { padding:18px !important; }
         .queue-card {
             box-shadow:var(--shadow-card);
@@ -727,7 +722,7 @@
         .print-panel{display:none}.print-panel.active{display:block}.panel-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;min-height:78px;padding:15px 16px 12px;border-bottom:1px solid #eef2f6;background:#fbfcfe}
         .panel-eyebrow{margin-bottom:3px;font-size:7.5px;font-weight:800;color:#94a3b8;letter-spacing:.12em}.panel-heading h3{margin:0;font-size:16px;font-weight:750;color:#0f172a}.panel-heading p{margin:4px 0 0;font-size:8.5px;color:#64748b}.panel-summary{max-width:190px;padding:5px 8px;border:1px solid #e2e8f0;border-radius:999px;background:#fff;color:#64748b;font-size:7.5px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
         .panel-content{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 12px;padding:15px 16px 18px}.panel-content>.input-group{min-width:0;margin:0}
-        .panel-content>.input-group:has(#ipAddress),.panel-content>.input-group:has(#printerSelect),.panel-content>.input-group:has(#fileInput),.panel-content>.input-group:has(#sourceSizeInfo),.panel-content>.driver-cap-grid,.panel-content>.queue-card,.panel-content>.history-card,#panelContent-expert>#driverAdvancedPanel,#panelContent-basic>#sheetEstimate,#panelContent-basic>#preflightStatus,#panelContent-basic>button[onclick*="runPreflight"]{grid-column:1/-1}
+        .panel-content>.input-group:has(#ipAddress),.panel-content>.input-group:has(#printerSelect),.panel-content>.input-group:has(#fileInput),.panel-content>.input-group:has(#sourceSizeInfo),.panel-content>.driver-cap-grid,.panel-content>.queue-card,.panel-content>.history-card,#panelContent-expert>#driverAdvancedPanel,#panelContent-basic>#sheetEstimate{grid-column:1/-1}
         .panel-content .input-group label{margin-bottom:5px;font-size:9.5px}.panel-content .input-standard,.panel-content .input-with-btn input,.panel-content .input-with-btn select{min-height:38px;padding:8px 10px;font-size:10.5px}.panel-content .input-with-btn{height:38px}.panel-content .btn-icon{width:38px;height:38px}
         .dialog-embedded-card{width:100%;margin:0!important;padding:12px!important;border:1px solid #e2e8f0!important;border-radius:10px!important;box-shadow:none!important;background:#fff!important}#panelContent-queue{grid-template-columns:1fr}#panelContent-queue .queue-list{max-height:420px}
         #realtimeStatus{margin-top:12px!important;padding:10px 12px;border:1px solid #dbe3ec;border-radius:9px;background:#f8fafc}
@@ -854,7 +849,7 @@
             .panel-heading { padding:14px; }
         }
 
-        /* v4.6.1 — Large Type Accessibility */
+        /* v4.6.2 — Large Type Accessibility */
         body { font-size:16px; line-height:1.5; }
         .app-brand-title { font-size:21px; line-height:1.25; }
         .app-brand-subtitle { font-size:13px; line-height:1.4; }
@@ -980,7 +975,7 @@
             .panel-heading { padding:15px; }
         }
 
-        /* v4.6.1 — Initial server bootstrap and application settings */
+        /* v4.6.2 — Initial server bootstrap and application settings */
         .initial-loading-screen {
             position:fixed;
             inset:0;
@@ -1142,7 +1137,7 @@
                         <div class="app-brand-subtitle">Network Printing Console</div>
                     </div>
                     <div class="app-brand-actions">
-                        <span class="app-version">v4.6.1</span>
+                        <span class="app-version">v4.6.2</span>
                         <button type="button" id="appSettingsBtn" class="app-settings-trigger" onclick="openAppSettings()" aria-controls="appSettingsPanel" aria-expanded="false">
                             <span id="appSettingsStatusDot" class="app-settings-status-dot" aria-hidden="true"></span>
                             <span>⚙ Pengaturan</span>
@@ -1165,7 +1160,6 @@
                         <span id="connectionStatusText">Belum terhubung</span>
                     </div>
                     <div class="network-discovery-actions">
-                        <button type="button" class="mini-btn" onclick="startQuickDiscovery()">⚡ Cari Cepat</button>
                         <button type="button" class="mini-btn" id="pairingNetworkBtn" onclick="openPairingModal()" style="display:none;">▦ QR Koneksi</button>
                     </div>
                     <div id="discoveryDiagnostics" class="discovery-diagnostics"></div>
@@ -1503,8 +1497,6 @@
                         <div class="input-group"><label>Prioritas:</label><select id="jobPriority" class="input-standard"><option value="normal">Normal</option><option value="priority">Prioritas</option><option value="urgent">Urgent</option></select></div>
                     </div>
                     <div id="sheetEstimate" class="estimate-card">Estimasi lembar akan tampil setelah file dipilih.</div>
-                    <div id="preflightStatus" class="capability-card" style="margin-top:10px;">Preflight belum dijalankan.</div>
-                    <button type="button" class="btn-block secondary" style="margin-top:8px;" onclick="runPreflight(true)">✓ Jalankan Preflight</button>
                 </div>
 
                 <div id="realtimeStatus" style="display:none; margin-top:20px;">
@@ -1643,7 +1635,7 @@
     <div id="helpModal" class="modal">
         <div class="modal-content" style="text-align:left;">
             <h3 style="text-align:center; margin:0 0 15px 0;">Bantu Cari IP Server</h3>
-            <p style="font-size:13px; color:var(--text-muted); line-height:1.5;">Mulai dengan <strong>Cari Cepat</strong>. Jika belum ditemukan, pindai prefix jaringan Wi-Fi dan LAN. Deteksi tidak dapat menembus firewall, VLAN, client isolation, atau jaringan yang tidak memiliki rute.</p>
+            <p style="font-size:13px; color:var(--text-muted); line-height:1.5;">Gunakan pemindaian prefix jaringan Wi-Fi/LAN atau masukkan alamat server secara manual. Deteksi tidak dapat menembus firewall, VLAN, client isolation, atau jaringan yang tidak memiliki rute.</p>
             <div style="font-size:13px; line-height:1.6; color:var(--text-main); margin-top:12px;">
                 <strong>Windows</strong>
                 <ol style="padding-left:20px; margin:6px 0 12px 0;">
@@ -1717,7 +1709,7 @@
         function togglePresetManager(){const p=document.querySelector('.preset-actions');if(!p)return;const open=!p.classList.contains('ux-open');p.classList.toggle('ux-open',open);const b=document.getElementById('uxPresetManageBtn');if(b)b.textContent=open?'Tutup Preset':'Kelola Preset';}
 
         const PRINT_DIALOG_PANELS=[
-            {key:'basic',label:'Dasar',icon:'▣',hint:'Printer, dokumen, kertas, skala, copy'},
+            {key:'basic',label:'Dasar',icon:'▣',hint:'Dokumen, kertas, skala, copy'},
             {key:'pages',label:'Halaman',icon:'☷',hint:'Rentang, urutan, collate, halaman kosong'},
             {key:'layout',label:'Layout',icon:'▦',hint:'Margin, posisi, N-up, rotasi'},
             {key:'duplex',label:'Duplex & Jilid',icon:'↔',hint:'Duplex, gutter, booklet'},
@@ -1810,7 +1802,7 @@ function buildConsolidatedSettingsUi(){
             const installRow=document.querySelector('.install-row'),generalSlot=document.getElementById('appSettingsGeneral');
             if(installRow&&generalSlot)generalSlot.appendChild(installRow);
 
-            ['sourceSizeInfo','fileInput','colorMode','pages','copies','paperSize','orientation','scaleMode'].forEach(id=>uxMoveGroup(id,document.getElementById('panelContent-basic')));
+            ['fileInput','sourceSizeInfo','colorMode','pages','copies','paperSize','orientation','scaleMode'].forEach(id=>uxMoveGroup(id,document.getElementById('panelContent-basic')));
             ['pageSubset','pageOrder','collateMode','blankPageMode','pageRotationMode'].forEach(id=>uxMoveGroup(id,document.getElementById('panelContent-pages')));
             ['pagesPerSheet','marginMode','autoRotateMode','contentAlign','nupBorder','nupOrder','impositionMode','nupGapXmm','offsetXmm'].forEach(id=>uxMoveGroup(id,document.getElementById('panelContent-layout')));
             ['duplexMode','bindingMode','bookletMode','startCopyNewSheet'].forEach(id=>uxMoveGroup(id,document.getElementById('panelContent-duplex')));
@@ -1824,8 +1816,7 @@ function buildConsolidatedSettingsUi(){
             if(q){q.classList.add('dialog-embedded-card');qp.appendChild(q);}
             if(h){h.classList.add('dialog-embedded-card');qp.appendChild(h);}
 
-            ['sheetEstimate','preflightStatus'].forEach(id=>{const e=document.getElementById(id);if(e)document.getElementById('panelContent-basic').appendChild(e);});
-            const preflightBtn=[...inline.querySelectorAll('button')].find(b=>String(b.getAttribute('onclick')||'').includes('runPreflight(true)'));if(preflightBtn)document.getElementById('panelContent-basic').appendChild(preflightBtn);
+            ['sheetEstimate'].forEach(id=>{const e=document.getElementById(id);if(e)document.getElementById('panelContent-basic').appendChild(e);});
 
             const summary=document.getElementById('printSettingsSummary');if(summary)document.getElementById('dialogQuickSummary').appendChild(summary);
             const oldToolbar=inline.querySelector('.settings-toolbar');if(oldToolbar)oldToolbar.classList.add('dialog-hidden-toolbar');
@@ -1976,7 +1967,7 @@ function buildConsolidatedSettingsUi(){
             }catch(e){if(e?.name==='AbortError'||sequence!==capabilityRequestSequence)return;populateDriverControls(null,preferred);renderCapabilityInfo('unavailable',null,[],String(e?.message||'Kemampuan driver tidak dapat dibaca.').replace(/^CAPABILITY_FAILED:\s*/i,''));}
         }
         async function openPrinterProperties(){ const ip=document.getElementById('ipAddress').value.trim(),name=currentPrinterCapabilities?.name||document.getElementById('printerSelect').value;if(!ip)return showToast('Hubungkan ke server printer terlebih dahulu.','error');if(!name)return showToast('Printer default belum berhasil diidentifikasi. Jalankan Deteksi Ulang terlebih dahulu.','error');try{const r=await fetchWithRetry(`http://${ip}:3000/printer-properties?name=${encodeURIComponent(name)}`,{method:'POST'},0,200);if(!r.ok)throw new Error(await r.text());showToast('Dialog properti printer dibuka di PC server.','success');}catch(e){showToast(e.message||'Gagal membuka properti printer.','error');} }
-        async function handlePrinterChanged(){ loadSettingsForCurrentPrinter(); loadPrinterCalibration(); await refreshPrinterCapabilities(); runPreflight(false); }
+        async function handlePrinterChanged(){ loadSettingsForCurrentPrinter(); loadPrinterCalibration(); await refreshPrinterCapabilities(); }
 
         let currentSourceInfo = { kind: 'none', width: 595.28, height: 841.89, label: 'Belum ada file', standard: 'A4' };
         let currentPrintableFile = null;
@@ -2020,6 +2011,65 @@ function buildConsolidatedSettingsUi(){
             panel.setAttribute('aria-hidden', 'true');
             trigger?.setAttribute('aria-expanded', 'false');
             document.body.classList.remove('app-settings-open');
+        }
+        let backNavigationReady = false;
+        let backExitAllowed = false;
+        let lastBackExitPromptAt = 0;
+        const BACK_EXIT_WINDOW_MS = 2200;
+        function armBackNavigationGuard() {
+            try { history.pushState({ ...(history.state || {}), printServerGuard: true }, '', location.href); }
+            catch (_) {}
+        }
+        function closeTransientUiForBack() {
+            const visibleModal = [...document.querySelectorAll('.modal')].reverse().find(modal => getComputedStyle(modal).display !== 'none');
+            if (visibleModal) {
+                if (visibleModal.id === 'scanModal') cancelNetworkScan();
+                else if (visibleModal.id === 'pinModal') closePinModal();
+                else if (visibleModal.id === 'deleteHistoryModal') closeDeleteHistoryModal();
+                else if (visibleModal.id === 'pairingModal') closePairingModal();
+                else if (visibleModal.id === 'helpModal') closeHelpModal();
+                else visibleModal.style.display = 'none';
+                return true;
+            }
+            if (document.getElementById('appSettingsPanel')?.classList.contains('open')) {
+                closeAppSettings();
+                return true;
+            }
+            if (document.getElementById('mobileSettingsSheet')?.classList.contains('open')) {
+                closeMobileSettingsSheet();
+                return true;
+            }
+            const activePanel = document.querySelector('.print-panel.active')?.dataset.panel;
+            if (activePanel && activePanel !== 'basic') {
+                showPrintPanel('basic', true);
+                return true;
+            }
+            return false;
+        }
+        function setupBackNavigation() {
+            if (backNavigationReady) return;
+            backNavigationReady = true;
+            try {
+                history.replaceState({ ...(history.state || {}), printServerBase: true }, '', location.href);
+                armBackNavigationGuard();
+            } catch (_) {}
+            window.addEventListener('popstate', () => {
+                if (backExitAllowed) return;
+                if (closeTransientUiForBack()) {
+                    lastBackExitPromptAt = 0;
+                    armBackNavigationGuard();
+                    return;
+                }
+                const now = Date.now();
+                if (now - lastBackExitPromptAt > BACK_EXIT_WINDOW_MS) {
+                    lastBackExitPromptAt = now;
+                    showToast('Tekan tombol Kembali sekali lagi untuk keluar.', 'info');
+                    armBackNavigationGuard();
+                    return;
+                }
+                backExitAllowed = true;
+                history.back();
+            });
         }
         function setConnectionStatus(state, customText = '') {
             const textEl = document.getElementById('connectionStatusText');
@@ -2703,26 +2753,6 @@ function buildConsolidatedSettingsUi(){
                 showToast('Server print tidak ditemukan.', 'error');
             }
         }
-        async function startQuickDiscovery() {
-            const runId = ++discoveryRunId;
-            setDiscoveryDiagnostics('');
-            const btn = document.getElementById('scanBtn');
-            btn.textContent = '⏳'; btn.disabled = true;
-            const queryHost = new URLSearchParams(location.search).get('server');
-            const candidates = [queryHost, document.getElementById('ipAddress').value, sessionStorage.getItem('activePrintServerIp'), ...getKnownServers().map(item => item.ip)].filter(Boolean);
-            setConnectionStatus('scanning', 'Mencari server yang pernah dikenal...');
-            try {
-                const found = await discoverCandidates(candidates, 1200, runId, 'Pencarian cepat');
-                if (runId !== discoveryRunId) return;
-                if (found.length) return processFoundServers(found);
-                const suggested = suggestDiscoveryPrefixes();
-                document.getElementById('scanIpInput').value = suggested.join(', ');
-                setDiscoveryDiagnostics('Server tersimpan belum merespons. Lanjutkan pemindaian subnet, atau masukkan alamat server secara langsung.');
-                showScanModal();
-            } finally {
-                if (runId === discoveryRunId) { btn.textContent = '🔎'; btn.disabled = false; }
-            }
-        }
         async function startNetworkScan() {
             let parsed;
             try { parsed = parseDiscoveryInput(document.getElementById('scanIpInput').value); }
@@ -2928,8 +2958,6 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
             const historyName = currentOriginalFileName || (inputFile ? inputFile.name : originalFile?.name);
             if (!originalFile || !ip) return;
             if (!validatePrintSettings(true)) return;
-            const preflight=await runPreflight(false);
-            if(!confirmPreflightWarnings(preflight)) return;
             if (!confirmSafetyLimitIfNeeded()) return;
 
             try {
@@ -3407,44 +3435,11 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
                 showToast('Imposition repeat dinonaktifkan karena Booklet sedang aktif.','info');
             }
         }
-        async function runPreflight(showToastResult=false){
-            const box=document.getElementById('preflightStatus'),warnings=[],errors=[];
-            if(!currentPdfDoc&&!currentImgSrc)errors.push('Belum ada dokumen.');
-            if(!document.getElementById('printerSelect').value)warnings.push('Printer spesifik belum dipilih.');
-            if(currentSourceInfo?.mixed)warnings.push('PDF memiliki ukuran/orientasi halaman campuran.');
-            const duplex=document.getElementById('duplexMode').value;
-            if(duplex.startsWith('duplex')&&currentPrinterCapabilities?.canDuplex===false)warnings.push('Printer terdeteksi tidak mendukung duplex otomatis.');
-            if(document.getElementById('scaleMode').value==='fill')warnings.push('Mode Fill dapat memotong tepi dokumen.');
-            if(document.getElementById('scaleMode').value==='custom'&&Number(document.getElementById('customScale').value)>100)warnings.push('Skala kustom >100% berisiko keluar dari printable area.');
-            if(document.getElementById('cropMode').value==='custom'&&['cropTop','cropRight','cropBottom','cropLeft'].some(id=>Number(document.getElementById(id).value)>20))warnings.push('Crop lebih dari 20 mm pada salah satu sisi.');
-            if(document.getElementById('bookletMode').value==='on'){
-                const total=currentPdfDoc?getSelectedPdfPages(currentPdfDoc.numPages).filter(Boolean).length:0;
-                const sig=getSignaturePagesClient(total||4);
-                if(sig%4!==0)errors.push('Signature booklet harus kelipatan 4 halaman.');
-                if(document.getElementById('duplexMode').value==='simplex')warnings.push('Booklet membutuhkan duplex atau proses duplex manual.');
-            }
-            if(document.getElementById('prepressMarks').value!=='off'&&document.getElementById('marginMode').value==='none')warnings.push('Prepress marks dapat masuk ke non-printable area jika margin aplikasi 0.');
-            const est=calculateEstimatedSheets(),limit=Number(document.getElementById('safetySheetLimit').value||0);
-            if(limit>0&&est.sheets>limit)warnings.push(`Estimasi ${est.sheets} lembar melewati batas aman ${limit}.`);
-            const bx=Number(document.getElementById('bleedMm').value||0);
-            if(document.getElementById('bleedMode').value!=='off'&&bx>10)warnings.push('Bleed >10 mm tidak umum; periksa kembali.');
-            let title=errors.length?'✕ Belum siap cetak':warnings.length?'⚠ Siap dengan catatan':'✓ Siap cetak';
-            box.innerHTML=`<strong>${title}</strong>${errors.length?'<br>'+errors.map(x=>'• '+escapeHtmlQueue(x)).join('<br>'):''}${warnings.length?'<br>'+warnings.map(x=>'• '+escapeHtmlQueue(x)).join('<br>'):''}`;
-            box.style.background=errors.length?'rgba(239,68,68,.10)':warnings.length?'rgba(245,158,11,.10)':'rgba(16,185,129,.10)';
-            if(showToastResult)showToast(title,errors.length?'error':warnings.length?'info':'success');
-            return {errors,warnings};
-        }
-        function confirmPreflightWarnings(result){
-            if(result.errors.length){showToast('Perbaiki error preflight sebelum mencetak.','error');return false;}
-            if(result.warnings.length)return confirm(`PREFLIGHT: ${result.warnings.length} catatan ditemukan.\n\n${result.warnings.map(x=>'• '+x).join('\n')}\n\nTetap lanjut mencetak?`);
-            return true;
-        }
-
         function installProductionPrecisionListeners() {
             ['bindingMode','gutterMm','blankPageMode','pageRotationMode','pageRotationRules','scaleXPercent','scaleYPercent','offsetXmm','offsetYmm','separatorMode','startCopyNewSheet','safetySheetLimit','signatureMode','signaturePages','creepMode','creepMm','pdfPageBox','bleedMode','bleedMm','prepressMarks','impositionMode','repeatCount','nupGapXmm','nupGapYmm','calibrationXmm','calibrationYmm'].forEach(id=>{
                 const el=document.getElementById(id); if(!el || el.dataset.productionListener==='1') return;
                 el.dataset.productionListener='1';
-                const fn=()=>{syncProductionPrecisionControls();syncPrepressControls();runPreflight(false);currentPreviewSheet=0;updatePrintSettingsSummary();updateDynamicPreview();saveSettingsForCurrentPrinter();};
+                const fn=()=>{syncProductionPrecisionControls();syncPrepressControls();currentPreviewSheet=0;updatePrintSettingsSummary();updateDynamicPreview();saveSettingsForCurrentPrinter();};
                 el.addEventListener('change',fn); if(el.tagName==='INPUT')el.addEventListener('input',fn);
             });
         }
@@ -3567,7 +3562,7 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
             updateDynamicPreview();
         });
         document.addEventListener('keydown', event => { if (event.key === 'Escape') closeAppSettings(); });
-        window.addEventListener('load', () => { applyProfessionalUiPolish(); loadHistory(); setupPwaInstall(); buildConsolidatedSettingsUi(); markAdvancedSettingGroups(); refreshPresetSelect(); document.getElementById('settingsViewMode').value='compact'; applySettingsViewMode(); syncAdvancedPrintControls(); validatePrintSettings(false); updatePrintSettingsSummary(); updateAccordionSummaries(); initialAutoDiscoverServer(); });
+        window.addEventListener('load', () => { setupBackNavigation(); applyProfessionalUiPolish(); loadHistory(); setupPwaInstall(); buildConsolidatedSettingsUi(); markAdvancedSettingGroups(); refreshPresetSelect(); document.getElementById('settingsViewMode').value='compact'; applySettingsViewMode(); syncAdvancedPrintControls(); validatePrintSettings(false); updatePrintSettingsSummary(); updateAccordionSummaries(); initialAutoDiscoverServer(); });
     </script>
 </body>
 </html>
