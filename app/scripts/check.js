@@ -24,7 +24,9 @@ if (index.includes('Auto sesuai ukuran halaman')) throw new Error('Opsi tray sem
 if (!index.includes('refreshPrinterCapabilities(force=false)')) throw new Error('Deteksi kemampuan dinamis tidak ditemukan.');
 if (!server.includes('assertPrintOptionsSupported')) throw new Error('Validasi kemampuan di backend tidak ditemukan.');
 if (!index.includes('startQuickDiscovery()')) throw new Error('Pencarian cepat server tidak ditemukan.');
-if (!index.includes("const DEFAULT_SERVER_HOST = '192.168.1.11'")) throw new Error('Alamat server default belum ditetapkan.');
+if (!index.includes("const DEFAULT_DISCOVERY_PREFIX = '192.168.1'")) throw new Error('Prefix pencarian server default belum ditetapkan.');
+if (!index.includes('Array.from({ length: 254 }')) throw new Error('Pemindaian 254 alamat pada prefix default tidak ditemukan.');
+if (index.includes('192.168.0')) throw new Error('Prefix kedua masih aktif pada pencarian server.');
 if (!index.includes('initialAutoDiscoverServer()')) throw new Error('Bootstrap pencarian server otomatis tidak ditemukan.');
 if (!index.includes('id="initialLoadingScreen"')) throw new Error('Layar loading awal tidak ditemukan.');
 if (!index.includes('id="dialogServerSlot"')) throw new Error('Panel server global tidak ditemukan.');

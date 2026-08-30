@@ -821,7 +821,7 @@
             .panel-heading { padding:14px; }
         }
 
-        /* v4.5.37 — Large Type Accessibility */
+        /* v4.6.0 — Large Type Accessibility */
         body { font-size:16px; line-height:1.5; }
         .app-brand-title { font-size:21px; line-height:1.25; }
         .app-brand-subtitle { font-size:13px; line-height:1.4; }
@@ -947,7 +947,7 @@
             .panel-heading { padding:15px; }
         }
 
-        /* v4.5.37 — Initial server bootstrap and global server control */
+        /* v4.6.0 — Initial server bootstrap and global server control */
         .initial-loading-screen {
             position:fixed;
             inset:0;
@@ -1025,7 +1025,7 @@
             <div class="initial-loading-spinner" aria-hidden="true"></div>
             <h1>Menyiapkan Print Server Pro</h1>
             <p id="initialLoadingMessage">Mencari server printer secara otomatis…</p>
-            <p id="initialLoadingDetail" class="initial-loading-detail">Mencoba alamat default 192.168.1.11</p>
+            <p id="initialLoadingDetail" class="initial-loading-detail">Memindai jaringan 192.168.1.x</p>
             <button type="button" id="initialLoadingManualBtn" class="btn-block secondary initial-loading-manual" onclick="continueWithManualServer()">Masukkan alamat secara manual</button>
         </div>
     </div>
@@ -1038,7 +1038,7 @@
                         <div class="app-brand-title">Print Server Pro</div>
                         <div class="app-brand-subtitle">Network Printing Console</div>
                     </div>
-                    <span class="app-version">v4.5.37</span>
+                    <span class="app-version">v4.6.0</span>
                 </div>
                 <div class="install-row"><button id="installBtn" class="btn-block secondary">Install Aplikasi</button></div>
                 <div class="section-title">
@@ -1048,7 +1048,7 @@
                 <div class="input-group">
                     <label>Alamat Server</label>
                     <div class="input-with-btn">
-                        <input type="text" id="ipAddress" value="192.168.1.11" placeholder="192.168.1.xxx" onblur="updateIpAndFetchPrinters()" onkeyup="if(event.key === 'Enter') updateIpAndFetchPrinters()">
+                        <input type="text" id="ipAddress" placeholder="IP ditemukan otomatis · 192.168.1.x" onblur="updateIpAndFetchPrinters()" onkeyup="if(event.key === 'Enter') updateIpAndFetchPrinters()">
                         <button class="btn-icon" id="scanBtn" onclick="showScanModal()" title="Pindai Subnet">🔎</button>
                     </div>
                     <div id="connectionStatusWrap" style="margin-top:10px; display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-muted);">
@@ -1454,8 +1454,8 @@
     <div id="scanModal" class="modal">
         <div class="modal-content" style="text-align:center;">
             <h3 style="margin:0 0 10px 0;">🔎 Pindai Multi-Subnet</h3>
-            <p style="font-size:13px; color:var(--text-muted); margin-bottom:12px; line-height:1.5;">Masukkan hingga 4 prefix /24, dipisahkan koma. Contoh: <strong>192.168.1, 192.168.0</strong>. Host langsung seperti <strong>printer-pc.local</strong> juga boleh.</p>
-            <div class="input-group" style="margin-bottom:12px;"><input type="text" id="scanIpInput" class="input-standard" value="192.168.1, 192.168.0" style="text-align:center; font-weight:bold;"></div>
+            <p style="font-size:13px; color:var(--text-muted); margin-bottom:12px; line-height:1.5;">Masukkan satu prefix /24. Untuk tahap ini aplikasi menggunakan <strong>192.168.1</strong>. Host langsung seperti <strong>printer-pc.local</strong> juga boleh.</p>
+            <div class="input-group" style="margin-bottom:12px;"><input type="text" id="scanIpInput" class="input-standard" value="192.168.1" style="text-align:center; font-weight:bold;"></div>
             <div class="subnet-hint">Pemindaian browser hanya dapat menemukan alamat yang bisa dirutekan dan tidak diblokir firewall/VLAN.</div>
             <div id="scanProgress" class="scan-progress">Menyiapkan pemindaian...</div>
             <div style="display:flex; gap:10px; margin-top:20px;">
@@ -1840,7 +1840,7 @@ function buildConsolidatedSettingsUi(){
         let currentSocketIp = '';
         let deferredPrompt = null;
         let discoveryRunId = 0;
-        const DEFAULT_SERVER_HOST = '192.168.1.11';
+        const DEFAULT_DISCOVERY_PREFIX = '192.168.1';
         let initialDiscoveryActive = false;
         const activeDiscoveryControllers = new Set();
         const CONNECTION_STATUS = {
@@ -2397,8 +2397,8 @@ function buildConsolidatedSettingsUi(){
             };
             add(document.getElementById('ipAddress')?.value);
             getKnownServers().forEach(item => { add(item.ip); item.localIps.forEach(add); });
-            ['192.168.1.1', '192.168.0.1'].forEach(add);
-            return prefixes.slice(0, 4);
+            add(`${DEFAULT_DISCOVERY_PREFIX}.1`);
+            return prefixes.filter(prefix => prefix === DEFAULT_DISCOVERY_PREFIX).slice(0, 1);
         }
         async function getLocalNetworkPermissionState() {
             if (!navigator.permissions?.query) return 'unknown';
@@ -2429,7 +2429,7 @@ function buildConsolidatedSettingsUi(){
                     throw new Error(`Alamat tidak valid: ${value}`);
                 }
             }
-            if (prefixes.length > 4) throw new Error('Maksimal 4 subnet /24 per pemindaian.');
+            if (prefixes.length > 1) throw new Error('Untuk tahap ini hanya satu prefix /24 yang dapat dipindai.');
             if (!prefixes.length && !directHosts.length) throw new Error('Masukkan minimal satu prefix atau alamat host.');
             return { prefixes, directHosts };
         }
@@ -3323,46 +3323,29 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
             const pairedHost = new URLSearchParams(location.search).get('server');
             const sessionHost = sessionStorage.getItem('activePrintServerIp');
             const knownHosts = getKnownServers().map(item => item.ip);
-            const quickCandidates = [pairedHost, sessionHost, ...knownHosts, DEFAULT_SERVER_HOST]
-                .filter(isSafeDiscoveryHost);
-            document.getElementById('ipAddress').value = isSafeDiscoveryHost(pairedHost) ? pairedHost : DEFAULT_SERVER_HOST;
+            const belongsToDefaultPrefix = host => String(host || '').startsWith(`${DEFAULT_DISCOVERY_PREFIX}.`) && isSafeDiscoveryHost(host);
+            const prioritized = [pairedHost, sessionHost, ...knownHosts].filter(belongsToDefaultPrefix);
+            const prefixCandidates = [
+                ...prioritized,
+                ...Array.from({ length: 254 }, (_, index) => `${DEFAULT_DISCOVERY_PREFIX}.${index + 1}`)
+            ];
+            document.getElementById('ipAddress').value = '';
             const runId = ++discoveryRunId;
-            setInitialLoading('Mencari server printer', `Mencoba alamat default ${DEFAULT_SERVER_HOST}…`, false);
-            setConnectionStatus('scanning', 'Mencari server otomatis…');
+            setInitialLoading('Mencari server printer', `Memindai ${DEFAULT_DISCOVERY_PREFIX}.1–254…`, false);
+            setConnectionStatus('scanning', `Memindai ${DEFAULT_DISCOVERY_PREFIX}.x…`);
             try {
-                const quickFound = await discoverFirstServer(quickCandidates, 1100, runId, 'Pencarian awal');
+                const found = await discoverFirstServer(prefixCandidates, 1200, runId, `Pemindaian ${DEFAULT_DISCOVERY_PREFIX}.x`);
                 if (!initialDiscoveryActive || runId !== discoveryRunId) return;
-                if (quickFound.length && await connectFirstDiscoveredServer(quickFound)) {
+                if (found.length && await connectFirstDiscoveredServer(found)) {
                     setInitialLoading('Server siap digunakan', `Terhubung ke ${document.getElementById('ipAddress').value}`, false);
                     await new Promise(resolve => setTimeout(resolve, 350));
                     hideInitialLoading();
                     return;
                 }
-
-                const prefixes = [];
-                const addPrefix = host => {
-                    const parts = String(host || '').split('.');
-                    if (parts.length !== 4 || !parts.every(part => /^\d+$/.test(part) && Number(part) <= 255)) return;
-                    const prefix = parts.slice(0, 3).join('.');
-                    if (!prefixes.includes(prefix)) prefixes.push(prefix);
-                };
-                [DEFAULT_SERVER_HOST, sessionHost, ...knownHosts, '192.168.0.1'].forEach(addPrefix);
-                const subnetCandidates = prefixes.slice(0, 2)
-                    .flatMap(prefix => Array.from({ length: 254 }, (_, index) => `${prefix}.${index + 1}`));
-                setInitialLoading('Memindai jaringan lokal', `Mencari server pada ${prefixes.slice(0, 2).join(' dan ')}…`, true);
-                const subnetFound = await discoverFirstServer(subnetCandidates, 1200, runId, 'Pencarian otomatis LAN');
-                if (!initialDiscoveryActive || runId !== discoveryRunId) return;
-                if (subnetFound.length && await connectFirstDiscoveredServer(subnetFound)) {
-                    setInitialLoading('Server siap digunakan', `Terhubung ke ${document.getElementById('ipAddress').value}`, false);
-                    await new Promise(resolve => setTimeout(resolve, 350));
-                    hideInitialLoading();
-                    return;
-                }
-
-                document.getElementById('ipAddress').value = DEFAULT_SERVER_HOST;
+                document.getElementById('ipAddress').value = '';
                 setConnectionStatus('failed', 'Server otomatis tidak ditemukan; periksa alamat secara manual');
-                setDiscoveryDiagnostics(`Server belum ditemukan. Alamat default ${DEFAULT_SERVER_HOST} sudah disiapkan; ubah jika IP server berbeda.`);
-                setInitialLoading('Server belum ditemukan', `Lanjutkan dengan alamat default ${DEFAULT_SERVER_HOST} atau masukkan IP lain.`, true);
+                setDiscoveryDiagnostics(`Tidak ada Print Server Pro yang merespons pada ${DEFAULT_DISCOVERY_PREFIX}.1–254. Masukkan IP server secara manual jika berada di prefix lain.`);
+                setInitialLoading('Server belum ditemukan', `Tidak ada server yang merespons pada ${DEFAULT_DISCOVERY_PREFIX}.x.`, true);
                 await new Promise(resolve => setTimeout(resolve, 1200));
                 if (initialDiscoveryActive) hideInitialLoading();
             } catch (_) {
