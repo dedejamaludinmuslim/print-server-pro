@@ -1,0 +1,18 @@
+PRINT SERVER PRO V4.5.36 — LARGE TYPE ACCESSIBILITY
+
+Fokus:
+- Memperbesar teks aplikasi secara menyeluruh tanpa mengubah mesin cetak.
+- Meningkatkan keterbacaan desktop dan perangkat seluler.
+
+Perubahan:
+- teks dasar 14 px menjadi 16 px pada desktop dan 15 px pada HP
+- label, input, dropdown, dan tombol utama diperbesar
+- sidebar kategori, judul panel, deskripsi, dan ringkasan diperbesar
+- capability, status printer, antrean, riwayat, preview, modal, dan toast diperbesar
+- teks kecil inline pada pengaturan lanjutan memiliki batas efektif 12 px
+- tinggi kontrol dan ruang antarelemen disesuaikan agar teks tidak terpotong
+
+Keamanan layout:
+- desktop mempertahankan panel dua kolom
+- tablet dan HP tetap memakai satu kolom serta bottom navigation
+- tidak ada ID kontrol, alur cetak, kemampuan printer, atau endpoint yang diubah

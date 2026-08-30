@@ -1,0 +1,110 @@
+# Print Server Pro
+
+Print Server Pro menghubungkan printer Windows—termasuk printer USB—dengan HP
+dan komputer lain melalui jaringan lokal.
+
+- Aplikasi stabil: **v4.5.36 Large Type**
+- Installer online: **v4.5.35-H3**
+- Repository: `dedejamaludinmuslim/print-server-pro`
+
+## Arsitektur
+
+| Komponen | Lokasi | Fungsi |
+| --- | --- | --- |
+| Source aplikasi | `app/` | UI, server Node.js, deteksi printer, dan mesin cetak |
+| Installer | `installer/` | Instalasi, repair, startup otomatis, dan uninstall |
+| GitHub Release | `v4.5.36` | Menyediakan `Print_Server_Pro.zip` dan `manifest.json` |
+| PC printer | `C:\ProgramData\PrintServerPro` | Menjalankan server lokal dan mengakses printer Windows |
+
+GitHub menyimpan source serta paket rilis. Server printer tetap berjalan pada PC
+Windows yang terhubung ke printer; GitHub Pages tidak dapat menggantikan server
+lokal tersebut.
+
+## Struktur repository
+
+```text
+print-server-pro/
+├── .github/workflows/qa.yml
+├── app/
+│   ├── icons/
+│   ├── scripts/
+│   ├── index.html
+│   ├── server.js
+│   ├── package.json
+│   ├── package-lock.json
+│   ├── manifest.json
+│   ├── sw.js
+│   └── setup_printer.bat
+├── installer/
+│   └── Install-PrintServerPro.ps1
+├── .gitattributes
+├── .gitignore
+├── DEPLOYMENT.md
+└── README.md
+```
+
+## Instalasi online
+
+Buka Windows PowerShell atau Terminal, lalu jalankan:
+
+```powershell
+$u="https://raw.githubusercontent.com/dedejamaludinmuslim/print-server-pro/main/installer/Install-PrintServerPro.ps1"; $p="$env:TEMP\Install-PrintServerPro.ps1"; Invoke-WebRequest $u -UseBasicParsing -OutFile $p; powershell.exe -NoProfile -ExecutionPolicy Bypass -File $p
+```
+
+Installer meminta hak Administrator, mengunduh Release stabil terbaru,
+memverifikasi SHA-256, memasang dependensi, membuka TCP 3000 hanya untuk profil
+Private/Domain, dan mendaftarkan startup tersembunyi melalui Task Scheduler.
+
+## Memperbarui instalasi
+
+```powershell
+$u="https://raw.githubusercontent.com/dedejamaludinmuslim/print-server-pro/main/installer/Install-PrintServerPro.ps1"; $p="$env:TEMP\Install-PrintServerPro.ps1"; Invoke-WebRequest $u -UseBasicParsing -OutFile $p; powershell.exe -NoProfile -ExecutionPolicy Bypass -File $p -Mode Repair
+```
+
+## Uninstall
+
+```powershell
+$u="https://raw.githubusercontent.com/dedejamaludinmuslim/print-server-pro/main/installer/Install-PrintServerPro.ps1"; $p="$env:TEMP\Install-PrintServerPro.ps1"; Invoke-WebRequest $u -UseBasicParsing -OutFile $p; powershell.exe -NoProfile -ExecutionPolicy Bypass -File $p -Mode Uninstall
+```
+
+Node.js tidak ikut dihapus karena mungkin digunakan aplikasi lain.
+
+## Menjalankan source untuk pengembangan
+
+```powershell
+cd app
+npm ci
+npm start
+```
+
+Buka `http://localhost:3000/?server=localhost`.
+
+QA source:
+
+```powershell
+cd app
+npm run check
+```
+
+## GitHub Release
+
+Installer selalu menggunakan Release stabil terbaru. Setiap Release wajib
+memiliki dua aset dengan nama tetap:
+
+- `Print_Server_Pro.zip`
+- `manifest.json`
+
+Jangan menandai Release aktif sebagai draft atau pre-release. Prosedur lengkap
+tersedia di [DEPLOYMENT.md](DEPLOYMENT.md).
+
+## Persyaratan dan keamanan jaringan
+
+- Windows 10/11 dan hak Administrator
+- Internet ketika instalasi atau pembaruan
+- WinGet jika Node.js belum tersedia
+- Profil jaringan Private/Domain untuk akses dari perangkat lain
+- Port TCP 3000 dapat dijangkau pada jaringan lokal tepercaya
+
+Installer tidak mengubah jaringan Public menjadi Private secara otomatis.
+Jangan menghapus `C:\ProgramData\PrintServerPro` setelah instalasi berhasil.
+
