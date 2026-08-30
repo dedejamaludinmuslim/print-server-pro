@@ -821,7 +821,7 @@
             .panel-heading { padding:14px; }
         }
 
-        /* v4.5.36 — Large Type Accessibility */
+        /* v4.5.37 — Large Type Accessibility */
         body { font-size:16px; line-height:1.5; }
         .app-brand-title { font-size:21px; line-height:1.25; }
         .app-brand-subtitle { font-size:13px; line-height:1.4; }
@@ -947,9 +947,88 @@
             .panel-heading { padding:15px; }
         }
 
+        /* v4.5.37 — Initial server bootstrap and global server control */
+        .initial-loading-screen {
+            position:fixed;
+            inset:0;
+            z-index:20000;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            padding:24px;
+            background:linear-gradient(145deg,#eff6ff 0%,#f8fafc 48%,#eef2ff 100%);
+            transition:opacity .24s ease,visibility .24s ease;
+        }
+        .initial-loading-screen.is-hidden { opacity:0; visibility:hidden; pointer-events:none; }
+        .initial-loading-card {
+            width:min(420px,100%);
+            padding:30px 26px;
+            border:1px solid rgba(148,163,184,.3);
+            border-radius:20px;
+            background:rgba(255,255,255,.94);
+            box-shadow:0 24px 60px rgba(15,23,42,.12);
+            text-align:center;
+        }
+        .initial-loading-mark {
+            width:58px;
+            height:58px;
+            margin:0 auto 18px;
+            display:grid;
+            place-items:center;
+            border-radius:17px;
+            background:linear-gradient(145deg,#2563eb,#1d4ed8);
+            color:#fff;
+            font-size:19px;
+            font-weight:850;
+            box-shadow:0 12px 28px rgba(37,99,235,.26);
+        }
+        .initial-loading-spinner {
+            width:30px;
+            height:30px;
+            margin:0 auto 16px;
+            border:3px solid #dbeafe;
+            border-top-color:#2563eb;
+            border-radius:50%;
+            animation:initialServerSpin .8s linear infinite;
+        }
+        @keyframes initialServerSpin { to { transform:rotate(360deg); } }
+        .initial-loading-card h1 { margin:0; font-size:20px; color:#0f172a; }
+        .initial-loading-card p { margin:9px 0 0; color:#64748b; font-size:13.5px; line-height:1.55; }
+        .initial-loading-detail { min-height:22px; color:#1d4ed8!important; font-weight:700; }
+        .initial-loading-manual { display:none; width:auto!important; margin:18px auto 0; padding:11px 18px!important; }
+        .initial-loading-manual.is-visible { display:inline-flex; }
+
+        .dialog-settings-topbar { flex-wrap:wrap; align-items:flex-start; }
+        .dialog-server-slot { flex:1 1 310px; min-width:260px; }
+        .dialog-server-slot .global-server-group { margin:0; }
+        .dialog-server-slot .global-server-group > label,
+        .dialog-preset-slot .dialog-preset-group > label { font-size:12px; }
+        .dialog-server-slot .input-with-btn { height:44px; }
+        .dialog-server-slot .input-with-btn input { min-height:44px; font-size:13.5px; }
+        .dialog-server-slot .btn-icon { width:44px; height:44px; }
+        .dialog-server-slot #connectionStatusWrap { margin-top:7px!important; }
+        .dialog-server-slot .network-discovery-actions { margin-top:7px; }
+        .dialog-quick-summary { flex:1 0 100%; }
+        @media (max-width:991px) {
+            .dialog-server-slot { width:100%; min-width:0; margin-bottom:10px; }
+            .dialog-server-slot .input-with-btn { height:48px; }
+            .dialog-server-slot .input-with-btn input { min-height:48px; font-size:15px; }
+            .dialog-server-slot .btn-icon { width:48px; height:48px; }
+        }
+
 </style>
 </head>
 <body>
+    <div id="initialLoadingScreen" class="initial-loading-screen" role="status" aria-live="polite">
+        <div class="initial-loading-card">
+            <div class="initial-loading-mark" aria-hidden="true">PS</div>
+            <div class="initial-loading-spinner" aria-hidden="true"></div>
+            <h1>Menyiapkan Print Server Pro</h1>
+            <p id="initialLoadingMessage">Mencari server printer secara otomatis…</p>
+            <p id="initialLoadingDetail" class="initial-loading-detail">Mencoba alamat default 192.168.1.11</p>
+            <button type="button" id="initialLoadingManualBtn" class="btn-block secondary initial-loading-manual" onclick="continueWithManualServer()">Masukkan alamat secara manual</button>
+        </div>
+    </div>
     <div class="app-wrapper">
         <div class="left-col">
             <div class="card main-card">
@@ -959,7 +1038,7 @@
                         <div class="app-brand-title">Print Server Pro</div>
                         <div class="app-brand-subtitle">Network Printing Console</div>
                     </div>
-                    <span class="app-version">v4.5.36</span>
+                    <span class="app-version">v4.5.37</span>
                 </div>
                 <div class="install-row"><button id="installBtn" class="btn-block secondary">Install Aplikasi</button></div>
                 <div class="section-title">
@@ -969,7 +1048,7 @@
                 <div class="input-group">
                     <label>Alamat Server</label>
                     <div class="input-with-btn">
-                        <input type="text" id="ipAddress" placeholder="192.168.1.xxx" onblur="updateIpAndFetchPrinters()" onkeyup="if(event.key === 'Enter') updateIpAndFetchPrinters()">
+                        <input type="text" id="ipAddress" value="192.168.1.11" placeholder="192.168.1.xxx" onblur="updateIpAndFetchPrinters()" onkeyup="if(event.key === 'Enter') updateIpAndFetchPrinters()">
                         <button class="btn-icon" id="scanBtn" onclick="showScanModal()" title="Pindai Subnet">🔎</button>
                     </div>
                     <div id="connectionStatusWrap" style="margin-top:10px; display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-muted);">
@@ -1561,7 +1640,7 @@ function buildConsolidatedSettingsUi(){
             const sidebar=document.createElement('aside');sidebar.className='dialog-sidebar';sidebar.id='printDialogSidebar';
             sidebar.innerHTML=`<div class="dialog-sidebar-head"><div class="dialog-sidebar-title">Print Setup</div><div class="dialog-sidebar-sub">Pilih kategori pengaturan</div></div><nav id="dialogNav" class="dialog-nav"></nav>`;
             const settings=document.createElement('main');settings.id='printDialogSettings';settings.className='dialog-settings';
-            settings.innerHTML=`<div class="dialog-settings-topbar" id="dialogSettingsTopbar"><div class="dialog-preset-slot" id="dialogPresetSlot"></div><div id="dialogQuickSummary" class="dialog-quick-summary"></div></div><div class="dialog-panels" id="dialogPanels"></div>`;
+            settings.innerHTML=`<div class="dialog-settings-topbar" id="dialogSettingsTopbar"><div class="dialog-server-slot" id="dialogServerSlot"></div><div class="dialog-preset-slot" id="dialogPresetSlot"></div><div id="dialogQuickSummary" class="dialog-quick-summary"></div></div><div class="dialog-panels" id="dialogPanels"></div>`;
             shell.append(sidebar,settings);
             document.querySelector('.app-brand').insertAdjacentElement('afterend',shell);
 
@@ -1581,7 +1660,10 @@ function buildConsolidatedSettingsUi(){
             if(presetActions){presetSlot.appendChild(presetActions);if(!document.getElementById('uxPresetManageBtn')){const b=document.createElement('button');b.type='button';b.id='uxPresetManageBtn';b.className='mini-btn';b.textContent='Kelola Preset';b.onclick=togglePresetManager;presetSlot.appendChild(b);}}
             uxGroupForControl('settingsViewMode')?.classList.add('dialog-hidden-control');
 
-            ['sourceSizeInfo','ipAddress','printerSelect','fileInput','colorMode','pages','copies','paperSize','orientation','scaleMode'].forEach(id=>uxMoveGroup(id,document.getElementById('panelContent-basic')));
+            const serverGroup=uxGroupForControl('ipAddress'),serverSlot=document.getElementById('dialogServerSlot');
+            if(serverGroup){serverSlot.appendChild(serverGroup);serverGroup.classList.add('global-server-group');}
+
+            ['sourceSizeInfo','printerSelect','fileInput','colorMode','pages','copies','paperSize','orientation','scaleMode'].forEach(id=>uxMoveGroup(id,document.getElementById('panelContent-basic')));
             ['pageSubset','pageOrder','collateMode','blankPageMode','pageRotationMode'].forEach(id=>uxMoveGroup(id,document.getElementById('panelContent-pages')));
             ['pagesPerSheet','marginMode','autoRotateMode','contentAlign','nupBorder','nupOrder','impositionMode','nupGapXmm','offsetXmm'].forEach(id=>uxMoveGroup(id,document.getElementById('panelContent-layout')));
             ['duplexMode','bindingMode','bookletMode','startCopyNewSheet'].forEach(id=>uxMoveGroup(id,document.getElementById('panelContent-duplex')));
@@ -1758,6 +1840,8 @@ function buildConsolidatedSettingsUi(){
         let currentSocketIp = '';
         let deferredPrompt = null;
         let discoveryRunId = 0;
+        const DEFAULT_SERVER_HOST = '192.168.1.11';
+        let initialDiscoveryActive = false;
         const activeDiscoveryControllers = new Set();
         const CONNECTION_STATUS = {
             idle: { text: 'Belum terhubung', color: '#94a3b8' },
@@ -1773,6 +1857,33 @@ function buildConsolidatedSettingsUi(){
             const cfg = CONNECTION_STATUS[state] || CONNECTION_STATUS.idle;
             textEl.textContent = customText || cfg.text;
             dotEl.style.background = cfg.color;
+        }
+        function setInitialLoading(message, detail = '', allowManual = false) {
+            const screen = document.getElementById('initialLoadingScreen');
+            const messageEl = document.getElementById('initialLoadingMessage');
+            const detailEl = document.getElementById('initialLoadingDetail');
+            const manualBtn = document.getElementById('initialLoadingManualBtn');
+            if (!screen) return;
+            if (message) messageEl.textContent = message;
+            detailEl.textContent = detail;
+            manualBtn.classList.toggle('is-visible', allowManual);
+        }
+        function hideInitialLoading() {
+            const screen = document.getElementById('initialLoadingScreen');
+            if (!screen || screen.classList.contains('is-hidden')) return;
+            screen.classList.add('is-hidden');
+            setTimeout(() => screen.remove(), 320);
+        }
+        function continueWithManualServer() {
+            initialDiscoveryActive = false;
+            cancelDiscoveryRequests(false);
+            hideInitialLoading();
+            setConnectionStatus('idle', 'Masukkan alamat server lalu tekan Enter');
+            setTimeout(() => {
+                const input = document.getElementById('ipAddress');
+                input?.focus();
+                input?.select();
+            }, 360);
         }
         function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
         async function fetchWithRetry(url, options = {}, retryCount = 1, retryDelay = 300) {
@@ -2353,13 +2464,17 @@ function buildConsolidatedSettingsUi(){
             await Promise.all(Array.from({ length: Math.min(limit, items.length) }, runWorker));
             return results;
         }
-        function cancelNetworkScan() {
+        function cancelDiscoveryRequests(updateUi = true) {
             discoveryRunId += 1;
             activeDiscoveryControllers.forEach(controller => controller.abort());
             activeDiscoveryControllers.clear();
+            if (!updateUi) return;
             document.getElementById('scanStartBtn').disabled = false;
             document.getElementById('scanBtn').disabled = false;
             document.getElementById('scanBtn').textContent = '🔎';
+        }
+        function cancelNetworkScan() {
+            cancelDiscoveryRequests(true);
             closeScanModal();
             setConnectionStatus('idle', 'Pemindaian dibatalkan');
         }
@@ -2371,6 +2486,28 @@ function buildConsolidatedSettingsUi(){
                 setScanProgress(message);
                 setConnectionStatus('scanning', message);
             });
+        }
+        async function discoverFirstServer(candidates, timeoutMs, runId, progressLabel) {
+            const unique = [...new Set(candidates.filter(isSafeDiscoveryHost))];
+            let nextIndex = 0, completed = 0, found = null;
+            async function worker() {
+                while (!found && nextIndex < unique.length && runId === discoveryRunId) {
+                    const host = unique[nextIndex++];
+                    const result = await probePrintServer(host, timeoutMs, runId);
+                    completed += 1;
+                    if (result && !found) {
+                        found = result;
+                        activeDiscoveryControllers.forEach(controller => controller.abort());
+                        activeDiscoveryControllers.clear();
+                        break;
+                    }
+                    const message = `${progressLabel}: ${completed}/${unique.length} alamat`;
+                    setConnectionStatus('scanning', message);
+                    if (initialDiscoveryActive) setInitialLoading('Mencari server printer', message, completed > 8);
+                }
+            }
+            await Promise.all(Array.from({ length: Math.min(32, unique.length) }, worker));
+            return found ? [found] : [];
         }
         function processFoundServers(servers) {
             const unique = [];
@@ -2459,10 +2596,14 @@ function buildConsolidatedSettingsUi(){
                 urls.textContent = `QR tidak dapat dimuat: ${error.message}`;
             }
         }
-        async function updateIpAndFetchPrinters() {
+        async function updateIpAndFetchPrinters(options = {}) {
+            const silent = Boolean(options?.silent);
             const ip = document.getElementById('ipAddress').value.trim();
-            if (!ip) return;
-            if (!isSafeDiscoveryHost(ip)) return showToast('Alamat server tidak valid. Gunakan IPv4 atau hostname tanpa http:// dan tanpa port.', 'error');
+            if (!ip) return false;
+            if (!isSafeDiscoveryHost(ip)) {
+                if (!silent) showToast('Alamat server tidak valid. Gunakan IPv4 atau hostname tanpa http:// dan tanpa port.', 'error');
+                return false;
+            }
             const sel = document.getElementById('printerSelect');
             sel.innerHTML = '<option value="">⏳ Memuat...</option>';
             sel.disabled = true;
@@ -2485,14 +2626,16 @@ function buildConsolidatedSettingsUi(){
                     if (infoResponse.ok) rememberPrintServer(await infoResponse.json(), ip);
                     else rememberPrintServer({ ip, name: ip }, ip);
                 } catch (_) { rememberPrintServer({ ip, name: ip }, ip); }
-                showToast(`Printer Server ${ip} siap!`, 'success');
+                if (!silent) showToast(`Printer Server ${ip} siap!`, 'success');
                 loadSettingsForCurrentPrinter();
                 refreshPrinterCapabilities();
+                return true;
             } catch (e) {
                 sel.innerHTML = '<option value="">⚠️ Gagal terhubung</option>';
                 sel.disabled = false;
                 document.getElementById('pairingNetworkBtn').style.display = 'none';
                 setConnectionStatus('failed', `Gagal terhubung ke ${ip}`);
+                return false;
             }
         }
         
@@ -3166,14 +3309,70 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
                 });
             }
         }
-        function restoreActiveServerFromSession() {
+        async function connectFirstDiscoveredServer(servers) {
+            for (const server of servers) {
+                if (!initialDiscoveryActive) return false;
+                document.getElementById('ipAddress').value = server.ip;
+                setInitialLoading('Server ditemukan', `Menghubungkan ke ${server.ip} dan memuat printer…`, true);
+                if (await updateIpAndFetchPrinters({ silent: true })) return true;
+            }
+            return false;
+        }
+        async function initialAutoDiscoverServer() {
+            initialDiscoveryActive = true;
             const pairedHost = new URLSearchParams(location.search).get('server');
-            const ip = isSafeDiscoveryHost(pairedHost) ? pairedHost : sessionStorage.getItem('activePrintServerIp');
-            if (!ip) return;
-            const ipInput = document.getElementById('ipAddress');
-            if (!ipInput.value.trim()) {
-                ipInput.value = ip;
-                updateIpAndFetchPrinters();
+            const sessionHost = sessionStorage.getItem('activePrintServerIp');
+            const knownHosts = getKnownServers().map(item => item.ip);
+            const quickCandidates = [pairedHost, sessionHost, ...knownHosts, DEFAULT_SERVER_HOST]
+                .filter(isSafeDiscoveryHost);
+            document.getElementById('ipAddress').value = isSafeDiscoveryHost(pairedHost) ? pairedHost : DEFAULT_SERVER_HOST;
+            const runId = ++discoveryRunId;
+            setInitialLoading('Mencari server printer', `Mencoba alamat default ${DEFAULT_SERVER_HOST}…`, false);
+            setConnectionStatus('scanning', 'Mencari server otomatis…');
+            try {
+                const quickFound = await discoverFirstServer(quickCandidates, 1100, runId, 'Pencarian awal');
+                if (!initialDiscoveryActive || runId !== discoveryRunId) return;
+                if (quickFound.length && await connectFirstDiscoveredServer(quickFound)) {
+                    setInitialLoading('Server siap digunakan', `Terhubung ke ${document.getElementById('ipAddress').value}`, false);
+                    await new Promise(resolve => setTimeout(resolve, 350));
+                    hideInitialLoading();
+                    return;
+                }
+
+                const prefixes = [];
+                const addPrefix = host => {
+                    const parts = String(host || '').split('.');
+                    if (parts.length !== 4 || !parts.every(part => /^\d+$/.test(part) && Number(part) <= 255)) return;
+                    const prefix = parts.slice(0, 3).join('.');
+                    if (!prefixes.includes(prefix)) prefixes.push(prefix);
+                };
+                [DEFAULT_SERVER_HOST, sessionHost, ...knownHosts, '192.168.0.1'].forEach(addPrefix);
+                const subnetCandidates = prefixes.slice(0, 2)
+                    .flatMap(prefix => Array.from({ length: 254 }, (_, index) => `${prefix}.${index + 1}`));
+                setInitialLoading('Memindai jaringan lokal', `Mencari server pada ${prefixes.slice(0, 2).join(' dan ')}…`, true);
+                const subnetFound = await discoverFirstServer(subnetCandidates, 1200, runId, 'Pencarian otomatis LAN');
+                if (!initialDiscoveryActive || runId !== discoveryRunId) return;
+                if (subnetFound.length && await connectFirstDiscoveredServer(subnetFound)) {
+                    setInitialLoading('Server siap digunakan', `Terhubung ke ${document.getElementById('ipAddress').value}`, false);
+                    await new Promise(resolve => setTimeout(resolve, 350));
+                    hideInitialLoading();
+                    return;
+                }
+
+                document.getElementById('ipAddress').value = DEFAULT_SERVER_HOST;
+                setConnectionStatus('failed', 'Server otomatis tidak ditemukan; periksa alamat secara manual');
+                setDiscoveryDiagnostics(`Server belum ditemukan. Alamat default ${DEFAULT_SERVER_HOST} sudah disiapkan; ubah jika IP server berbeda.`);
+                setInitialLoading('Server belum ditemukan', `Lanjutkan dengan alamat default ${DEFAULT_SERVER_HOST} atau masukkan IP lain.`, true);
+                await new Promise(resolve => setTimeout(resolve, 1200));
+                if (initialDiscoveryActive) hideInitialLoading();
+            } catch (_) {
+                if (!initialDiscoveryActive || runId !== discoveryRunId) return;
+                setConnectionStatus('failed', 'Pencarian otomatis gagal; masukkan alamat server');
+                setInitialLoading('Pencarian otomatis terhenti', 'Masukkan alamat server secara manual.', true);
+                await new Promise(resolve => setTimeout(resolve, 900));
+                if (initialDiscoveryActive) hideInitialLoading();
+            } finally {
+                initialDiscoveryActive = false;
             }
         }
 
@@ -3209,7 +3408,7 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
             currentPreviewSheet = 0;
             updateDynamicPreview();
         });
-        window.addEventListener('load', () => { applyProfessionalUiPolish(); loadHistory(); setupPwaInstall(); startQueuePolling(); buildConsolidatedSettingsUi(); markAdvancedSettingGroups(); refreshPresetSelect(); document.getElementById('settingsViewMode').value='compact'; applySettingsViewMode(); syncAdvancedPrintControls(); validatePrintSettings(false); updatePrintSettingsSummary(); updateAccordionSummaries(); restoreActiveServerFromSession(); });
+        window.addEventListener('load', () => { applyProfessionalUiPolish(); loadHistory(); setupPwaInstall(); buildConsolidatedSettingsUi(); markAdvancedSettingGroups(); refreshPresetSelect(); document.getElementById('settingsViewMode').value='compact'; applySettingsViewMode(); syncAdvancedPrintControls(); validatePrintSettings(false); updatePrintSettingsSummary(); updateAccordionSummaries(); initialAutoDiscoverServer(); });
     </script>
 </body>
 </html>

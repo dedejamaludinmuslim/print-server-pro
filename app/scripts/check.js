@@ -24,10 +24,16 @@ if (index.includes('Auto sesuai ukuran halaman')) throw new Error('Opsi tray sem
 if (!index.includes('refreshPrinterCapabilities(force=false)')) throw new Error('Deteksi kemampuan dinamis tidak ditemukan.');
 if (!server.includes('assertPrintOptionsSupported')) throw new Error('Validasi kemampuan di backend tidak ditemukan.');
 if (!index.includes('startQuickDiscovery()')) throw new Error('Pencarian cepat server tidak ditemukan.');
+if (!index.includes("const DEFAULT_SERVER_HOST = '192.168.1.11'")) throw new Error('Alamat server default belum ditetapkan.');
+if (!index.includes('initialAutoDiscoverServer()')) throw new Error('Bootstrap pencarian server otomatis tidak ditemukan.');
+if (!index.includes('id="initialLoadingScreen"')) throw new Error('Layar loading awal tidak ditemukan.');
+if (!index.includes('id="dialogServerSlot"')) throw new Error('Panel server global tidak ditemukan.');
+if (index.includes("['sourceSizeInfo','ipAddress','printerSelect'")) throw new Error('Alamat server masih ditempatkan pada panel Dasar.');
 if (!index.includes('parseDiscoveryInput')) throw new Error('Pemindaian multi-subnet tidak ditemukan.');
 if (!index.includes("local-network-access")) throw new Error('Diagnosis izin Local Network Access tidak ditemukan.');
 if (!server.includes("app.get('/pairing-qr'")) throw new Error('Endpoint QR pairing tidak ditemukan.');
 if (!server.includes("type: 'printserverpro'")) throw new Error('Publikasi mDNS tidak ditemukan.');
+if (!server.includes('https://dedejamaludinmuslim.github.io')) throw new Error('Origin GitHub Pages belum diizinkan.');
 if (!setup.includes('profile=private,domain')) throw new Error('Aturan firewall aman tidak ditemukan.');
 
 console.log(`QA ${expected} OK: server valid, ${inlineCount} inline script valid, identitas versi konsisten.`);

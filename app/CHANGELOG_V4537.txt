@@ -1,0 +1,8 @@
+PRINT SERVER PRO v4.5.37
+
+- Aplikasi mencoba alamat server default 192.168.1.11 ketika pertama dibuka.
+- Jika alamat awal tidak merespons, aplikasi mencari server tersimpan dan memindai subnet lokal secara otomatis.
+- Layar loading awal mencegah perpindahan tata letak terlihat selama proses pencarian.
+- Pengguna tetap dapat membatalkan pencarian dan memasukkan alamat server secara manual.
+- Kontrol Alamat Server dipindahkan dari halaman Dasar ke bar global bersama Preset.
+- Kontrol server tetap terlihat ketika berpindah halaman pengaturan.
