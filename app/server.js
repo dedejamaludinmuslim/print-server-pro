@@ -125,7 +125,7 @@ function connectionInfoPayload() {
     allowedOrigins,
     port,
     discovery: { mdns: Boolean(Bonjour), qr: Boolean(QRCode), service: '_printserverpro._tcp.local' },
-    version: '4.6.0',
+    version: '4.6.1',
   };
 }
 
@@ -357,7 +357,7 @@ app.get('/ping', (req, res) => {
     hostname: os.hostname(),
     ipHint: localIps[0] || '',
     localIps,
-    version: '4.6.0',
+    version: '4.6.1',
   });
 });
 
@@ -406,7 +406,7 @@ app.get('/docx-converter-status', async (req, res) => {
       executable: libreOfficeExecutable || null,
       timeoutSeconds: Math.round(DOCX_CONVERT_TIMEOUT_MS / 1000),
     },
-    version: '4.6.0',
+    version: '4.6.1',
   });
 });
 
@@ -417,7 +417,7 @@ app.get('/limits', (req, res) => {
     largePdfThresholdMb: LARGE_PDF_THRESHOLD_MB,
     largePdfChunkPages: LARGE_PDF_CHUNK_PAGES,
     supportedFileTypes: ['pdf', 'png', 'jpg', 'jpeg', 'docx'],
-    version: '4.6.0',
+    version: '4.6.1',
   });
 });
 
@@ -1522,7 +1522,7 @@ function startLocalDiscovery() {
   }
   try {
     const hostname = os.hostname();
-    const txt = { version: '4.6.0', path: '/', role: 'print-server-pro' };
+    const txt = { version: '4.6.1', path: '/', role: 'print-server-pro' };
     interfaces.forEach(item => {
       const instance = new Bonjour({ interface: item.address, bind: '0.0.0.0' }, error => {
         console.warn(`[DISCOVERY] mDNS ${item.address}: ${error.message}`);
@@ -1550,7 +1550,7 @@ function stopLocalDiscovery() {
 }
 
 server.listen(port, '0.0.0.0', () => {
-  console.log(`Print Server V4.6.0 Ready on ${port}`);
+  console.log(`Print Server V4.6.1 Ready on ${port}`);
   const info = connectionInfoPayload();
   info.urls.forEach(url => console.log(`[NETWORK] ${url}`));
   startLocalDiscovery();

@@ -1,6 +1,6 @@
 # Source Aplikasi
 
-Folder ini berisi source Print Server Pro v4.6.0.
+Folder ini berisi source Print Server Pro v4.6.1.
 
 ```powershell
 npm ci

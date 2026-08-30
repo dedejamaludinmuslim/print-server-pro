@@ -261,6 +261,39 @@
             font-weight:750;
             white-space:nowrap;
         }
+        .app-brand-actions {
+            display:flex;
+            align-items:center;
+            justify-content:flex-end;
+            gap:8px;
+            flex:0 0 auto;
+        }
+        .app-settings-trigger {
+            min-height:36px;
+            display:inline-flex;
+            align-items:center;
+            justify-content:center;
+            gap:7px;
+            padding:0 12px;
+            border:1px solid #cbd5e1;
+            border-radius:10px;
+            background:#fff;
+            color:#1e293b;
+            font:700 12px/1 'Inter',system-ui,sans-serif;
+            cursor:pointer;
+            box-shadow:0 1px 2px rgba(15,23,42,.04);
+            transition:border-color .15s ease,background .15s ease,box-shadow .15s ease;
+        }
+        .app-settings-trigger:hover { border-color:#93c5fd; background:#eff6ff; box-shadow:0 4px 12px rgba(37,99,235,.10); }
+        .app-settings-trigger:focus-visible { outline:3px solid rgba(37,99,235,.18); outline-offset:2px; }
+        .app-settings-status-dot {
+            width:9px;
+            height:9px;
+            flex:0 0 9px;
+            border-radius:999px;
+            background:#94a3b8;
+            box-shadow:0 0 0 3px #f1f5f9;
+        }
 
         .section-title {
             margin:22px 0 12px;
@@ -821,7 +854,7 @@
             .panel-heading { padding:14px; }
         }
 
-        /* v4.6.0 — Large Type Accessibility */
+        /* v4.6.1 — Large Type Accessibility */
         body { font-size:16px; line-height:1.5; }
         .app-brand-title { font-size:21px; line-height:1.25; }
         .app-brand-subtitle { font-size:13px; line-height:1.4; }
@@ -947,7 +980,7 @@
             .panel-heading { padding:15px; }
         }
 
-        /* v4.6.0 — Initial server bootstrap and global server control */
+        /* v4.6.1 — Initial server bootstrap and application settings */
         .initial-loading-screen {
             position:fixed;
             inset:0;
@@ -999,21 +1032,91 @@
         .initial-loading-manual.is-visible { display:inline-flex; }
 
         .dialog-settings-topbar { flex-wrap:wrap; align-items:flex-start; }
-        .dialog-server-slot { flex:1 1 310px; min-width:260px; }
-        .dialog-server-slot .global-server-group { margin:0; }
-        .dialog-server-slot .global-server-group > label,
         .dialog-preset-slot .dialog-preset-group > label { font-size:12px; }
-        .dialog-server-slot .input-with-btn { height:44px; }
-        .dialog-server-slot .input-with-btn input { min-height:44px; font-size:13.5px; }
-        .dialog-server-slot .btn-icon { width:44px; height:44px; }
-        .dialog-server-slot #connectionStatusWrap { margin-top:7px!important; }
-        .dialog-server-slot .network-discovery-actions { margin-top:7px; }
         .dialog-quick-summary { flex:1 0 100%; }
-        @media (max-width:991px) {
-            .dialog-server-slot { width:100%; min-width:0; margin-bottom:10px; }
-            .dialog-server-slot .input-with-btn { height:48px; }
-            .dialog-server-slot .input-with-btn input { min-height:48px; font-size:15px; }
-            .dialog-server-slot .btn-icon { width:48px; height:48px; }
+
+        .app-settings-overlay {
+            position:fixed;
+            inset:0;
+            z-index:9190;
+            background:rgba(15,23,42,.46);
+            opacity:0;
+            visibility:hidden;
+            backdrop-filter:blur(3px);
+            transition:opacity .2s ease,visibility .2s ease;
+        }
+        .app-settings-overlay.open { opacity:1; visibility:visible; }
+        .app-settings-panel {
+            position:fixed;
+            top:0;
+            right:0;
+            z-index:9200;
+            width:min(460px,94vw);
+            height:100dvh;
+            display:flex;
+            flex-direction:column;
+            background:#f8fafc;
+            border-left:1px solid #dbe3ec;
+            box-shadow:-24px 0 60px rgba(15,23,42,.18);
+            transform:translateX(105%);
+            transition:transform .22s ease;
+        }
+        .app-settings-panel.open { transform:translateX(0); }
+        .app-settings-head {
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:16px;
+            padding:20px 22px;
+            background:#fff;
+            border-bottom:1px solid #e2e8f0;
+        }
+        .app-settings-head h2 { margin:0; color:#0f172a; font-size:20px; line-height:1.2; }
+        .app-settings-head p { margin:4px 0 0; color:#64748b; font-size:12px; line-height:1.45; }
+        .app-settings-close {
+            width:40px;
+            height:40px;
+            flex:0 0 40px;
+            border:1px solid #dbe3ec;
+            border-radius:11px;
+            background:#f8fafc;
+            color:#334155;
+            font-size:22px;
+            line-height:1;
+            cursor:pointer;
+        }
+        .app-settings-body { padding:18px; overflow:auto; overscroll-behavior:contain; }
+        .app-settings-section {
+            margin-bottom:14px;
+            padding:17px;
+            border:1px solid #dfe6ee;
+            border-radius:14px;
+            background:#fff;
+            box-shadow:0 4px 16px rgba(15,23,42,.035);
+        }
+        .app-settings-section-title { margin:0 0 4px; color:#0f172a; font-size:15px; }
+        .app-settings-section-copy { margin:0 0 15px; color:#64748b; font-size:11.5px; line-height:1.5; }
+        .app-settings-section .input-group { margin:0; }
+        .app-settings-section .input-with-btn { height:46px; }
+        .app-settings-section .input-with-btn input,
+        .app-settings-section .input-with-btn select { min-height:46px; font-size:14px; }
+        .app-settings-section .btn-icon { width:46px; height:46px; }
+        .app-settings-section .install-row { margin:0; justify-content:stretch; }
+        .app-settings-section #installBtn { max-width:none; width:100%; }
+        #appSettingsPreset .dialog-preset-group { margin:0 0 10px; }
+        #appSettingsPreset .preset-actions { margin-top:10px; }
+        #appSettingsPreset #uxPresetManageBtn { width:100%; min-height:40px; }
+        .app-settings-help { width:100%; margin-top:10px; }
+        body.app-settings-open { overflow:hidden; }
+        @media (max-width:560px) {
+            .app-brand { align-items:flex-start; flex-wrap:wrap; }
+            .app-brand-copy { padding-top:3px; }
+            .app-brand-actions { width:100%; justify-content:space-between; }
+            .app-settings-trigger { min-height:42px; padding:0 14px; font-size:13px; }
+            .app-settings-panel { width:100%; }
+            .app-settings-head { padding:17px 16px; }
+            .app-settings-body { padding:12px; }
+            .app-settings-section { padding:15px; }
         }
 
 </style>
@@ -1038,7 +1141,13 @@
                         <div class="app-brand-title">Print Server Pro</div>
                         <div class="app-brand-subtitle">Network Printing Console</div>
                     </div>
-                    <span class="app-version">v4.6.0</span>
+                    <div class="app-brand-actions">
+                        <span class="app-version">v4.6.1</span>
+                        <button type="button" id="appSettingsBtn" class="app-settings-trigger" onclick="openAppSettings()" aria-controls="appSettingsPanel" aria-expanded="false">
+                            <span id="appSettingsStatusDot" class="app-settings-status-dot" aria-hidden="true"></span>
+                            <span>⚙ Pengaturan</span>
+                        </button>
+                    </div>
                 </div>
                 <div class="install-row"><button id="installBtn" class="btn-block secondary">Install Aplikasi</button></div>
                 <div class="section-title">
@@ -1451,6 +1560,40 @@
         </div>
     </div>
 
+    <div id="appSettingsOverlay" class="app-settings-overlay" onclick="closeAppSettings()"></div>
+    <aside id="appSettingsPanel" class="app-settings-panel" role="dialog" aria-modal="true" aria-labelledby="appSettingsTitle" aria-hidden="true">
+        <div class="app-settings-head">
+            <div>
+                <h2 id="appSettingsTitle">Pengaturan Aplikasi</h2>
+                <p>Koneksi server, printer, dan pemasangan aplikasi.</p>
+            </div>
+            <button type="button" class="app-settings-close" onclick="closeAppSettings()" aria-label="Tutup pengaturan">×</button>
+        </div>
+        <div class="app-settings-body">
+            <section class="app-settings-section">
+                <h3 class="app-settings-section-title">Koneksi Server</h3>
+                <p class="app-settings-section-copy">Alamat server dicari otomatis pada 192.168.1.x. Gunakan kolom ini untuk mengganti atau memindai ulang.</p>
+                <div id="appSettingsConnection"></div>
+            </section>
+            <section class="app-settings-section">
+                <h3 class="app-settings-section-title">Printer</h3>
+                <p class="app-settings-section-copy">Pilih printer tujuan dan periksa kemampuan perangkat yang tersedia.</p>
+                <div id="appSettingsPrinter"></div>
+            </section>
+            <section class="app-settings-section">
+                <h3 class="app-settings-section-title">Preset</h3>
+                <p class="app-settings-section-copy">Pilih, simpan, atau hapus kumpulan pengaturan cetak yang sering digunakan.</p>
+                <div id="appSettingsPreset"></div>
+            </section>
+            <section class="app-settings-section">
+                <h3 class="app-settings-section-title">Aplikasi</h3>
+                <p class="app-settings-section-copy">Pasang aplikasi ke perangkat atau buka panduan koneksi jaringan.</p>
+                <div id="appSettingsGeneral"></div>
+                <button type="button" class="btn-block secondary app-settings-help" onclick="showHelpModal()">Bantuan Koneksi Server</button>
+            </section>
+        </div>
+    </aside>
+
     <div id="scanModal" class="modal">
         <div class="modal-content" style="text-align:center;">
             <h3 style="margin:0 0 10px 0;">🔎 Pindai Multi-Subnet</h3>
@@ -1640,7 +1783,7 @@ function buildConsolidatedSettingsUi(){
             const sidebar=document.createElement('aside');sidebar.className='dialog-sidebar';sidebar.id='printDialogSidebar';
             sidebar.innerHTML=`<div class="dialog-sidebar-head"><div class="dialog-sidebar-title">Print Setup</div><div class="dialog-sidebar-sub">Pilih kategori pengaturan</div></div><nav id="dialogNav" class="dialog-nav"></nav>`;
             const settings=document.createElement('main');settings.id='printDialogSettings';settings.className='dialog-settings';
-            settings.innerHTML=`<div class="dialog-settings-topbar" id="dialogSettingsTopbar"><div class="dialog-server-slot" id="dialogServerSlot"></div><div class="dialog-preset-slot" id="dialogPresetSlot"></div><div id="dialogQuickSummary" class="dialog-quick-summary"></div></div><div class="dialog-panels" id="dialogPanels"></div>`;
+            settings.innerHTML=`<div class="dialog-settings-topbar" id="dialogSettingsTopbar"><div id="dialogQuickSummary" class="dialog-quick-summary"></div></div><div class="dialog-panels" id="dialogPanels"></div>`;
             shell.append(sidebar,settings);
             document.querySelector('.app-brand').insertAdjacentElement('afterend',shell);
 
@@ -1654,16 +1797,20 @@ function buildConsolidatedSettingsUi(){
             document.body.append(overlay,sheet);
             const mobileBar=document.createElement('div');mobileBar.id='mobilePrintBar';mobileBar.className='mobile-print-bar';mobileBar.innerHTML=`<button type="button" class="mobile-settings-button" onclick="openMobileSettingsSheet()">☰ <span id="mobileActivePanelLabel">Dasar</span></button><button type="button" class="mobile-print-button" onclick="showPinModal()">Cetak</button>`;document.body.appendChild(mobileBar);
 
-            const presetGroup=uxGroupForControl('presetSelect'),presetSlot=document.getElementById('dialogPresetSlot');
+            const presetGroup=uxGroupForControl('presetSelect'),presetSlot=document.getElementById('appSettingsPreset');
             if(presetGroup){presetSlot.appendChild(presetGroup);presetGroup.classList.add('dialog-preset-group');}
             const presetActions=document.querySelector('.preset-actions');
             if(presetActions){presetSlot.appendChild(presetActions);if(!document.getElementById('uxPresetManageBtn')){const b=document.createElement('button');b.type='button';b.id='uxPresetManageBtn';b.className='mini-btn';b.textContent='Kelola Preset';b.onclick=togglePresetManager;presetSlot.appendChild(b);}}
             uxGroupForControl('settingsViewMode')?.classList.add('dialog-hidden-control');
 
-            const serverGroup=uxGroupForControl('ipAddress'),serverSlot=document.getElementById('dialogServerSlot');
-            if(serverGroup){serverSlot.appendChild(serverGroup);serverGroup.classList.add('global-server-group');}
+            const serverGroup=uxGroupForControl('ipAddress'),serverSlot=document.getElementById('appSettingsConnection');
+            if(serverGroup){serverSlot.appendChild(serverGroup);serverGroup.classList.add('app-settings-control');}
+            const printerGroup=uxGroupForControl('printerSelect'),printerSlot=document.getElementById('appSettingsPrinter');
+            if(printerGroup){printerSlot.appendChild(printerGroup);printerGroup.classList.add('app-settings-control');}
+            const installRow=document.querySelector('.install-row'),generalSlot=document.getElementById('appSettingsGeneral');
+            if(installRow&&generalSlot)generalSlot.appendChild(installRow);
 
-            ['sourceSizeInfo','printerSelect','fileInput','colorMode','pages','copies','paperSize','orientation','scaleMode'].forEach(id=>uxMoveGroup(id,document.getElementById('panelContent-basic')));
+            ['sourceSizeInfo','fileInput','colorMode','pages','copies','paperSize','orientation','scaleMode'].forEach(id=>uxMoveGroup(id,document.getElementById('panelContent-basic')));
             ['pageSubset','pageOrder','collateMode','blankPageMode','pageRotationMode'].forEach(id=>uxMoveGroup(id,document.getElementById('panelContent-pages')));
             ['pagesPerSheet','marginMode','autoRotateMode','contentAlign','nupBorder','nupOrder','impositionMode','nupGapXmm','offsetXmm'].forEach(id=>uxMoveGroup(id,document.getElementById('panelContent-layout')));
             ['duplexMode','bindingMode','bookletMode','startCopyNewSheet'].forEach(id=>uxMoveGroup(id,document.getElementById('panelContent-duplex')));
@@ -1851,12 +1998,39 @@ function buildConsolidatedSettingsUi(){
             disconnected: { text: 'Koneksi terputus', color: '#ef4444' },
             failed: { text: 'Server tidak terjangkau', color: '#ef4444' }
         };
+        function openAppSettings() {
+            const panel = document.getElementById('appSettingsPanel');
+            const overlay = document.getElementById('appSettingsOverlay');
+            const trigger = document.getElementById('appSettingsBtn');
+            if (!panel || !overlay) return;
+            panel.classList.add('open');
+            overlay.classList.add('open');
+            panel.setAttribute('aria-hidden', 'false');
+            trigger?.setAttribute('aria-expanded', 'true');
+            document.body.classList.add('app-settings-open');
+            setTimeout(() => panel.querySelector('button, input, select')?.focus(), 220);
+        }
+        function closeAppSettings() {
+            const panel = document.getElementById('appSettingsPanel');
+            const overlay = document.getElementById('appSettingsOverlay');
+            const trigger = document.getElementById('appSettingsBtn');
+            if (!panel || !overlay) return;
+            panel.classList.remove('open');
+            overlay.classList.remove('open');
+            panel.setAttribute('aria-hidden', 'true');
+            trigger?.setAttribute('aria-expanded', 'false');
+            document.body.classList.remove('app-settings-open');
+        }
         function setConnectionStatus(state, customText = '') {
             const textEl = document.getElementById('connectionStatusText');
             const dotEl = document.getElementById('connectionDot');
+            const headerDot = document.getElementById('appSettingsStatusDot');
+            const trigger = document.getElementById('appSettingsBtn');
             const cfg = CONNECTION_STATUS[state] || CONNECTION_STATUS.idle;
             textEl.textContent = customText || cfg.text;
             dotEl.style.background = cfg.color;
+            if (headerDot) headerDot.style.background = cfg.color;
+            if (trigger) trigger.title = customText || cfg.text;
         }
         function setInitialLoading(message, detail = '', allowManual = false) {
             const screen = document.getElementById('initialLoadingScreen');
@@ -1880,6 +2054,7 @@ function buildConsolidatedSettingsUi(){
             hideInitialLoading();
             setConnectionStatus('idle', 'Masukkan alamat server lalu tekan Enter');
             setTimeout(() => {
+                openAppSettings();
                 const input = document.getElementById('ipAddress');
                 input?.focus();
                 input?.select();
@@ -3347,13 +3522,13 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
                 setDiscoveryDiagnostics(`Tidak ada Print Server Pro yang merespons pada ${DEFAULT_DISCOVERY_PREFIX}.1–254. Masukkan IP server secara manual jika berada di prefix lain.`);
                 setInitialLoading('Server belum ditemukan', `Tidak ada server yang merespons pada ${DEFAULT_DISCOVERY_PREFIX}.x.`, true);
                 await new Promise(resolve => setTimeout(resolve, 1200));
-                if (initialDiscoveryActive) hideInitialLoading();
+                if (initialDiscoveryActive) { hideInitialLoading(); openAppSettings(); }
             } catch (_) {
                 if (!initialDiscoveryActive || runId !== discoveryRunId) return;
                 setConnectionStatus('failed', 'Pencarian otomatis gagal; masukkan alamat server');
                 setInitialLoading('Pencarian otomatis terhenti', 'Masukkan alamat server secara manual.', true);
                 await new Promise(resolve => setTimeout(resolve, 900));
-                if (initialDiscoveryActive) hideInitialLoading();
+                if (initialDiscoveryActive) { hideInitialLoading(); openAppSettings(); }
             } finally {
                 initialDiscoveryActive = false;
             }
@@ -3391,6 +3566,7 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
             currentPreviewSheet = 0;
             updateDynamicPreview();
         });
+        document.addEventListener('keydown', event => { if (event.key === 'Escape') closeAppSettings(); });
         window.addEventListener('load', () => { applyProfessionalUiPolish(); loadHistory(); setupPwaInstall(); buildConsolidatedSettingsUi(); markAdvancedSettingGroups(); refreshPresetSelect(); document.getElementById('settingsViewMode').value='compact'; applySettingsViewMode(); syncAdvancedPrintControls(); validatePrintSettings(false); updatePrintSettingsSummary(); updateAccordionSummaries(); initialAutoDiscoverServer(); });
     </script>
 </body>

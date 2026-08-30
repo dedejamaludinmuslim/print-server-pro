@@ -29,8 +29,17 @@ if (!index.includes('Array.from({ length: 254 }')) throw new Error('Pemindaian 2
 if (index.includes('192.168.0')) throw new Error('Prefix kedua masih aktif pada pencarian server.');
 if (!index.includes('initialAutoDiscoverServer()')) throw new Error('Bootstrap pencarian server otomatis tidak ditemukan.');
 if (!index.includes('id="initialLoadingScreen"')) throw new Error('Layar loading awal tidak ditemukan.');
-if (!index.includes('id="dialogServerSlot"')) throw new Error('Panel server global tidak ditemukan.');
-if (index.includes("['sourceSizeInfo','ipAddress','printerSelect'")) throw new Error('Alamat server masih ditempatkan pada panel Dasar.');
+if (!index.includes('id="appSettingsBtn"')) throw new Error('Tombol Pengaturan pada header tidak ditemukan.');
+if (!index.includes('id="appSettingsPanel"')) throw new Error('Panel Pengaturan Aplikasi tidak ditemukan.');
+for (const slot of ['appSettingsConnection', 'appSettingsPrinter', 'appSettingsPreset', 'appSettingsGeneral']) {
+  if (!index.includes(`id="${slot}"`)) throw new Error(`Slot ${slot} tidak ditemukan.`);
+}
+if (index.includes('id="dialogServerSlot"')) throw new Error('Alamat server masih berada pada bar pengaturan cetak.');
+if (index.includes('id="dialogPresetSlot"')) throw new Error('Preset masih berada pada bar pengaturan cetak.');
+if (index.includes("['sourceSizeInfo','printerSelect'")) throw new Error('Printer masih ditempatkan pada panel Dasar.');
+if (!index.includes("uxGroupForControl('ipAddress'),serverSlot=document.getElementById('appSettingsConnection')")) throw new Error('Alamat server belum dipindahkan ke Pengaturan Aplikasi.');
+if (!index.includes("uxGroupForControl('printerSelect'),printerSlot=document.getElementById('appSettingsPrinter')")) throw new Error('Printer belum dipindahkan ke Pengaturan Aplikasi.');
+if (!index.includes("uxGroupForControl('presetSelect'),presetSlot=document.getElementById('appSettingsPreset')")) throw new Error('Preset belum dipindahkan ke Pengaturan Aplikasi.');
 if (!index.includes('parseDiscoveryInput')) throw new Error('Pemindaian multi-subnet tidak ditemukan.');
 if (!index.includes("local-network-access")) throw new Error('Diagnosis izin Local Network Access tidak ditemukan.');
 if (!server.includes("app.get('/pairing-qr'")) throw new Error('Endpoint QR pairing tidak ditemukan.');
