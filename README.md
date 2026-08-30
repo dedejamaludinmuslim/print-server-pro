@@ -12,13 +12,14 @@ dan komputer lain melalui jaringan lokal.
 | Komponen | Lokasi | Fungsi |
 | --- | --- | --- |
 | Source aplikasi | `app/` | UI, server Node.js, deteksi printer, dan mesin cetak |
+| GitHub Pages | `docs/` | Antarmuka publik yang menghubungi server lokal |
 | Installer | `installer/` | Instalasi, repair, startup otomatis, dan uninstall |
 | GitHub Release | `v4.5.36` | Menyediakan `Print_Server_Pro.zip` dan `manifest.json` |
 | PC printer | `C:\ProgramData\PrintServerPro` | Menjalankan server lokal dan mengakses printer Windows |
 
-GitHub menyimpan source serta paket rilis. Server printer tetap berjalan pada PC
-Windows yang terhubung ke printer; GitHub Pages tidak dapat menggantikan server
-lokal tersebut.
+GitHub menyimpan source serta paket rilis. GitHub Pages menyediakan antarmuka
+publik, sedangkan server printer tetap berjalan pada PC Windows yang terhubung
+ke printer.
 
 ## Struktur repository
 
@@ -35,6 +36,12 @@ print-server-pro/
 │   ├── manifest.json
 │   ├── sw.js
 │   └── setup_printer.bat
+├── docs/
+│   ├── icons/
+│   ├── .nojekyll
+│   ├── index.html
+│   ├── manifest.json
+│   └── sw.js
 ├── installer/
 │   └── Install-PrintServerPro.ps1
 ├── .gitattributes
@@ -42,6 +49,17 @@ print-server-pro/
 ├── DEPLOYMENT.md
 └── README.md
 ```
+
+## GitHub Pages
+
+Aktifkan **Settings → Pages → Deploy from a branch → main → /docs**. Alamat
+aplikasi:
+
+`https://dedejamaludinmuslim.github.io/print-server-pro/`
+
+Saat browser meminta izin akses jaringan lokal, pilih **Allow**. PC printer
+harus berada pada jaringan yang dapat dijangkau perangkat pengguna dan server
+lokal harus tetap aktif pada port 3000.
 
 ## Instalasi online
 
@@ -107,4 +125,3 @@ tersedia di [DEPLOYMENT.md](DEPLOYMENT.md).
 
 Installer tidak mengubah jaringan Public menjadi Private secara otomatis.
 Jangan menghapus `C:\ProgramData\PrintServerPro` setelah instalasi berhasil.
-

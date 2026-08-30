@@ -28,7 +28,7 @@ const LIBREOFFICE_PATH = process.env.LIBREOFFICE_PATH || '';
 const WORD_CONVERT_TIMEOUT_MS = Math.max(30000, parseInt(process.env.WORD_CONVERT_TIMEOUT_MS || '180000', 10) || 180000);
 const WORD_CONVERTER_ENABLED = String(process.env.WORD_CONVERTER_ENABLED || 'true').toLowerCase() !== 'false';
 const PRINTER_CAPABILITY_CACHE_MS = Math.max(5000, parseInt(process.env.PRINTER_CAPABILITY_CACHE_MS || '60000', 10) || 60000);
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'https://printer-upmp.vercel.app,http://127.0.0.1:5500,http://localhost:5500')
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'https://printer-upmp.vercel.app,https://dedejamaludinmuslim.github.io,http://127.0.0.1:5500,http://localhost:5500')
   .split(',')
   .map(v => v.trim())
   .filter(Boolean);

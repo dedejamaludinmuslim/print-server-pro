@@ -6,8 +6,8 @@ Target repository:
 ## 1. Isi branch `main`
 
 Salin seluruh isi folder `repository` dari paket deployment ke root repository.
-Hasil akhirnya harus memuat `app/`, `installer/`, `.github/`, `.gitignore`,
-`.gitattributes`, `README.md`, dan `DEPLOYMENT.md`.
+Hasil akhirnya harus memuat `app/`, `docs/`, `installer/`, `.github/`,
+`.gitignore`, `.gitattributes`, `README.md`, dan `DEPLOYMENT.md`.
 
 Jika menggunakan Git:
 
@@ -15,37 +15,51 @@ Jika menggunakan Git:
 git clone https://github.com/dedejamaludinmuslim/print-server-pro.git
 cd print-server-pro
 # Salin isi folder repository dari paket ke folder ini.
-git add app installer .github .gitignore .gitattributes README.md DEPLOYMENT.md
-git commit -m "Deploy Print Server Pro v4.5.36 source and installer H3"
+git add app docs installer .github .gitignore .gitattributes README.md DEPLOYMENT.md
+git commit -m "Deploy Print Server Pro v4.5.36 with GitHub Pages"
 git push origin main
 ```
 
 Jangan mengunggah `node_modules`, file upload sementara, log, atau ZIP Release ke
 branch `main`.
 
-## 2. Buat Release stabil v4.5.36
+## 2. Aktifkan GitHub Pages
+
+1. Buka **Settings → Pages**.
+2. Pilih **Deploy from a branch**.
+3. Pilih branch `main` dan folder `/docs`.
+4. Simpan, lalu tunggu proses deployment selesai.
+
+Alamat aplikasi:
+
+`https://dedejamaludinmuslim.github.io/print-server-pro/`
+
+Saat browser meminta izin akses jaringan lokal, pilih **Allow**.
+
+## 3. Perbarui Release stabil v4.5.36
 
 1. Buka halaman repository, lalu pilih **Releases**.
-2. Pilih **Draft a new release**.
-3. Buat tag `v4.5.36` dari branch `main`.
-4. Gunakan judul `Print Server Pro v4.5.36 Large Type`.
-5. Unggah dari folder `release-assets`:
+2. Buka Release `v4.5.36`. Jika belum ada, buat tag `v4.5.36` dari branch
+   `main`.
+3. Hapus aset lama dengan nama yang sama, lalu unggah dari folder
+   `release-assets`:
    - `Print_Server_Pro.zip`
    - `manifest.json`
-6. Jangan aktifkan **Set as a pre-release**.
-7. Publikasikan Release.
+4. Jangan aktifkan **Set as a pre-release**.
+5. Simpan/publikasikan Release.
 
-## 3. Verifikasi publik
+## 4. Verifikasi publik
 
 Pastikan alamat berikut dapat dibuka tanpa login:
 
 - `https://raw.githubusercontent.com/dedejamaludinmuslim/print-server-pro/main/installer/Install-PrintServerPro.ps1`
 - `https://github.com/dedejamaludinmuslim/print-server-pro/releases/latest/download/manifest.json`
 - `https://github.com/dedejamaludinmuslim/print-server-pro/releases/latest/download/Print_Server_Pro.zip`
+- `https://dedejamaludinmuslim.github.io/print-server-pro/`
 
 Isi manifest terbaru harus menunjukkan versi `4.5.36`.
 
-## 4. Uji satu PC
+## 5. Uji satu PC
 
 Jalankan mode Repair pada satu PC nonkritis. Verifikasi:
 
@@ -55,11 +69,11 @@ Get-ScheduledTask -TaskName "Print Server Pro" | Select-Object TaskName,State
 ```
 
 Server harus melaporkan versi `4.5.36`, task tetap berjalan setelah terminal
-ditutup, dan printer Windows muncul pada aplikasi.
+ditutup, dan printer Windows muncul pada aplikasi GitHub Pages. Jalankan kembali
+installer mode Repair agar server lokal menggunakan daftar CORS terbaru.
 
-## 5. Batas deployment
+## 6. Batas deployment
 
-GitHub Pages tidak digunakan. Halaman aplikasi bergantung pada `server.js`,
-printer Windows, dan endpoint lokal port 3000. Source boleh berada di GitHub,
-tetapi layanan cetak harus berjalan pada PC printer.
-
+GitHub Pages hanya menjalankan antarmuka statis. `server.js`, printer Windows,
+dan endpoint port 3000 tetap harus berjalan pada PC printer. Perangkat pengguna
+harus mengizinkan akses jaringan lokal dan dapat menjangkau IP PC printer.
