@@ -16,7 +16,7 @@ git clone https://github.com/dedejamaludinmuslim/print-server-pro.git
 cd print-server-pro
 # Salin isi folder repository dari paket ke folder ini.
 git add app docs installer .github .gitignore .gitattributes README.md DEPLOYMENT.md
-git commit -m "Deploy Print Server Pro v4.6.7 manual-first startup"
+git commit -m "Deploy Print Server Pro v4.6.8 balanced header"
 git push origin main
 ```
 
@@ -36,10 +36,10 @@ Alamat aplikasi:
 
 Saat browser meminta izin akses jaringan lokal, pilih **Allow**.
 
-## 3. Perbarui Release stabil v4.6.7
+## 3. Perbarui Release stabil v4.6.8
 
 1. Buka halaman repository, lalu pilih **Releases**.
-2. Buka Release `v4.6.7`. Jika belum ada, buat tag `v4.6.7` dari branch
+2. Buka Release `v4.6.8`. Jika belum ada, buat tag `v4.6.8` dari branch
    `main`.
 3. Hapus aset lama dengan nama yang sama, lalu unggah dari folder
    `release-assets`:
@@ -57,7 +57,7 @@ Pastikan alamat berikut dapat dibuka tanpa login:
 - `https://github.com/dedejamaludinmuslim/print-server-pro/releases/latest/download/Print_Server_Pro.zip`
 - `https://dedejamaludinmuslim.github.io/print-server-pro/`
 
-Isi manifest terbaru harus menunjukkan versi `4.6.7`.
+Isi manifest terbaru harus menunjukkan versi `4.6.8`.
 
 ## 5. Uji satu PC
 
@@ -69,7 +69,7 @@ Invoke-RestMethod http://localhost:3000/ping
 Get-ScheduledTask -TaskName "Print Server Pro" | Select-Object TaskName,State
 ```
 
-Server harus melaporkan versi `4.6.7`, task tetap berjalan setelah terminal
+Server harus melaporkan versi `4.6.8`, task tetap berjalan setelah terminal
 ditutup, dan printer Windows muncul pada aplikasi GitHub Pages. Perintah yang
 sama juga menyediakan pilihan untuk menghapus aplikasi.
 

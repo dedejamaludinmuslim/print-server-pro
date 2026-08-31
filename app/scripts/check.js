@@ -8,6 +8,7 @@ const server = fs.readFileSync('server.js', 'utf8');
 const setup = fs.readFileSync('setup_printer.bat', 'utf8');
 const worker = fs.readFileSync('sw.js', 'utf8');
 const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+const appIcon = fs.readFileSync('icons/icon-192.png');
 
 new Function(server);
 let inlineCount = 0;
@@ -36,6 +37,16 @@ if (!index.includes("serviceWorker.register('./sw.js?v=" + expected)) throw new 
 if (!worker.includes(`const SW_VERSION = '${expected}'`)) throw new Error('Versi Service Worker tidak sesuai.');
 if (!worker.includes('requestUrl.origin !== self.location.origin')) throw new Error('Service Worker masih dapat mencegat request lintas origin ke LAN.');
 if (!index.includes('mapWithConcurrency(unique, 8')) throw new Error('Paralelisme pemindaian LAN belum dibatasi menjadi 8.');
+if (!index.includes('<img src="icons/icon-192.png" alt="Ikon Print Server Pro">')) throw new Error('Ikon resmi belum digunakan pada header.');
+if (appIcon.readUInt32BE(16) !== 192 || appIcon.readUInt32BE(20) !== 192) throw new Error('Dimensi icon-192.png tidak valid.');
+if (!index.includes('class="app-brand-heading"')) throw new Error('Judul dan badge versi belum dikelompokkan.');
+if (!index.includes('class="app-settings-trigger-icon"')) throw new Error('Tombol Pengaturan belum memakai ikon tanpa label.');
+if (!index.includes('<span>VIEW</span>')) throw new Error('Label preview belum diubah menjadi View.');
+if (/DOCUMENT PREVIEW/i.test(index)) throw new Error('Label Document Preview lama masih ditemukan.');
+if (/Cetak Dokumen/i.test(index)) throw new Error('Tombol Cetak Dokumen lama masih ditemukan.');
+if (!index.includes('id="printBtn" class="btn-block" onclick="showPinModal()">Cetak</button>')) throw new Error('Tombol Cetak utama tidak ditemukan.');
+if (!index.includes('confirmAndPrint(pendingCompatibilityPrint)">Konfirmasi</button>')) throw new Error('Tombol konfirmasi PIN belum dibedakan dari tombol Cetak.');
+if (!index.includes('@media (max-width:991px) { #printBtn { display:none; } }')) throw new Error('Tombol Cetak duplikat pada HP belum disembunyikan.');
 if (index.includes('#installBtn { display:none')) throw new Error('Tombol Install Aplikasi masih disembunyikan.');
 if (!index.includes("'Buat Pintasan Aplikasi'")) throw new Error('Fallback pintasan aplikasi belum ditemukan.');
 if (index.includes('192.168.0')) throw new Error('Prefix kedua masih aktif pada pencarian server.');

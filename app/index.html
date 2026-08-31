@@ -849,7 +849,7 @@
             .panel-heading { padding:14px; }
         }
 
-        /* v4.6.7 — Large Type Accessibility */
+        /* v4.6.8 — Large Type Accessibility */
         body { font-size:16px; line-height:1.5; }
         .app-brand-title { font-size:21px; line-height:1.25; }
         .app-brand-subtitle { font-size:13px; line-height:1.4; }
@@ -975,7 +975,7 @@
             .panel-heading { padding:15px; }
         }
 
-        /* v4.6.7 — Manual-first bootstrap and application settings */
+        /* v4.6.8 — Manual-first bootstrap and application settings */
         .initial-loading-screen {
             position:fixed;
             inset:0;
@@ -1128,6 +1128,72 @@
             .app-settings-section { padding:15px; }
         }
 
+        /* v4.6.8 — balanced application header */
+        .app-brand {
+            display:grid;
+            grid-template-columns:48px minmax(0,1fr) 42px;
+            align-items:start;
+            gap:13px;
+        }
+        .app-brand-mark {
+            width:48px;
+            height:48px;
+            padding:0;
+            overflow:hidden;
+            border:1px solid #dbeafe;
+            border-radius:13px;
+            background:#2563eb;
+            box-shadow:0 7px 18px rgba(37,99,235,.20);
+        }
+        .app-brand-mark img { width:100%; height:100%; display:block; object-fit:cover; }
+        .app-brand-copy { padding-top:1px; }
+        .app-brand-heading { display:flex; align-items:center; flex-wrap:wrap; gap:8px; min-width:0; }
+        .app-brand-heading .app-brand-title { min-width:0; }
+        .app-version {
+            height:25px;
+            padding:0 9px;
+            border-color:#bfdbfe;
+            border-radius:7px;
+            background:#eff6ff;
+            color:#1d4ed8;
+            font-size:10.5px;
+            font-weight:800;
+            letter-spacing:.01em;
+        }
+        .app-brand-actions { align-self:start; width:42px; }
+        .app-settings-trigger {
+            position:relative;
+            width:42px;
+            height:42px;
+            min-height:42px;
+            padding:0;
+            border-radius:11px;
+            font-size:20px;
+        }
+        .app-settings-trigger-icon { display:block; font-size:19px; line-height:1; }
+        .app-settings-status-dot { position:absolute; right:5px; bottom:5px; width:8px; height:8px; border:2px solid #fff; }
+        .app-settings-head {
+            display:grid;
+            grid-template-columns:minmax(0,1fr) 42px;
+            align-items:start;
+            gap:14px;
+            padding:18px 18px 17px;
+        }
+        .app-settings-head > div { min-width:0; padding-top:1px; }
+        .app-settings-head h2, .app-settings-head p { text-align:left; }
+        .app-settings-close { width:42px; height:42px; flex-basis:42px; justify-self:end; }
+        @media (max-width:991px) { #printBtn { display:none; } }
+        @media (max-width:560px) {
+            .app-brand { grid-template-columns:44px minmax(0,1fr) 40px; align-items:start; gap:10px; }
+            .app-brand-mark { width:44px; height:44px; border-radius:12px; }
+            .app-brand-copy { padding-top:0; }
+            .app-brand-actions { width:40px; justify-content:flex-end; }
+            .app-settings-trigger { width:40px; height:40px; min-height:40px; padding:0; }
+            .app-brand-heading { gap:6px; }
+            .app-version { height:23px; padding:0 7px; font-size:9.5px; }
+            .app-settings-head { grid-template-columns:minmax(0,1fr) 42px; padding:16px; }
+        }
+
 </style>
 </head>
 <body>
@@ -1135,16 +1201,18 @@
         <div class="left-col">
             <div class="card main-card">
                 <div class="app-brand">
-                    <div class="app-brand-mark" aria-hidden="true">PS</div>
+                    <div class="app-brand-mark"><img src="icons/icon-192.png" alt="Ikon Print Server Pro"></div>
                     <div class="app-brand-copy">
-                        <div class="app-brand-title">Print Server Pro</div>
+                        <div class="app-brand-heading">
+                            <div class="app-brand-title">Print Server Pro</div>
+                            <span class="app-version">v4.6.8</span>
+                        </div>
                         <div class="app-brand-subtitle">Network Printing Console</div>
                     </div>
                     <div class="app-brand-actions">
-                        <span class="app-version">v4.6.7</span>
-                        <button type="button" id="appSettingsBtn" class="app-settings-trigger" onclick="openAppSettings()" aria-controls="appSettingsPanel" aria-expanded="false">
+                        <button type="button" id="appSettingsBtn" class="app-settings-trigger" onclick="openAppSettings()" aria-label="Buka Pengaturan" title="Pengaturan" aria-controls="appSettingsPanel" aria-expanded="false">
                             <span id="appSettingsStatusDot" class="app-settings-status-dot" aria-hidden="true"></span>
-                            <span>⚙ Pengaturan</span>
+                            <span class="app-settings-trigger-icon" aria-hidden="true">⚙</span>
                         </button>
                     </div>
                 </div>
@@ -1533,7 +1601,7 @@
         <div class="preview-col" id="previewCol">
             <div class="card" style="padding: 0; overflow: hidden; display: flex; flex-direction: column;">
                 <div class="preview-header">
-                    <span>DOCUMENT PREVIEW</span>
+                    <span>VIEW</span>
                     <span id="previewPagination" style="display:none; align-items:center; gap:8px;">
                         <button class="btn-nav" id="btnPrevPage" onclick="changePreviewSheet(-1)">◀</button>
                         <span id="previewSheetText" style="font-size:11px;">1 / 1</span>
@@ -1546,7 +1614,7 @@
                     <canvas id="mainPreviewCanvas" class="preview-canvas" style="display: none;"></canvas>
                 </div>
                 <div class="preview-actions" style="padding: 20px; border-top: 1px solid var(--border-soft); background: white;">
-                    <button id="printBtn" class="btn-block" onclick="showPinModal()">Cetak Dokumen</button>
+                    <button id="printBtn" class="btn-block" onclick="showPinModal()">Cetak</button>
                     <button id="compatPrintBtn" class="btn-block" style="margin-top:10px; background:#334155; display:none;" onclick="showPinModal(true)">Cetak dengan Mode Kompatibilitas</button>
                     <div id="compatHint" style="display:none; margin-top:8px; font-size:11px; color:var(--text-muted); line-height:1.4;">
                         Jika PDF gagal dicetak normal, aplikasi akan otomatis mencoba mode ini. Tombol ini tetap bisa dipakai manual.
@@ -1568,7 +1636,7 @@
         <div class="app-settings-body">
             <section class="app-settings-section">
                 <h3 class="app-settings-section-title">Koneksi Server</h3>
-                <p class="app-settings-section-copy">Alamat server dicari otomatis pada 192.168.1.x. Gunakan kolom ini untuk mengganti atau memindai ulang.</p>
+                <p class="app-settings-section-copy">Masukkan alamat server secara manual, atau gunakan tombol pencarian untuk memindai 192.168.1.x.</p>
                 <div id="appSettingsConnection"></div>
             </section>
             <section class="app-settings-section">
@@ -1620,7 +1688,7 @@
             <input type="password" id="modalPinInput" class="input-standard" maxlength="6" inputmode="numeric" style="font-size:32px; letter-spacing:10px; text-align:center; padding:15px; margin-bottom: 20px;">
             <div style="display:flex; gap:10px;">
                 <button class="btn-block secondary" onclick="closePinModal()">Batal</button>
-                <button class="btn-block" onclick="confirmAndPrint(pendingCompatibilityPrint)">Cetak</button>
+                <button class="btn-block" onclick="confirmAndPrint(pendingCompatibilityPrint)">Konfirmasi</button>
             </div>
         </div>
     </div>
@@ -3469,7 +3537,7 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
             const queue=document.getElementById('queueCard');
             if(queue)queue.setAttribute('aria-label','Antrean Cetak');
             const preview=document.getElementById('previewCol');
-            if(preview)preview.setAttribute('aria-label','Preview Dokumen');
+            if(preview)preview.setAttribute('aria-label','View Dokumen');
         }
 
         function setupPwaInstall() {
@@ -3511,7 +3579,7 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
         async function prepareLanBootstrap() {
             if (!('serviceWorker' in navigator)) return true;
             const controllerUrl = navigator.serviceWorker.controller?.scriptURL || '';
-            if (!controllerUrl || controllerUrl.includes('v=4.6.7')) return true;
+            if (!controllerUrl || controllerUrl.includes('v=4.6.8')) return true;
             try {
                 const registrations = await navigator.serviceWorker.getRegistrations();
                 const appScope = new URL('./', location.href).href;
@@ -3524,7 +3592,7 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
         }
         function registerPwaWorker() {
             if (!('serviceWorker' in navigator)) return;
-            navigator.serviceWorker.register('./sw.js?v=4.6.7', { scope: './' }).catch(() => {});
+            navigator.serviceWorker.register('./sw.js?v=4.6.8', { scope: './' }).catch(() => {});
         }
         function openManualStartup() {
             initialDiscoveryActive = false;

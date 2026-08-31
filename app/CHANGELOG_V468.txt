@@ -1,0 +1,11 @@
+PRINT SERVER PRO v4.6.8
+=======================
+
+- Menggunakan icon-192.png sebagai ikon resmi pada header aplikasi.
+- Menempatkan badge versi tepat di samping judul Print Server Pro.
+- Mengubah tombol Pengaturan di kanan atas menjadi ikon gear tanpa label.
+- Menyeimbangkan header aplikasi dan header panel Pengaturan pada desktop serta HP.
+- Mengganti label Document Preview menjadi View.
+- Mengganti tombol Cetak Dokumen menjadi Cetak.
+- Pada HP, tombol Cetak di preview disembunyikan karena bar bawah sudah menyediakan aksi yang sama.
+- Mengganti tombol tahap kedua pada dialog PIN menjadi Konfirmasi agar tidak tampak sebagai aksi duplikat.
