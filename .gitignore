@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+app/node_modules/
+
+# Runtime uploads and logs
+app/uploads/
+uploads/
+logs/
+*.log
+
+# Local configuration
+.env
+.env.*
+!.env.example
+
+# Release binaries belong in GitHub Releases
+Print_Server_Pro.zip
+release-assets/
+
+# Operating systems and editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
