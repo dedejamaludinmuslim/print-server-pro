@@ -3,7 +3,7 @@
 Print Server Pro menghubungkan printer Windows—termasuk printer USB—dengan HP
 dan komputer lain melalui jaringan lokal.
 
-- Aplikasi stabil: **v4.6.5 Immediate Entry**
+- Aplikasi stabil: **v4.6.6 LAN Bootstrap Hotfix**
 - Installer online: **v4.5.35-H4**
 - Repository: `dedejamaludinmuslim/print-server-pro`
 
@@ -14,7 +14,7 @@ dan komputer lain melalui jaringan lokal.
 | Source aplikasi | `app/` | UI, server Node.js, deteksi printer, dan mesin cetak |
 | GitHub Pages | `docs/` | Antarmuka publik yang menghubungi server lokal |
 | Installer | `installer/` | Instalasi, repair, startup otomatis, dan uninstall |
-| GitHub Release | `v4.6.5` | Menyediakan `Print_Server_Pro.zip` dan `manifest.json` |
+| GitHub Release | `v4.6.6` | Menyediakan `Print_Server_Pro.zip` dan `manifest.json` |
 | PC printer | `C:\ProgramData\PrintServerPro` | Menjalankan server lokal dan mengakses printer Windows |
 
 GitHub menyimpan source serta paket rilis. GitHub Pages menyediakan antarmuka
@@ -75,11 +75,13 @@ ditekan dua kali dalam jeda sekitar dua detik. Fitur Cari Cepat dan Preflight
 tidak lagi digunakan; pencarian awal otomatis dan pemindaian prefix manual tetap
 tersedia.
 
-Deteksi awal v4.6.5 hanya memindai prefix `192.168.1.x`. Setelah `/ping`
+Deteksi awal v4.6.6 hanya memindai prefix `192.168.1.x`. Setelah `/ping`
 membuktikan server aktif, layar awal langsung membuka antarmuka dan daftar
 printer dimuat di belakang dengan batas 8 detik. Batas pencarian 18 detik serta
-watchdog antarmuka 20 detik mencegah layar loading menetap. Jika gagal, panel
-**Pengaturan** dibuka otomatis dan menampilkan diagnosis jaringan.
+watchdog antarmuka 20 detik mencegah layar loading menetap. Service Worker hanya
+menangani aset dari origin halaman dan tidak mencegat permintaan menuju server
+LAN. Jika gagal, panel **Pengaturan** dibuka otomatis dan menampilkan diagnosis
+jaringan.
 
 Tombol **Install Aplikasi** selalu tersedia di Pengaturan. Saat prompt PWA belum
 disediakan browser, tombol tersebut menampilkan petunjuk **Tambahkan ke layar

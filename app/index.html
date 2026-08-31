@@ -849,7 +849,7 @@
             .panel-heading { padding:14px; }
         }
 
-        /* v4.6.5 — Large Type Accessibility */
+        /* v4.6.6 — Large Type Accessibility */
         body { font-size:16px; line-height:1.5; }
         .app-brand-title { font-size:21px; line-height:1.25; }
         .app-brand-subtitle { font-size:13px; line-height:1.4; }
@@ -975,7 +975,7 @@
             .panel-heading { padding:15px; }
         }
 
-        /* v4.6.5 — Bounded server bootstrap and application settings */
+        /* v4.6.6 — Bounded server bootstrap and application settings */
         .initial-loading-screen {
             position:fixed;
             inset:0;
@@ -1151,7 +1151,7 @@
                         <div class="app-brand-subtitle">Network Printing Console</div>
                     </div>
                     <div class="app-brand-actions">
-                        <span class="app-version">v4.6.5</span>
+                        <span class="app-version">v4.6.6</span>
                         <button type="button" id="appSettingsBtn" class="app-settings-trigger" onclick="openAppSettings()" aria-controls="appSettingsPanel" aria-expanded="false">
                             <span id="appSettingsStatusDot" class="app-settings-status-dot" aria-hidden="true"></span>
                             <span>⚙ Pengaturan</span>
@@ -2723,7 +2723,7 @@ function buildConsolidatedSettingsUi(){
         }
         async function discoverCandidates(candidates, timeoutMs, runId, progressLabel) {
             const unique = [...new Set(candidates.filter(isSafeDiscoveryHost))];
-            return mapWithConcurrency(unique, 32, host => probePrintServer(host, timeoutMs, runId), (done, total, found) => {
+            return mapWithConcurrency(unique, 8, host => probePrintServer(host, timeoutMs, runId), (done, total, found) => {
                 if (runId !== discoveryRunId) return;
                 const message = `${progressLabel}: ${done}/${total} alamat · ${found} server ditemukan`;
                 setScanProgress(message);
@@ -2749,7 +2749,7 @@ function buildConsolidatedSettingsUi(){
                     if (initialDiscoveryActive) setInitialLoading('Mencari server printer', message, completed > 8);
                 }
             }
-            await Promise.all(Array.from({ length: Math.min(32, unique.length) }, worker));
+            await Promise.all(Array.from({ length: Math.min(8, unique.length) }, worker));
             return found ? [found] : [];
         }
         function processFoundServers(servers) {
@@ -3517,11 +3517,24 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
                 refreshInstallButton();
                 showToast('Aplikasi berhasil diinstall.', 'success');
             });
-            if ('serviceWorker' in navigator) {
-                window.addEventListener('load', () => {
-                    navigator.serviceWorker.register('./sw.js').catch(() => {});
-                });
-            }
+        }
+        async function prepareLanBootstrap() {
+            if (!('serviceWorker' in navigator)) return true;
+            const controllerUrl = navigator.serviceWorker.controller?.scriptURL || '';
+            if (!controllerUrl || controllerUrl.includes('v=4.6.6')) return true;
+            try {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                const appScope = new URL('./', location.href).href;
+                await Promise.all(registrations
+                    .filter(registration => registration.scope === appScope)
+                    .map(registration => registration.unregister()));
+            } catch (_) {}
+            location.reload();
+            return false;
+        }
+        function registerPwaWorker() {
+            if (!('serviceWorker' in navigator)) return;
+            navigator.serviceWorker.register('./sw.js?v=4.6.6', { scope: './' }).catch(() => {});
         }
         async function connectFirstDiscoveredServer(servers) {
             for (const server of servers) {
@@ -3689,9 +3702,10 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
         });
         document.addEventListener('keydown', event => { if (event.key === 'Escape') closeAppSettings(); });
         setupPwaInstall();
-        window.addEventListener('load', () => {
+        window.addEventListener('load', async () => {
             setupBackNavigation(); applyProfessionalUiPolish(); loadHistory(); buildConsolidatedSettingsUi(); markAdvancedSettingGroups(); refreshPresetSelect();
             document.getElementById('settingsViewMode').value='compact'; applySettingsViewMode(); syncAdvancedPrintControls(); validatePrintSettings(false); updatePrintSettingsSummary(); updateAccordionSummaries();
+            if (!await prepareLanBootstrap()) return;
             const loadingWatchdog = setTimeout(() => {
                 const screen = document.getElementById('initialLoadingScreen');
                 if (!screen || screen.classList.contains('is-hidden')) return;
@@ -3709,7 +3723,19 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
                     hideInitialLoading();
                     openAppSettings();
                 })
-                .finally(() => clearTimeout(loadingWatchdog));
+                .finally(() => {
+                    clearTimeout(loadingWatchdog);
+                    const screen = document.getElementById('initialLoadingScreen');
+                    if (screen && !screen.classList.contains('is-hidden')) {
+                        initialDiscoveryActive = false;
+                        cancelDiscoveryRequests(false);
+                        setConnectionStatus('failed', 'Pencarian server telah selesai');
+                        setDiscoveryDiagnostics('Layar awal ditutup otomatis. Periksa hasil deteksi melalui tombol Pengaturan.');
+                        setInitialLoading('Pencarian selesai', 'Antarmuka dibuka agar aplikasi tidak terkunci.', true, 'failed');
+                        setTimeout(() => { hideInitialLoading(); openAppSettings(); }, 900);
+                    }
+                    registerPwaWorker();
+                });
         });
     </script>
 </body>

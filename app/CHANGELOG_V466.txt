@@ -1,0 +1,10 @@
+PRINT SERVER PRO v4.6.6
+=======================
+
+- Service Worker hanya menangani request GET yang berasal dari origin aplikasi.
+- Request ke server LAN 192.168.1.x melewati Service Worker dan tetap berasal dari dokumen aktif.
+- Service Worker lama v4.6.5 dilepas satu kali sebelum pemindaian lalu diganti worker aman v4.6.6.
+- Tombol Install Aplikasi tetap tersedia tanpa mengambil alih proses deteksi server.
+- Registrasi PWA dilakukan setelah bootstrap LAN selesai.
+- Pemindaian prefix dibatasi menjadi 8 koneksi paralel agar stabil pada Chrome Android.
+- Layar awal selalu ditutup setelah bootstrap selesai, termasuk pada jalur keluar dini.

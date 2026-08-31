@@ -6,6 +6,7 @@ if (!expected) throw new Error('Versi yang diharapkan belum diberikan.');
 const index = fs.readFileSync('index.html', 'utf8');
 const server = fs.readFileSync('server.js', 'utf8');
 const setup = fs.readFileSync('setup_printer.bat', 'utf8');
+const worker = fs.readFileSync('sw.js', 'utf8');
 const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
 
 new Function(server);
@@ -36,6 +37,13 @@ if (!index.includes("updateIpAndFetchPrinters({ silent: true, timeoutMs: 8000 })
 if (!index.includes("setTimeout(() => controller.abort(), timeoutMs)")) throw new Error('Abort timeout daftar printer belum ditemukan.');
 if (!index.includes("const loadingWatchdog = setTimeout")) throw new Error('Watchdog layar loading belum ditemukan.');
 if (!index.includes("setupPwaInstall();\n        window.addEventListener('load'")) throw new Error('Listener instalasi PWA masih terlambat dipasang.');
+if (!index.includes('async function prepareLanBootstrap()')) throw new Error('Pelepasan Service Worker lama sebelum bootstrap LAN tidak ditemukan.');
+if (!index.includes("registerPwaWorker();")) throw new Error('Registrasi Service Worker setelah bootstrap LAN tidak ditemukan.');
+if (!index.includes("serviceWorker.register('./sw.js?v=" + expected)) throw new Error('Versi registrasi Service Worker tidak sesuai.');
+if (!worker.includes(`const SW_VERSION = '${expected}'`)) throw new Error('Versi Service Worker tidak sesuai.');
+if (!worker.includes('requestUrl.origin !== self.location.origin')) throw new Error('Service Worker masih dapat mencegat request lintas origin ke LAN.');
+if (!index.includes('mapWithConcurrency(unique, 8')) throw new Error('Paralelisme pemindaian LAN belum dibatasi menjadi 8.');
+if (!index.includes("setInitialLoading('Pencarian selesai', 'Antarmuka dibuka agar aplikasi tidak terkunci.'")) throw new Error('Jalur penutup paksa layar awal tidak ditemukan.');
 if (index.includes('#installBtn { display:none')) throw new Error('Tombol Install Aplikasi masih disembunyikan.');
 if (!index.includes("'Tambahkan ke layar utama'")) throw new Error('Fallback instalasi PWA belum ditemukan.');
 if (index.includes('192.168.0')) throw new Error('Prefix kedua masih aktif pada pencarian server.');
