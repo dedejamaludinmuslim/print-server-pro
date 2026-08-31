@@ -26,9 +26,12 @@ if (!server.includes('assertPrintOptionsSupported')) throw new Error('Validasi k
 if (index.includes('startQuickDiscovery') || index.includes('Cari Cepat')) throw new Error('Fitur Cari Cepat masih ditemukan.');
 if (!index.includes("const DEFAULT_DISCOVERY_PREFIX = '192.168.1'")) throw new Error('Prefix pencarian server default belum ditetapkan.');
 if (!index.includes('Array.from({ length: 254 }')) throw new Error('Pemindaian 254 alamat pada prefix default tidak ditemukan.');
-if (!index.includes('Pemindaian tahap 1') || !index.includes('Pemindaian tahap 2')) throw new Error('Pemindaian server dua tahap tidak ditemukan.');
-if (!index.includes('discoverFirstServer(prefixCandidates, 1600') || !index.includes('discoverFirstServer(prefixCandidates, 2800')) throw new Error('Timeout pemindaian dua tahap tidak sesuai.');
-if (!index.includes("permissionBeforeScan === 'prompt'") || !index.includes('probePrintServer(`${DEFAULT_DISCOVERY_PREFIX}.1`, 10000')) throw new Error('Pemicu izin Local Network Access belum ditemukan.');
+if (!index.includes('const INITIAL_DISCOVERY_LIMIT_MS = 18000')) throw new Error('Batas keras pencarian awal belum ditetapkan.');
+if (!index.includes('discoverFirstServer(prefixCandidates, 1300')) throw new Error('Pemindaian prefix awal tidak ditemukan.');
+if (!index.includes("permissionBeforeScan === 'prompt'") || !index.includes('probePrintServer(`${DEFAULT_DISCOVERY_PREFIX}.1`, 3500')) throw new Error('Pemicu izin Local Network Access belum ditemukan.');
+if (!index.includes("targetAddressSpace: 'local'")) throw new Error('Fetch jaringan lokal belum menyatakan targetAddressSpace.');
+if (!index.includes("setInitialLoading('Server belum ditemukan', message, true, 'failed')")) throw new Error('Hasil gagal pencarian awal belum ditampilkan.');
+if (!index.includes('openManualSettings()')) throw new Error('Pengaturan manual belum dibuka otomatis setelah pencarian gagal.');
 if (index.includes('192.168.0')) throw new Error('Prefix kedua masih aktif pada pencarian server.');
 if (!index.includes('initialAutoDiscoverServer()')) throw new Error('Bootstrap pencarian server otomatis tidak ditemukan.');
 if (!index.includes('id="initialLoadingScreen"')) throw new Error('Layar loading awal tidak ditemukan.');

@@ -16,7 +16,7 @@ git clone https://github.com/dedejamaludinmuslim/print-server-pro.git
 cd print-server-pro
 # Salin isi folder repository dari paket ke folder ini.
 git add app docs installer .github .gitignore .gitattributes README.md DEPLOYMENT.md
-git commit -m "Deploy Print Server Pro v4.6.3 with GitHub Pages"
+git commit -m "Deploy Print Server Pro v4.6.4 with GitHub Pages"
 git push origin main
 ```
 
@@ -36,10 +36,10 @@ Alamat aplikasi:
 
 Saat browser meminta izin akses jaringan lokal, pilih **Allow**.
 
-## 3. Perbarui Release stabil v4.6.3
+## 3. Perbarui Release stabil v4.6.4
 
 1. Buka halaman repository, lalu pilih **Releases**.
-2. Buka Release `v4.6.3`. Jika belum ada, buat tag `v4.6.3` dari branch
+2. Buka Release `v4.6.4`. Jika belum ada, buat tag `v4.6.4` dari branch
    `main`.
 3. Hapus aset lama dengan nama yang sama, lalu unggah dari folder
    `release-assets`:
@@ -57,20 +57,21 @@ Pastikan alamat berikut dapat dibuka tanpa login:
 - `https://github.com/dedejamaludinmuslim/print-server-pro/releases/latest/download/Print_Server_Pro.zip`
 - `https://dedejamaludinmuslim.github.io/print-server-pro/`
 
-Isi manifest terbaru harus menunjukkan versi `4.6.3`.
+Isi manifest terbaru harus menunjukkan versi `4.6.4`.
 
 ## 5. Uji satu PC
 
-Jalankan mode Repair pada satu PC nonkritis. Verifikasi:
+Jalankan perintah installer terpadu pada satu PC nonkritis, lalu pilih
+**Pasang / Perbarui / Perbaiki**. Verifikasi:
 
 ```powershell
 Invoke-RestMethod http://localhost:3000/ping
 Get-ScheduledTask -TaskName "Print Server Pro" | Select-Object TaskName,State
 ```
 
-Server harus melaporkan versi `4.6.3`, task tetap berjalan setelah terminal
-ditutup, dan printer Windows muncul pada aplikasi GitHub Pages. Jalankan kembali
-installer mode Repair agar server lokal menggunakan daftar CORS terbaru.
+Server harus melaporkan versi `4.6.4`, task tetap berjalan setelah terminal
+ditutup, dan printer Windows muncul pada aplikasi GitHub Pages. Perintah yang
+sama juga menyediakan pilihan untuk menghapus aplikasi.
 
 ## 6. Batas deployment
 

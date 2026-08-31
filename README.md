@@ -3,8 +3,8 @@
 Print Server Pro menghubungkan printer Windows—termasuk printer USB—dengan HP
 dan komputer lain melalui jaringan lokal.
 
-- Aplikasi stabil: **v4.6.3 Reliable Discovery**
-- Installer online: **v4.5.35-H3**
+- Aplikasi stabil: **v4.6.4 Bounded Discovery**
+- Installer online: **v4.5.35-H4**
 - Repository: `dedejamaludinmuslim/print-server-pro`
 
 ## Arsitektur
@@ -14,7 +14,7 @@ dan komputer lain melalui jaringan lokal.
 | Source aplikasi | `app/` | UI, server Node.js, deteksi printer, dan mesin cetak |
 | GitHub Pages | `docs/` | Antarmuka publik yang menghubungi server lokal |
 | Installer | `installer/` | Instalasi, repair, startup otomatis, dan uninstall |
-| GitHub Release | `v4.6.3` | Menyediakan `Print_Server_Pro.zip` dan `manifest.json` |
+| GitHub Release | `v4.6.4` | Menyediakan `Print_Server_Pro.zip` dan `manifest.json` |
 | PC printer | `C:\ProgramData\PrintServerPro` | Menjalankan server lokal dan mengakses printer Windows |
 
 GitHub menyimpan source serta paket rilis. GitHub Pages menyediakan antarmuka
@@ -75,10 +75,11 @@ ditekan dua kali dalam jeda sekitar dua detik. Fitur Cari Cepat dan Preflight
 tidak lagi digunakan; pencarian awal otomatis dan pemindaian prefix manual tetap
 tersedia.
 
-Deteksi awal v4.6.3 menggunakan dua tahap pada prefix yang sama. Tahap pertama
-memicu atau memakai izin Local Network Access, kemudian tahap kedua mengulang
-pemeriksaan dengan timeout lebih panjang. Mekanisme ini mencegah alamat server
-terlewat ketika pengguna masih merespons permintaan izin browser.
+Deteksi awal v4.6.4 hanya memindai prefix `192.168.1.x` dan memiliki batas keras
+18 detik. Layar awal selalu berakhir dengan status server ditemukan, izin
+jaringan lokal ditolak, atau server tidak ditemukan. Jika gagal, panel
+**Pengaturan** dibuka otomatis dan menampilkan diagnosis untuk izin Chrome,
+Wi-Fi tamu, dan AP/client isolation.
 
 ## Instalasi online
 
@@ -88,21 +89,15 @@ Buka Windows PowerShell atau Terminal, lalu jalankan:
 $u="https://raw.githubusercontent.com/dedejamaludinmuslim/print-server-pro/main/installer/Install-PrintServerPro.ps1"; $p="$env:TEMP\Install-PrintServerPro.ps1"; Invoke-WebRequest $u -UseBasicParsing -OutFile $p; powershell.exe -NoProfile -ExecutionPolicy Bypass -File $p
 ```
 
+Perintah tunggal tersebut menampilkan pilihan terpadu:
+
+1. **Pasang / Perbarui / Perbaiki**
+2. **Hapus Print Server Pro**
+3. **Batal**
+
 Installer meminta hak Administrator, mengunduh Release stabil terbaru,
 memverifikasi SHA-256, memasang dependensi, membuka TCP 3000 hanya untuk profil
 Private/Domain, dan mendaftarkan startup tersembunyi melalui Task Scheduler.
-
-## Memperbarui instalasi
-
-```powershell
-$u="https://raw.githubusercontent.com/dedejamaludinmuslim/print-server-pro/main/installer/Install-PrintServerPro.ps1"; $p="$env:TEMP\Install-PrintServerPro.ps1"; Invoke-WebRequest $u -UseBasicParsing -OutFile $p; powershell.exe -NoProfile -ExecutionPolicy Bypass -File $p -Mode Repair
-```
-
-## Uninstall
-
-```powershell
-$u="https://raw.githubusercontent.com/dedejamaludinmuslim/print-server-pro/main/installer/Install-PrintServerPro.ps1"; $p="$env:TEMP\Install-PrintServerPro.ps1"; Invoke-WebRequest $u -UseBasicParsing -OutFile $p; powershell.exe -NoProfile -ExecutionPolicy Bypass -File $p -Mode Uninstall
-```
 
 Node.js tidak ikut dihapus karena mungkin digunakan aplikasi lain.
 

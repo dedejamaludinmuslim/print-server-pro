@@ -849,7 +849,7 @@
             .panel-heading { padding:14px; }
         }
 
-        /* v4.6.3 — Large Type Accessibility */
+        /* v4.6.4 — Large Type Accessibility */
         body { font-size:16px; line-height:1.5; }
         .app-brand-title { font-size:21px; line-height:1.25; }
         .app-brand-subtitle { font-size:13px; line-height:1.4; }
@@ -975,7 +975,7 @@
             .panel-heading { padding:15px; }
         }
 
-        /* v4.6.3 — Initial server bootstrap and application settings */
+        /* v4.6.4 — Bounded server bootstrap and application settings */
         .initial-loading-screen {
             position:fixed;
             inset:0;
@@ -1019,6 +1019,20 @@
             border-radius:50%;
             animation:initialServerSpin .8s linear infinite;
         }
+        .initial-loading-screen.is-result .initial-loading-spinner {
+            display:grid;
+            place-items:center;
+            border:0;
+            animation:none;
+            color:#fff;
+            font-size:18px;
+            font-weight:900;
+        }
+        .initial-loading-screen.is-success .initial-loading-spinner { background:#16a34a; }
+        .initial-loading-screen.is-success .initial-loading-spinner::after { content:'\2713'; }
+        .initial-loading-screen.is-failed .initial-loading-spinner { background:#dc2626; }
+        .initial-loading-screen.is-failed .initial-loading-spinner::after { content:'!'; }
+        .initial-loading-screen.is-failed .initial-loading-detail { color:#b91c1c!important; }
         @keyframes initialServerSpin { to { transform:rotate(360deg); } }
         .initial-loading-card h1 { margin:0; font-size:20px; color:#0f172a; }
         .initial-loading-card p { margin:9px 0 0; color:#64748b; font-size:13.5px; line-height:1.55; }
@@ -1137,7 +1151,7 @@
                         <div class="app-brand-subtitle">Network Printing Console</div>
                     </div>
                     <div class="app-brand-actions">
-                        <span class="app-version">v4.6.3</span>
+                        <span class="app-version">v4.6.4</span>
                         <button type="button" id="appSettingsBtn" class="app-settings-trigger" onclick="openAppSettings()" aria-controls="appSettingsPanel" aria-expanded="false">
                             <span id="appSettingsStatusDot" class="app-settings-status-dot" aria-hidden="true"></span>
                             <span>⚙ Pengaturan</span>
@@ -1979,6 +1993,7 @@ function buildConsolidatedSettingsUi(){
         let deferredPrompt = null;
         let discoveryRunId = 0;
         const DEFAULT_DISCOVERY_PREFIX = '192.168.1';
+        const INITIAL_DISCOVERY_LIMIT_MS = 18000;
         let initialDiscoveryActive = false;
         const activeDiscoveryControllers = new Set();
         const CONNECTION_STATUS = {
@@ -2082,12 +2097,15 @@ function buildConsolidatedSettingsUi(){
             if (headerDot) headerDot.style.background = cfg.color;
             if (trigger) trigger.title = customText || cfg.text;
         }
-        function setInitialLoading(message, detail = '', allowManual = false) {
+        function setInitialLoading(message, detail = '', allowManual = false, state = 'loading') {
             const screen = document.getElementById('initialLoadingScreen');
             const messageEl = document.getElementById('initialLoadingMessage');
             const detailEl = document.getElementById('initialLoadingDetail');
             const manualBtn = document.getElementById('initialLoadingManualBtn');
             if (!screen) return;
+            screen.classList.toggle('is-result', state !== 'loading');
+            screen.classList.toggle('is-success', state === 'success');
+            screen.classList.toggle('is-failed', state === 'failed');
             if (message) messageEl.textContent = message;
             detailEl.textContent = detail;
             manualBtn.classList.toggle('is-visible', allowManual);
@@ -2664,7 +2682,7 @@ function buildConsolidatedSettingsUi(){
             activeDiscoveryControllers.add(controller);
             const timer = setTimeout(() => controller.abort(), timeoutMs);
             try {
-                const res = await fetch(`http://${host}:3000/ping?_t=${Date.now()}`, { signal: controller.signal, cache: 'no-store' });
+                const res = await fetch(`http://${host}:3000/ping?_t=${Date.now()}`, { signal: controller.signal, cache: 'no-store', targetAddressSpace: 'local' });
                 if (!res.ok || runId !== discoveryRunId) return null;
                 const data = await res.json();
                 if (data?.status !== 'PrintServerActive') return null;
@@ -3501,59 +3519,109 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
             ];
             document.getElementById('ipAddress').value = '';
             const runId = ++discoveryRunId;
-            const permissionBeforeScan = await getLocalNetworkPermissionState();
-            const permissionHint = permissionBeforeScan === 'prompt'
-                ? 'Izinkan akses jaringan lokal jika browser menampilkan permintaan.'
-                : permissionBeforeScan === 'denied'
-                    ? 'Izin jaringan lokal sedang ditolak; buka pengaturan situs jika pemindaian gagal.'
-                    : `Memindai ${DEFAULT_DISCOVERY_PREFIX}.1–254…`;
-            setInitialLoading('Mencari server printer', permissionHint, false);
-            setConnectionStatus('scanning', `Memindai ${DEFAULT_DISCOVERY_PREFIX}.x…`);
+            let outcomeFinalized = false;
+            let deadlineTimer = null;
+            let manualRevealTimer = null;
+            const openManualSettings = () => {
+                hideInitialLoading();
+                openAppSettings();
+                const input = document.getElementById('ipAddress');
+                input?.focus();
+                input?.select();
+            };
+            const finalizeFailure = async (message, detail) => {
+                if (outcomeFinalized) return;
+                outcomeFinalized = true;
+                initialDiscoveryActive = false;
+                setConnectionStatus('failed', message);
+                setDiscoveryDiagnostics(detail);
+                setInitialLoading('Server belum ditemukan', message, true, 'failed');
+                cancelDiscoveryRequests(false);
+                await sleep(1700);
+                openManualSettings();
+            };
+            deadlineTimer = setTimeout(() => {
+                finalizeFailure(
+                    `Batas pencarian ${INITIAL_DISCOVERY_LIMIT_MS / 1000} detik tercapai.`,
+                    `Tidak ada Print Server Pro yang merespons pada ${DEFAULT_DISCOVERY_PREFIX}.1–254. Jika halaman ping dapat dibuka dari PC tetapi tidak dari HP, periksa izin Jaringan lokal Chrome, pastikan HP memakai Wi-Fi yang sama dan bukan jaringan tamu, lalu nonaktifkan AP/client isolation pada router.`
+                );
+            }, INITIAL_DISCOVERY_LIMIT_MS);
+            manualRevealTimer = setTimeout(() => {
+                if (initialDiscoveryActive && runId === discoveryRunId) {
+                    document.getElementById('initialLoadingManualBtn')?.classList.add('is-visible');
+                }
+            }, 3000);
             try {
+                const permissionBeforeScan = await getLocalNetworkPermissionState();
+                if (!initialDiscoveryActive || runId !== discoveryRunId) return;
+                const permissionHint = permissionBeforeScan === 'prompt'
+                    ? 'Izinkan akses jaringan lokal jika browser menampilkan permintaan.'
+                    : permissionBeforeScan === 'denied'
+                        ? 'Izin jaringan lokal ditolak; pencarian akan dihentikan dan Pengaturan dibuka.'
+                        : `Memindai ${DEFAULT_DISCOVERY_PREFIX}.1–254, maksimal ${INITIAL_DISCOVERY_LIMIT_MS / 1000} detik…`;
+                setInitialLoading('Mencari server printer', permissionHint, false);
+                setConnectionStatus('scanning', `Memindai ${DEFAULT_DISCOVERY_PREFIX}.x…`);
+                if (permissionBeforeScan === 'denied') {
+                    await finalizeFailure(
+                        'Izin jaringan lokal ditolak oleh browser.',
+                        'Buka Pengaturan situs Chrome untuk halaman ini, pilih Jaringan lokal, lalu pilih Izinkan. Setelah itu muat ulang aplikasi.'
+                    );
+                    return;
+                }
                 let permissionProbe = null;
                 if (permissionBeforeScan === 'prompt') {
                     setInitialLoading('Izin jaringan lokal diperlukan', 'Tekan Allow/Izinkan agar aplikasi dapat mencari Print Server Pro.', true);
                     setConnectionStatus('scanning', 'Menunggu izin akses jaringan lokal…');
-                    permissionProbe = await probePrintServer(`${DEFAULT_DISCOVERY_PREFIX}.1`, 10000, runId);
-                    await sleep(400);
+                    permissionProbe = await probePrintServer(`${DEFAULT_DISCOVERY_PREFIX}.1`, 3500, runId);
+                    await sleep(250);
                     if (!initialDiscoveryActive || runId !== discoveryRunId) return;
                 }
                 let found = permissionProbe
                     ? [permissionProbe]
-                    : await discoverFirstServer(prefixCandidates, 1600, runId, `Pemindaian tahap 1 ${DEFAULT_DISCOVERY_PREFIX}.x`);
+                    : await discoverFirstServer(prefixCandidates, 1300, runId, `Pemindaian ${DEFAULT_DISCOVERY_PREFIX}.x`);
                 if (!initialDiscoveryActive || runId !== discoveryRunId) return;
                 if (!found.length) {
                     const permissionAfterScan = await getLocalNetworkPermissionState();
-                    const retryHint = permissionAfterScan === 'denied'
-                        ? 'Izin jaringan lokal ditolak. Aktifkan izin pada pengaturan situs browser.'
-                        : `Memverifikasi ulang ${DEFAULT_DISCOVERY_PREFIX}.1–254 setelah izin jaringan diproses…`;
+                    if (permissionAfterScan === 'denied') {
+                        await finalizeFailure(
+                            'Izin jaringan lokal ditolak oleh browser.',
+                            'Buka Pengaturan situs Chrome untuk halaman ini, pilih Jaringan lokal, lalu pilih Izinkan. Setelah itu muat ulang aplikasi.'
+                        );
+                        return;
+                    }
+                    const retryHint = `Memverifikasi alamat yang pernah dikenal pada ${DEFAULT_DISCOVERY_PREFIX}.x…`;
                     setInitialLoading('Memeriksa ulang jaringan', retryHint, true);
                     setConnectionStatus('scanning', `Verifikasi ulang ${DEFAULT_DISCOVERY_PREFIX}.x…`);
-                    await sleep(650);
+                    await sleep(250);
                     if (!initialDiscoveryActive || runId !== discoveryRunId) return;
-                    found = await discoverFirstServer(prefixCandidates, 2800, runId, `Pemindaian tahap 2 ${DEFAULT_DISCOVERY_PREFIX}.x`);
+                    const retryCandidates = [...prioritized, ...prefixCandidates.slice(0, 32)];
+                    found = await discoverFirstServer(retryCandidates, 1800, runId, `Verifikasi ${DEFAULT_DISCOVERY_PREFIX}.1–32`);
                 }
                 if (!initialDiscoveryActive || runId !== discoveryRunId) return;
-                if (found.length && await connectFirstDiscoveredServer(found)) {
-                    setInitialLoading('Server siap digunakan', `Terhubung ke ${document.getElementById('ipAddress').value}`, false);
-                    await new Promise(resolve => setTimeout(resolve, 350));
+                const connected = found.length ? await connectFirstDiscoveredServer(found) : false;
+                if (!initialDiscoveryActive || runId !== discoveryRunId || outcomeFinalized) return;
+                if (connected) {
+                    outcomeFinalized = true;
+                    setInitialLoading('Server siap digunakan', `Terhubung ke ${document.getElementById('ipAddress').value}`, false, 'success');
+                    await sleep(550);
                     hideInitialLoading();
                     return;
                 }
                 document.getElementById('ipAddress').value = '';
-                setConnectionStatus('failed', 'Server otomatis tidak ditemukan; periksa alamat secara manual');
-                setDiscoveryDiagnostics(`Tidak ada Print Server Pro yang merespons pada ${DEFAULT_DISCOVERY_PREFIX}.1–254. Masukkan IP server secara manual jika berada di prefix lain.`);
-                setInitialLoading('Server belum ditemukan', `Tidak ada server yang merespons pada ${DEFAULT_DISCOVERY_PREFIX}.x.`, true);
-                await new Promise(resolve => setTimeout(resolve, 1200));
-                if (initialDiscoveryActive) { hideInitialLoading(); openAppSettings(); }
-            } catch (_) {
+                await finalizeFailure(
+                    `Tidak ada server yang merespons pada ${DEFAULT_DISCOVERY_PREFIX}.x.`,
+                    `Pencarian otomatis telah selesai. Dari HP, uji http://IP-PC:3000/ping. Jika alamat itu tidak terbuka, pastikan HP dan PC memakai Wi-Fi yang sama, bukan jaringan tamu, dan AP/client isolation tidak aktif.`
+                );
+            } catch (error) {
                 if (!initialDiscoveryActive || runId !== discoveryRunId) return;
-                setConnectionStatus('failed', 'Pencarian otomatis gagal; masukkan alamat server');
-                setInitialLoading('Pencarian otomatis terhenti', 'Masukkan alamat server secara manual.', true);
-                await new Promise(resolve => setTimeout(resolve, 900));
-                if (initialDiscoveryActive) { hideInitialLoading(); openAppSettings(); }
+                await finalizeFailure(
+                    'Pencarian otomatis terhenti.',
+                    `Masukkan alamat server secara manual. Detail: ${String(error?.message || 'koneksi jaringan lokal tidak dapat diperiksa')}`
+                );
             } finally {
                 initialDiscoveryActive = false;
+                clearTimeout(deadlineTimer);
+                clearTimeout(manualRevealTimer);
             }
         }
 

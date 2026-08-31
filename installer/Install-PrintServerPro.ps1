@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
-    [ValidateSet('Install', 'Repair', 'Uninstall')]
-    [string]$Mode = 'Install'
+    [ValidateSet('Auto', 'Install', 'Repair', 'Uninstall')]
+    [string]$Mode = 'Auto'
 )
 
 Set-StrictMode -Version 2.0
@@ -10,7 +10,7 @@ $ProgressPreference = 'SilentlyContinue'
 
 $RepositoryOwner = 'dedejamaludinmuslim'
 $RepositoryName = 'print-server-pro'
-$InstallerRevision = '4.5.35-H3'
+$InstallerRevision = '4.5.35-H4'
 $ManifestUrl = "https://github.com/$RepositoryOwner/$RepositoryName/releases/latest/download/manifest.json"
 $InstallRoot = Join-Path $env:ProgramData 'PrintServerPro'
 $AppDirectory = Join-Path $InstallRoot 'app'
@@ -42,6 +42,32 @@ function Write-Step {
 function Write-Success {
     param([string]$Message)
     Write-Host "[OK] $Message" -ForegroundColor Green
+}
+
+function Select-InstallerMode {
+    $existingTask = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
+    $installationExists = (Test-Path -LiteralPath (Join-Path $AppDirectory 'package.json')) -or ($null -ne $existingTask)
+    $primaryLabel = if ($installationExists) {
+        'Pasang / Perbarui / Perbaiki (instalasi ditemukan)'
+    } else {
+        'Pasang / Perbarui / Perbaiki'
+    }
+
+    Write-Host "Print Server Pro Online Installer $InstallerRevision" -ForegroundColor White
+    Write-Host "Repository: https://github.com/$RepositoryOwner/$RepositoryName"
+    Write-Host ''
+    Write-Host "[1] $primaryLabel" -ForegroundColor Cyan
+    Write-Host '[2] Hapus Print Server Pro' -ForegroundColor Yellow
+    Write-Host '[3] Batal'
+    Write-Host ''
+
+    while ($true) {
+        $selection = (Read-Host 'Pilih tindakan [1]').Trim()
+        if ([string]::IsNullOrWhiteSpace($selection) -or $selection -eq '1') { return 'Install' }
+        if ($selection -eq '2') { return 'Uninstall' }
+        if ($selection -eq '3') { return 'Cancel' }
+        Write-Host 'Pilihan tidak valid. Masukkan 1, 2, atau 3.' -ForegroundColor Yellow
+    }
 }
 
 function Refresh-ProcessPath {
@@ -293,6 +319,14 @@ if (-not (Test-Administrator)) {
 
 try {
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+    if ($Mode -eq 'Auto') {
+        $Mode = Select-InstallerMode
+        if ($Mode -eq 'Cancel') {
+            Write-Host 'Tidak ada perubahan yang dilakukan.' -ForegroundColor Yellow
+            exit 0
+        }
+    }
+    if ($Mode -eq 'Repair') { $Mode = 'Install' }
     New-Item -ItemType Directory -Path $InstallRoot, $LogsDirectory -Force | Out-Null
     $transcriptDirectory = if ($Mode -eq 'Uninstall') { $env:TEMP } else { $LogsDirectory }
     $transcriptPath = Join-Path $transcriptDirectory ("PrintServerPro-installer-{0:yyyyMMdd-HHmmss}.log" -f (Get-Date))
@@ -310,7 +344,7 @@ try {
 
     Write-Host "Print Server Pro Online Installer $InstallerRevision" -ForegroundColor White
     Write-Host "Repository: https://github.com/$RepositoryOwner/$RepositoryName"
-    Write-Host "Mode: $Mode"
+    Write-Host 'Mode: Pasang / Perbarui / Perbaiki'
 
     $WorkDirectory = Join-Path $env:TEMP ("PrintServerPro-{0}" -f [Guid]::NewGuid().ToString('N'))
     $extractDirectory = Join-Path $WorkDirectory 'extract'

@@ -1,4 +1,4 @@
-PRINT SERVER PRO v4.6.3 — RELIABLE DISCOVERY
+PRINT SERVER PRO v4.6.4 — RELIABLE DISCOVERY
 
 - Mempertahankan satu prefix pencarian: 192.168.1.1–254.
 - Menambahkan permintaan pemicu izin Local Network Access sebelum pemindaian.
