@@ -8,3 +8,4 @@ PRINT SERVER PRO v4.6.6
 - Registrasi PWA dilakukan setelah bootstrap LAN selesai.
 - Pemindaian prefix dibatasi menjadi 8 koneksi paralel agar stabil pada Chrome Android.
 - Layar awal selalu ditutup setelah bootstrap selesai, termasuk pada jalur keluar dini.
+- CORS mengizinkan origin produksi Vercel yang tepat: https://print-server-pro.vercel.app.

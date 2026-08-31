@@ -70,6 +70,8 @@ if (!index.includes("local-network-access")) throw new Error('Diagnosis izin Loc
 if (!server.includes("app.get('/pairing-qr'")) throw new Error('Endpoint QR pairing tidak ditemukan.');
 if (!server.includes("type: 'printserverpro'")) throw new Error('Publikasi mDNS tidak ditemukan.');
 if (!server.includes('https://dedejamaludinmuslim.github.io')) throw new Error('Origin GitHub Pages belum diizinkan.');
+if (!server.includes('https://print-server-pro.vercel.app')) throw new Error('Origin Vercel produksi belum diizinkan.');
+if (server.includes('https://printer-upmp.vercel.app')) throw new Error('Origin Vercel lama yang keliru masih aktif.');
 if (!server.includes("res.setHeader('Access-Control-Allow-Private-Network', 'true')")) throw new Error('Header akses jaringan lokal pada ping tidak ditemukan.');
 if (!setup.includes('profile=private,domain')) throw new Error('Aturan firewall aman tidak ditemukan.');
 

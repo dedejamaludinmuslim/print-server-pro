@@ -57,6 +57,10 @@ aplikasi:
 
 `https://dedejamaludinmuslim.github.io/print-server-pro/`
 
+Deployment Vercel produksi juga diizinkan pada:
+
+`https://print-server-pro.vercel.app/`
+
 Saat browser meminta izin akses jaringan lokal, pilih **Allow**. PC printer
 harus berada pada jaringan yang dapat dijangkau perangkat pengguna dan server
 lokal harus tetap aktif pada port 3000.
