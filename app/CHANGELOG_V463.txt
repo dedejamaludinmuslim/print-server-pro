@@ -1,0 +1,12 @@
+PRINT SERVER PRO v4.6.3 — RELIABLE DISCOVERY
+
+- Mempertahankan satu prefix pencarian: 192.168.1.1–254.
+- Menambahkan permintaan pemicu izin Local Network Access sebelum pemindaian.
+- Memberikan waktu hingga 10 detik untuk merespons izin pertama kali.
+- Mengubah deteksi awal menjadi dua tahap.
+- Tahap pertama memindai dengan timeout 1,6 detik per alamat.
+- Tahap kedua memverifikasi ulang dengan timeout 2,8 detik per alamat.
+- Menampilkan petunjuk izin Local Network Access pada layar loading.
+- Memberi kesempatan pengguna membuka pengaturan manual selama tahap kedua.
+- Menambahkan header akses jaringan privat dan no-cache pada endpoint /ping.
+- Mempertahankan struktur ZIP PrintServerPro/ yang diwajibkan installer H3.

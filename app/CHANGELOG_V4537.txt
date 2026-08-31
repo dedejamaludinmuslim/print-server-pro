@@ -1,0 +1,9 @@
+PRINT SERVER PRO v4.5.37
+
+- Saat pertama dibuka, aplikasi langsung memindai 192.168.1.1–254.
+- Hanya satu prefix, 192.168.1.x, yang dipindai pada tahap ini.
+- IP baru diisi setelah endpoint Print Server Pro berhasil diverifikasi.
+- Layar loading awal mencegah perpindahan tata letak terlihat selama proses pencarian.
+- Pengguna tetap dapat membatalkan pencarian dan memasukkan alamat server secara manual.
+- Kontrol Alamat Server dipindahkan dari halaman Dasar ke bar global bersama Preset.
+- Kontrol server tetap terlihat ketika berpindah halaman pengaturan.

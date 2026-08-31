@@ -1,0 +1,10 @@
+PRINT SERVER PRO v4.6.0 — AUTO CONNECT
+
+- Saat pertama dibuka, aplikasi langsung memindai 192.168.1.1–254.
+- Hanya satu prefix, 192.168.1.x, yang dipindai pada rilis ini.
+- IP server baru diisi setelah endpoint Print Server Pro terverifikasi.
+- Pemindaian berhenti segera setelah server yang valid ditemukan.
+- Layar loading awal mencegah perubahan tata letak terlihat selama pencarian.
+- Tombol input manual tersedia jika server tidak berhasil ditemukan.
+- Kontrol Alamat Server dipindahkan dari halaman Dasar ke bar global bersama Preset.
+- Kontrol server tetap tersedia saat pengguna berpindah halaman pengaturan.

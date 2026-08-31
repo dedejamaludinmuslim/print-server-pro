@@ -1,0 +1,11 @@
+PRINT SERVER PRO v4.6.2 — NAVIGATION CLEANUP
+
+- Menghapus tombol dan fungsi Cari Cepat untuk alamat server.
+- Mempertahankan deteksi server otomatis 192.168.1.1–254 saat aplikasi dibuka.
+- Menambahkan pelindung tombol Kembali pada browser/PWA.
+- Menutup modal, Pengaturan Aplikasi, atau daftar kategori terlebih dahulu.
+- Mengembalikan kategori pengaturan cetak ke Dasar sebelum alur keluar.
+- Memerlukan dua tekanan tombol Kembali dalam jeda 2,2 detik untuk keluar.
+- Memindahkan Pilih File tepat di atas Ukuran Dokumen Sumber.
+- Menghapus seluruh tampilan, fungsi, dan konfirmasi Preflight.
+- Mempertahankan validasi pengaturan cetak dan batas aman jumlah lembar.

@@ -1,0 +1,11 @@
+PRINT SERVER PRO v4.6.4
+=======================
+
+- Pemindaian awal tetap terbatas pada prefix 192.168.1.x.
+- Layar loading memiliki batas keras 18 detik dan tidak dapat menggantung tanpa akhir.
+- Hasil pemindaian dibedakan menjadi berhasil, izin jaringan lokal ditolak, atau server tidak ditemukan.
+- Tombol alamat manual muncul setelah 3 detik; panel Pengaturan terbuka otomatis jika pemindaian gagal.
+- Diagnosis HP menjelaskan izin Jaringan lokal Chrome, Wi-Fi tamu, dan AP/client isolation.
+- Permintaan ping menyatakan target jaringan lokal kepada browser yang mendukung Local Network Access.
+- Installer H4 memakai satu perintah dengan menu Pasang/Perbarui/Perbaiki, Hapus, atau Batal.
+
