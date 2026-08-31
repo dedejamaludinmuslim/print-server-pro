@@ -26,6 +26,9 @@ if (!server.includes('assertPrintOptionsSupported')) throw new Error('Validasi k
 if (index.includes('startQuickDiscovery') || index.includes('Cari Cepat')) throw new Error('Fitur Cari Cepat masih ditemukan.');
 if (!index.includes("const DEFAULT_DISCOVERY_PREFIX = '192.168.1'")) throw new Error('Prefix pencarian server default belum ditetapkan.');
 if (!index.includes('Array.from({ length: 254 }')) throw new Error('Pemindaian 254 alamat pada prefix default tidak ditemukan.');
+if (!index.includes('Pemindaian tahap 1') || !index.includes('Pemindaian tahap 2')) throw new Error('Pemindaian server dua tahap tidak ditemukan.');
+if (!index.includes('discoverFirstServer(prefixCandidates, 1600') || !index.includes('discoverFirstServer(prefixCandidates, 2800')) throw new Error('Timeout pemindaian dua tahap tidak sesuai.');
+if (!index.includes("permissionBeforeScan === 'prompt'") || !index.includes('probePrintServer(`${DEFAULT_DISCOVERY_PREFIX}.1`, 10000')) throw new Error('Pemicu izin Local Network Access belum ditemukan.');
 if (index.includes('192.168.0')) throw new Error('Prefix kedua masih aktif pada pencarian server.');
 if (!index.includes('initialAutoDiscoverServer()')) throw new Error('Bootstrap pencarian server otomatis tidak ditemukan.');
 if (!index.includes('id="initialLoadingScreen"')) throw new Error('Layar loading awal tidak ditemukan.');
@@ -50,6 +53,7 @@ if (!index.includes("local-network-access")) throw new Error('Diagnosis izin Loc
 if (!server.includes("app.get('/pairing-qr'")) throw new Error('Endpoint QR pairing tidak ditemukan.');
 if (!server.includes("type: 'printserverpro'")) throw new Error('Publikasi mDNS tidak ditemukan.');
 if (!server.includes('https://dedejamaludinmuslim.github.io')) throw new Error('Origin GitHub Pages belum diizinkan.');
+if (!server.includes("res.setHeader('Access-Control-Allow-Private-Network', 'true')")) throw new Error('Header akses jaringan lokal pada ping tidak ditemukan.');
 if (!setup.includes('profile=private,domain')) throw new Error('Aturan firewall aman tidak ditemukan.');
 
 console.log(`QA ${expected} OK: server valid, ${inlineCount} inline script valid, identitas versi konsisten.`);

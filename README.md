@@ -3,7 +3,7 @@
 Print Server Pro menghubungkan printer Windows—termasuk printer USB—dengan HP
 dan komputer lain melalui jaringan lokal.
 
-- Aplikasi stabil: **v4.6.2 Navigation Cleanup**
+- Aplikasi stabil: **v4.6.3 Reliable Discovery**
 - Installer online: **v4.5.35-H3**
 - Repository: `dedejamaludinmuslim/print-server-pro`
 
@@ -14,7 +14,7 @@ dan komputer lain melalui jaringan lokal.
 | Source aplikasi | `app/` | UI, server Node.js, deteksi printer, dan mesin cetak |
 | GitHub Pages | `docs/` | Antarmuka publik yang menghubungi server lokal |
 | Installer | `installer/` | Instalasi, repair, startup otomatis, dan uninstall |
-| GitHub Release | `v4.6.2` | Menyediakan `Print_Server_Pro.zip` dan `manifest.json` |
+| GitHub Release | `v4.6.3` | Menyediakan `Print_Server_Pro.zip` dan `manifest.json` |
 | PC printer | `C:\ProgramData\PrintServerPro` | Menjalankan server lokal dan mengakses printer Windows |
 
 GitHub menyimpan source serta paket rilis. GitHub Pages menyediakan antarmuka
@@ -74,6 +74,11 @@ Kembali mengarah ke **Dasar**. Aplikasi hanya keluar setelah tombol Kembali
 ditekan dua kali dalam jeda sekitar dua detik. Fitur Cari Cepat dan Preflight
 tidak lagi digunakan; pencarian awal otomatis dan pemindaian prefix manual tetap
 tersedia.
+
+Deteksi awal v4.6.3 menggunakan dua tahap pada prefix yang sama. Tahap pertama
+memicu atau memakai izin Local Network Access, kemudian tahap kedua mengulang
+pemeriksaan dengan timeout lebih panjang. Mekanisme ini mencegah alamat server
+terlewat ketika pengguna masih merespons permintaan izin browser.
 
 ## Instalasi online
 

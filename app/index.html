@@ -849,7 +849,7 @@
             .panel-heading { padding:14px; }
         }
 
-        /* v4.6.2 — Large Type Accessibility */
+        /* v4.6.3 — Large Type Accessibility */
         body { font-size:16px; line-height:1.5; }
         .app-brand-title { font-size:21px; line-height:1.25; }
         .app-brand-subtitle { font-size:13px; line-height:1.4; }
@@ -975,7 +975,7 @@
             .panel-heading { padding:15px; }
         }
 
-        /* v4.6.2 — Initial server bootstrap and application settings */
+        /* v4.6.3 — Initial server bootstrap and application settings */
         .initial-loading-screen {
             position:fixed;
             inset:0;
@@ -1137,7 +1137,7 @@
                         <div class="app-brand-subtitle">Network Printing Console</div>
                     </div>
                     <div class="app-brand-actions">
-                        <span class="app-version">v4.6.2</span>
+                        <span class="app-version">v4.6.3</span>
                         <button type="button" id="appSettingsBtn" class="app-settings-trigger" onclick="openAppSettings()" aria-controls="appSettingsPanel" aria-expanded="false">
                             <span id="appSettingsStatusDot" class="app-settings-status-dot" aria-hidden="true"></span>
                             <span>⚙ Pengaturan</span>
@@ -3501,10 +3501,38 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
             ];
             document.getElementById('ipAddress').value = '';
             const runId = ++discoveryRunId;
-            setInitialLoading('Mencari server printer', `Memindai ${DEFAULT_DISCOVERY_PREFIX}.1–254…`, false);
+            const permissionBeforeScan = await getLocalNetworkPermissionState();
+            const permissionHint = permissionBeforeScan === 'prompt'
+                ? 'Izinkan akses jaringan lokal jika browser menampilkan permintaan.'
+                : permissionBeforeScan === 'denied'
+                    ? 'Izin jaringan lokal sedang ditolak; buka pengaturan situs jika pemindaian gagal.'
+                    : `Memindai ${DEFAULT_DISCOVERY_PREFIX}.1–254…`;
+            setInitialLoading('Mencari server printer', permissionHint, false);
             setConnectionStatus('scanning', `Memindai ${DEFAULT_DISCOVERY_PREFIX}.x…`);
             try {
-                const found = await discoverFirstServer(prefixCandidates, 1200, runId, `Pemindaian ${DEFAULT_DISCOVERY_PREFIX}.x`);
+                let permissionProbe = null;
+                if (permissionBeforeScan === 'prompt') {
+                    setInitialLoading('Izin jaringan lokal diperlukan', 'Tekan Allow/Izinkan agar aplikasi dapat mencari Print Server Pro.', true);
+                    setConnectionStatus('scanning', 'Menunggu izin akses jaringan lokal…');
+                    permissionProbe = await probePrintServer(`${DEFAULT_DISCOVERY_PREFIX}.1`, 10000, runId);
+                    await sleep(400);
+                    if (!initialDiscoveryActive || runId !== discoveryRunId) return;
+                }
+                let found = permissionProbe
+                    ? [permissionProbe]
+                    : await discoverFirstServer(prefixCandidates, 1600, runId, `Pemindaian tahap 1 ${DEFAULT_DISCOVERY_PREFIX}.x`);
+                if (!initialDiscoveryActive || runId !== discoveryRunId) return;
+                if (!found.length) {
+                    const permissionAfterScan = await getLocalNetworkPermissionState();
+                    const retryHint = permissionAfterScan === 'denied'
+                        ? 'Izin jaringan lokal ditolak. Aktifkan izin pada pengaturan situs browser.'
+                        : `Memverifikasi ulang ${DEFAULT_DISCOVERY_PREFIX}.1–254 setelah izin jaringan diproses…`;
+                    setInitialLoading('Memeriksa ulang jaringan', retryHint, true);
+                    setConnectionStatus('scanning', `Verifikasi ulang ${DEFAULT_DISCOVERY_PREFIX}.x…`);
+                    await sleep(650);
+                    if (!initialDiscoveryActive || runId !== discoveryRunId) return;
+                    found = await discoverFirstServer(prefixCandidates, 2800, runId, `Pemindaian tahap 2 ${DEFAULT_DISCOVERY_PREFIX}.x`);
+                }
                 if (!initialDiscoveryActive || runId !== discoveryRunId) return;
                 if (found.length && await connectFirstDiscoveredServer(found)) {
                     setInitialLoading('Server siap digunakan', `Terhubung ke ${document.getElementById('ipAddress').value}`, false);
