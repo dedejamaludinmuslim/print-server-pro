@@ -1,0 +1,11 @@
+PRINT SERVER PRO v4.6.5
+=======================
+
+- Antarmuka dibuka segera setelah endpoint /ping membuktikan server aktif.
+- Pemuatan daftar printer dipisahkan dari penutupan layar awal dan dibatasi 8 detik.
+- Permintaan connection-info berjalan di belakang dan tidak lagi menahan antarmuka.
+- Watchdog 20 detik menjadi pengaman kedua agar overlay awal tidak pernah menetap.
+- Tombol Install Aplikasi selalu terlihat di Pengaturan.
+- Listener instalasi PWA dipasang sebelum event load agar prompt Android tidak terlewat.
+- Jika prompt belum tersedia, tombol menampilkan petunjuk Tambahkan ke layar utama.
+

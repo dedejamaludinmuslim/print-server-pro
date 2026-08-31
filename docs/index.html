@@ -72,7 +72,7 @@
         .btn-nav:disabled { opacity: 0.3; cursor: not-allowed; }
         .subnet-hint { font-size: 12px; color: var(--text-muted); line-height: 1.5; margin-top: 8px; }
         .install-row { display:flex; justify-content:center; margin-top:12px; }
-        #installBtn { display:none; max-width:220px; }
+        #installBtn { display:inline-flex; max-width:220px; }
 
         .settings-inline { margin-top: 22px; padding-top: 4px; }
         .settings-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
@@ -849,7 +849,7 @@
             .panel-heading { padding:14px; }
         }
 
-        /* v4.6.4 — Large Type Accessibility */
+        /* v4.6.5 — Large Type Accessibility */
         body { font-size:16px; line-height:1.5; }
         .app-brand-title { font-size:21px; line-height:1.25; }
         .app-brand-subtitle { font-size:13px; line-height:1.4; }
@@ -975,7 +975,7 @@
             .panel-heading { padding:15px; }
         }
 
-        /* v4.6.4 — Bounded server bootstrap and application settings */
+        /* v4.6.5 — Bounded server bootstrap and application settings */
         .initial-loading-screen {
             position:fixed;
             inset:0;
@@ -1151,7 +1151,7 @@
                         <div class="app-brand-subtitle">Network Printing Console</div>
                     </div>
                     <div class="app-brand-actions">
-                        <span class="app-version">v4.6.4</span>
+                        <span class="app-version">v4.6.5</span>
                         <button type="button" id="appSettingsBtn" class="app-settings-trigger" onclick="openAppSettings()" aria-controls="appSettingsPanel" aria-expanded="false">
                             <span id="appSettingsStatusDot" class="app-settings-status-dot" aria-hidden="true"></span>
                             <span>⚙ Pengaturan</span>
@@ -2821,6 +2821,7 @@ function buildConsolidatedSettingsUi(){
         }
         async function updateIpAndFetchPrinters(options = {}) {
             const silent = Boolean(options?.silent);
+            const timeoutMs = Math.max(3000, Number(options?.timeoutMs) || 8000);
             const ip = document.getElementById('ipAddress').value.trim();
             if (!ip) return false;
             if (!isSafeDiscoveryHost(ip)) {
@@ -2831,9 +2832,11 @@ function buildConsolidatedSettingsUi(){
             sel.innerHTML = '<option value="">⏳ Memuat...</option>';
             sel.disabled = true;
             setConnectionStatus('connecting', `Menghubungkan ke ${ip} ...`);
-            connectSocket(ip);
+            const controller = new AbortController();
+            const timeoutTimer = setTimeout(() => controller.abort(), timeoutMs);
             try {
-                const r = await fetchWithRetry(`http://${ip}:3000/printers?_t=${Date.now()}`, { cache: 'no-store' }, 1, 300);
+                try { connectSocket(ip); } catch (_) {}
+                const r = await fetchWithRetry(`http://${ip}:3000/printers?_t=${Date.now()}`, { cache: 'no-store', signal: controller.signal, targetAddressSpace: 'local' }, 1, 300);
                 if (!r.ok) throw new Error('Gagal memuat printer');
                 const data = await r.json();
                 sel.innerHTML = '<option value="">🖨️ Default Printer</option>';
@@ -2844,11 +2847,11 @@ function buildConsolidatedSettingsUi(){
                 sessionStorage.setItem('activePrintServerIp', ip);
                 document.getElementById('pairingNetworkBtn').style.display = 'inline-block';
                 setDiscoveryDiagnostics('');
-                try {
-                    const infoResponse = await fetch(`http://${ip}:3000/connection-info?_t=${Date.now()}`, { cache: 'no-store' });
-                    if (infoResponse.ok) rememberPrintServer(await infoResponse.json(), ip);
-                    else rememberPrintServer({ ip, name: ip }, ip);
-                } catch (_) { rememberPrintServer({ ip, name: ip }, ip); }
+                rememberPrintServer({ ip, name: ip }, ip);
+                fetch(`http://${ip}:3000/connection-info?_t=${Date.now()}`, { cache: 'no-store', targetAddressSpace: 'local' })
+                    .then(response => response.ok ? response.json() : null)
+                    .then(info => { if (info) rememberPrintServer(info, ip); })
+                    .catch(() => {});
                 if (!silent) showToast(`Printer Server ${ip} siap!`, 'success');
                 loadSettingsForCurrentPrinter();
                 refreshPrinterCapabilities();
@@ -2857,8 +2860,14 @@ function buildConsolidatedSettingsUi(){
                 sel.innerHTML = '<option value="">⚠️ Gagal terhubung</option>';
                 sel.disabled = false;
                 document.getElementById('pairingNetworkBtn').style.display = 'none';
-                setConnectionStatus('failed', `Gagal terhubung ke ${ip}`);
+                const timedOut = e?.name === 'AbortError';
+                setConnectionStatus('failed', timedOut ? `Daftar printer melewati batas ${timeoutMs / 1000} detik` : `Gagal terhubung ke ${ip}`);
+                setDiscoveryDiagnostics(timedOut
+                    ? `Server ${ip} ditemukan, tetapi daftar printer belum merespons dalam ${timeoutMs / 1000} detik. Antarmuka tetap dapat digunakan; tekan Deteksi Ulang pada bagian Printer.`
+                    : `Server ${ip} ditemukan, tetapi daftar printer gagal dimuat. Tekan Deteksi Ulang pada bagian Printer.`);
                 return false;
+            } finally {
+                clearTimeout(timeoutTimer);
             }
         }
         
@@ -3475,20 +3484,37 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
 
         function setupPwaInstall() {
             const installBtn = document.getElementById('installBtn');
+            if (!installBtn || installBtn.dataset.pwaReady === '1') return;
+            installBtn.dataset.pwaReady = '1';
+            const isStandalone = () => window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true;
+            const refreshInstallButton = () => {
+                installBtn.style.display = 'inline-flex';
+                installBtn.disabled = isStandalone();
+                installBtn.textContent = isStandalone()
+                    ? '✓ Aplikasi sudah terpasang'
+                    : deferredPrompt
+                        ? 'Install Aplikasi'
+                        : 'Tambahkan ke layar utama';
+            };
+            refreshInstallButton();
             window.addEventListener('beforeinstallprompt', (e) => {
                 e.preventDefault();
                 deferredPrompt = e;
-                installBtn.style.display = 'inline-flex';
+                refreshInstallButton();
             });
             installBtn.addEventListener('click', async () => {
-                if (!deferredPrompt) return;
+                if (isStandalone()) return;
+                if (!deferredPrompt) {
+                    showToast('Jika dialog instalasi belum tersedia, buka menu Chrome ⋮ lalu pilih Tambahkan ke layar utama.', 'info');
+                    return;
+                }
                 deferredPrompt.prompt();
                 await deferredPrompt.userChoice;
                 deferredPrompt = null;
-                installBtn.style.display = 'none';
+                refreshInstallButton();
             });
             window.addEventListener('appinstalled', () => {
-                installBtn.style.display = 'none';
+                refreshInstallButton();
                 showToast('Aplikasi berhasil diinstall.', 'success');
             });
             if ('serviceWorker' in navigator) {
@@ -3501,8 +3527,12 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
             for (const server of servers) {
                 if (!initialDiscoveryActive) return false;
                 document.getElementById('ipAddress').value = server.ip;
-                setInitialLoading('Server ditemukan', `Menghubungkan ke ${server.ip} dan memuat printer…`, true);
-                if (await updateIpAndFetchPrinters({ silent: true })) return true;
+                sessionStorage.setItem('activePrintServerIp', server.ip);
+                rememberPrintServer(server.data || server, server.ip);
+                setInitialLoading('Server ditemukan', `Membuka aplikasi melalui ${server.ip}…`, false, 'success');
+                setConnectionStatus('connecting', `Server ditemukan: ${server.ip}; memuat printer…`);
+                updateIpAndFetchPrinters({ silent: true, timeoutMs: 8000 }).catch(() => false);
+                return true;
             }
             return false;
         }
@@ -3658,7 +3688,29 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
             updateDynamicPreview();
         });
         document.addEventListener('keydown', event => { if (event.key === 'Escape') closeAppSettings(); });
-        window.addEventListener('load', () => { setupBackNavigation(); applyProfessionalUiPolish(); loadHistory(); setupPwaInstall(); buildConsolidatedSettingsUi(); markAdvancedSettingGroups(); refreshPresetSelect(); document.getElementById('settingsViewMode').value='compact'; applySettingsViewMode(); syncAdvancedPrintControls(); validatePrintSettings(false); updatePrintSettingsSummary(); updateAccordionSummaries(); initialAutoDiscoverServer(); });
+        setupPwaInstall();
+        window.addEventListener('load', () => {
+            setupBackNavigation(); applyProfessionalUiPolish(); loadHistory(); buildConsolidatedSettingsUi(); markAdvancedSettingGroups(); refreshPresetSelect();
+            document.getElementById('settingsViewMode').value='compact'; applySettingsViewMode(); syncAdvancedPrintControls(); validatePrintSettings(false); updatePrintSettingsSummary(); updateAccordionSummaries();
+            const loadingWatchdog = setTimeout(() => {
+                const screen = document.getElementById('initialLoadingScreen');
+                if (!screen || screen.classList.contains('is-hidden')) return;
+                initialDiscoveryActive = false;
+                cancelDiscoveryRequests(false);
+                setConnectionStatus('failed', 'Pemuatan awal dihentikan setelah 20 detik');
+                setDiscoveryDiagnostics('Antarmuka dibuka oleh pengaman waktu. Periksa status server dan printer melalui tombol Pengaturan.');
+                setInitialLoading('Pemuatan awal dihentikan', 'Antarmuka tetap dibuka agar aplikasi tidak terkunci.', true, 'failed');
+                setTimeout(() => { hideInitialLoading(); openAppSettings(); }, 900);
+            }, 20000);
+            initialAutoDiscoverServer()
+                .catch(error => {
+                    setConnectionStatus('failed', 'Pemuatan awal gagal');
+                    setDiscoveryDiagnostics(`Pemuatan awal gagal: ${String(error?.message || error || 'kesalahan tidak diketahui')}`);
+                    hideInitialLoading();
+                    openAppSettings();
+                })
+                .finally(() => clearTimeout(loadingWatchdog));
+        });
     </script>
 </body>
 </html>

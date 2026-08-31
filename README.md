@@ -3,7 +3,7 @@
 Print Server Pro menghubungkan printer Windows—termasuk printer USB—dengan HP
 dan komputer lain melalui jaringan lokal.
 
-- Aplikasi stabil: **v4.6.4 Bounded Discovery**
+- Aplikasi stabil: **v4.6.5 Immediate Entry**
 - Installer online: **v4.5.35-H4**
 - Repository: `dedejamaludinmuslim/print-server-pro`
 
@@ -14,7 +14,7 @@ dan komputer lain melalui jaringan lokal.
 | Source aplikasi | `app/` | UI, server Node.js, deteksi printer, dan mesin cetak |
 | GitHub Pages | `docs/` | Antarmuka publik yang menghubungi server lokal |
 | Installer | `installer/` | Instalasi, repair, startup otomatis, dan uninstall |
-| GitHub Release | `v4.6.4` | Menyediakan `Print_Server_Pro.zip` dan `manifest.json` |
+| GitHub Release | `v4.6.5` | Menyediakan `Print_Server_Pro.zip` dan `manifest.json` |
 | PC printer | `C:\ProgramData\PrintServerPro` | Menjalankan server lokal dan mengakses printer Windows |
 
 GitHub menyimpan source serta paket rilis. GitHub Pages menyediakan antarmuka
@@ -75,11 +75,15 @@ ditekan dua kali dalam jeda sekitar dua detik. Fitur Cari Cepat dan Preflight
 tidak lagi digunakan; pencarian awal otomatis dan pemindaian prefix manual tetap
 tersedia.
 
-Deteksi awal v4.6.4 hanya memindai prefix `192.168.1.x` dan memiliki batas keras
-18 detik. Layar awal selalu berakhir dengan status server ditemukan, izin
-jaringan lokal ditolak, atau server tidak ditemukan. Jika gagal, panel
-**Pengaturan** dibuka otomatis dan menampilkan diagnosis untuk izin Chrome,
-Wi-Fi tamu, dan AP/client isolation.
+Deteksi awal v4.6.5 hanya memindai prefix `192.168.1.x`. Setelah `/ping`
+membuktikan server aktif, layar awal langsung membuka antarmuka dan daftar
+printer dimuat di belakang dengan batas 8 detik. Batas pencarian 18 detik serta
+watchdog antarmuka 20 detik mencegah layar loading menetap. Jika gagal, panel
+**Pengaturan** dibuka otomatis dan menampilkan diagnosis jaringan.
+
+Tombol **Install Aplikasi** selalu tersedia di Pengaturan. Saat prompt PWA belum
+disediakan browser, tombol tersebut menampilkan petunjuk **Tambahkan ke layar
+utama**; jika aplikasi sudah dipasang, statusnya ditampilkan pada tombol.
 
 ## Instalasi online
 

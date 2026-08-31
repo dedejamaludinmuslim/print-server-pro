@@ -1,6 +1,6 @@
 # Source Aplikasi
 
-Folder ini berisi source Print Server Pro v4.6.4. Versi ini membatasi pencarian
+Folder ini berisi source Print Server Pro v4.6.5. Versi ini membatasi pencarian
 awal `192.168.1.x` hingga 18 detik, selalu menampilkan hasil pemindaian, dan
 membuka Pengaturan secara otomatis jika server tidak ditemukan.
 

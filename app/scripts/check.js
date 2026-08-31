@@ -32,6 +32,12 @@ if (!index.includes("permissionBeforeScan === 'prompt'") || !index.includes('pro
 if (!index.includes("targetAddressSpace: 'local'")) throw new Error('Fetch jaringan lokal belum menyatakan targetAddressSpace.');
 if (!index.includes("setInitialLoading('Server belum ditemukan', message, true, 'failed')")) throw new Error('Hasil gagal pencarian awal belum ditampilkan.');
 if (!index.includes('openManualSettings()')) throw new Error('Pengaturan manual belum dibuka otomatis setelah pencarian gagal.');
+if (!index.includes("updateIpAndFetchPrinters({ silent: true, timeoutMs: 8000 })")) throw new Error('Pemuatan printer di belakang dengan timeout belum ditemukan.');
+if (!index.includes("setTimeout(() => controller.abort(), timeoutMs)")) throw new Error('Abort timeout daftar printer belum ditemukan.');
+if (!index.includes("const loadingWatchdog = setTimeout")) throw new Error('Watchdog layar loading belum ditemukan.');
+if (!index.includes("setupPwaInstall();\n        window.addEventListener('load'")) throw new Error('Listener instalasi PWA masih terlambat dipasang.');
+if (index.includes('#installBtn { display:none')) throw new Error('Tombol Install Aplikasi masih disembunyikan.');
+if (!index.includes("'Tambahkan ke layar utama'")) throw new Error('Fallback instalasi PWA belum ditemukan.');
 if (index.includes('192.168.0')) throw new Error('Prefix kedua masih aktif pada pencarian server.');
 if (!index.includes('initialAutoDiscoverServer()')) throw new Error('Bootstrap pencarian server otomatis tidak ditemukan.');
 if (!index.includes('id="initialLoadingScreen"')) throw new Error('Layar loading awal tidak ditemukan.');
