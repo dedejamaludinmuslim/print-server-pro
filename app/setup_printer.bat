@@ -1,5 +1,5 @@
 @echo off
-title Installer - Print Server Pro V4.6.6
+title Installer - Print Server Pro V4.6.7
 color 0B
 
 :: Hak administrator diperlukan hanya untuk membuat aturan firewall yang terbatas.
@@ -13,7 +13,7 @@ if %errorlevel% neq 0 (
 cd /d "%~dp0"
 
 echo ===================================================
-echo      INSTALLER PRINT SERVER PRO V4.6.6
+echo      INSTALLER PRINT SERVER PRO V4.6.7
 echo ===================================================
 echo.
 

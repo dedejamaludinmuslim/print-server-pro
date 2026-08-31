@@ -27,15 +27,8 @@ if (!server.includes('assertPrintOptionsSupported')) throw new Error('Validasi k
 if (index.includes('startQuickDiscovery') || index.includes('Cari Cepat')) throw new Error('Fitur Cari Cepat masih ditemukan.');
 if (!index.includes("const DEFAULT_DISCOVERY_PREFIX = '192.168.1'")) throw new Error('Prefix pencarian server default belum ditetapkan.');
 if (!index.includes('Array.from({ length: 254 }')) throw new Error('Pemindaian 254 alamat pada prefix default tidak ditemukan.');
-if (!index.includes('const INITIAL_DISCOVERY_LIMIT_MS = 18000')) throw new Error('Batas keras pencarian awal belum ditetapkan.');
-if (!index.includes('discoverFirstServer(prefixCandidates, 1300')) throw new Error('Pemindaian prefix awal tidak ditemukan.');
-if (!index.includes("permissionBeforeScan === 'prompt'") || !index.includes('probePrintServer(`${DEFAULT_DISCOVERY_PREFIX}.1`, 3500')) throw new Error('Pemicu izin Local Network Access belum ditemukan.');
 if (!index.includes("targetAddressSpace: 'local'")) throw new Error('Fetch jaringan lokal belum menyatakan targetAddressSpace.');
-if (!index.includes("setInitialLoading('Server belum ditemukan', message, true, 'failed')")) throw new Error('Hasil gagal pencarian awal belum ditampilkan.');
-if (!index.includes('openManualSettings()')) throw new Error('Pengaturan manual belum dibuka otomatis setelah pencarian gagal.');
-if (!index.includes("updateIpAndFetchPrinters({ silent: true, timeoutMs: 8000 })")) throw new Error('Pemuatan printer di belakang dengan timeout belum ditemukan.');
 if (!index.includes("setTimeout(() => controller.abort(), timeoutMs)")) throw new Error('Abort timeout daftar printer belum ditemukan.');
-if (!index.includes("const loadingWatchdog = setTimeout")) throw new Error('Watchdog layar loading belum ditemukan.');
 if (!index.includes("setupPwaInstall();\n        window.addEventListener('load'")) throw new Error('Listener instalasi PWA masih terlambat dipasang.');
 if (!index.includes('async function prepareLanBootstrap()')) throw new Error('Pelepasan Service Worker lama sebelum bootstrap LAN tidak ditemukan.');
 if (!index.includes("registerPwaWorker();")) throw new Error('Registrasi Service Worker setelah bootstrap LAN tidak ditemukan.');
@@ -43,12 +36,15 @@ if (!index.includes("serviceWorker.register('./sw.js?v=" + expected)) throw new 
 if (!worker.includes(`const SW_VERSION = '${expected}'`)) throw new Error('Versi Service Worker tidak sesuai.');
 if (!worker.includes('requestUrl.origin !== self.location.origin')) throw new Error('Service Worker masih dapat mencegat request lintas origin ke LAN.');
 if (!index.includes('mapWithConcurrency(unique, 8')) throw new Error('Paralelisme pemindaian LAN belum dibatasi menjadi 8.');
-if (!index.includes("setInitialLoading('Pencarian selesai', 'Antarmuka dibuka agar aplikasi tidak terkunci.'")) throw new Error('Jalur penutup paksa layar awal tidak ditemukan.');
 if (index.includes('#installBtn { display:none')) throw new Error('Tombol Install Aplikasi masih disembunyikan.');
-if (!index.includes("'Tambahkan ke layar utama'")) throw new Error('Fallback instalasi PWA belum ditemukan.');
+if (!index.includes("'Buat Pintasan Aplikasi'")) throw new Error('Fallback pintasan aplikasi belum ditemukan.');
 if (index.includes('192.168.0')) throw new Error('Prefix kedua masih aktif pada pencarian server.');
-if (!index.includes('initialAutoDiscoverServer()')) throw new Error('Bootstrap pencarian server otomatis tidak ditemukan.');
-if (!index.includes('id="initialLoadingScreen"')) throw new Error('Layar loading awal tidak ditemukan.');
+if (!index.includes('function openManualStartup()')) throw new Error('Bootstrap manual-first tidak ditemukan.');
+const bootBlock = index.slice(index.lastIndexOf('setupPwaInstall();'));
+if (!bootBlock.includes('openManualStartup();')) throw new Error('Pengaturan manual belum dibuka pada startup.');
+if (bootBlock.includes('initialAutoDiscoverServer()')) throw new Error('Pemindaian otomatis masih dijalankan pada startup.');
+if (bootBlock.includes('loadingWatchdog')) throw new Error('Watchdog overlay lama masih aktif pada startup.');
+if (index.includes('id="initialLoadingScreen"')) throw new Error('Overlay loading awal masih ditemukan.');
 if (!index.includes('id="appSettingsBtn"')) throw new Error('Tombol Pengaturan pada header tidak ditemukan.');
 if (!index.includes('id="appSettingsPanel"')) throw new Error('Panel Pengaturan Aplikasi tidak ditemukan.');
 for (const slot of ['appSettingsConnection', 'appSettingsPrinter', 'appSettingsPreset', 'appSettingsGeneral']) {

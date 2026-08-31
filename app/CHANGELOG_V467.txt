@@ -1,0 +1,11 @@
+PRINT SERVER PRO v4.6.7
+=======================
+
+- Menghapus overlay loading dari startup aplikasi.
+- Menghapus pemindaian server otomatis saat halaman pertama dibuka.
+- Membuka panel Pengaturan secara langsung dan memfokuskan kolom alamat server.
+- IP dari URL, sesi, atau riwayat hanya diprefill dan tetap memerlukan konfirmasi Enter.
+- Pemindaian 192.168.1.x tetap tersedia melalui tombol pencarian manual.
+- Registrasi Service Worker tidak lagi menunggu koneksi atau pencarian server.
+- Kontrol instalasi menampilkan Install Aplikasi saat prompt tersedia dan Buat Pintasan Aplikasi sebagai fallback.
+- Mempertahankan CORS untuk https://print-server-pro.vercel.app dan GitHub Pages.

@@ -849,7 +849,7 @@
             .panel-heading { padding:14px; }
         }
 
-        /* v4.6.6 — Large Type Accessibility */
+        /* v4.6.7 — Large Type Accessibility */
         body { font-size:16px; line-height:1.5; }
         .app-brand-title { font-size:21px; line-height:1.25; }
         .app-brand-subtitle { font-size:13px; line-height:1.4; }
@@ -975,7 +975,7 @@
             .panel-heading { padding:15px; }
         }
 
-        /* v4.6.6 — Bounded server bootstrap and application settings */
+        /* v4.6.7 — Manual-first bootstrap and application settings */
         .initial-loading-screen {
             position:fixed;
             inset:0;
@@ -1131,16 +1131,6 @@
 </style>
 </head>
 <body>
-    <div id="initialLoadingScreen" class="initial-loading-screen" role="status" aria-live="polite">
-        <div class="initial-loading-card">
-            <div class="initial-loading-mark" aria-hidden="true">PS</div>
-            <div class="initial-loading-spinner" aria-hidden="true"></div>
-            <h1>Menyiapkan Print Server Pro</h1>
-            <p id="initialLoadingMessage">Mencari server printer secara otomatis…</p>
-            <p id="initialLoadingDetail" class="initial-loading-detail">Memindai jaringan 192.168.1.x</p>
-            <button type="button" id="initialLoadingManualBtn" class="btn-block secondary initial-loading-manual" onclick="continueWithManualServer()">Masukkan alamat secara manual</button>
-        </div>
-    </div>
     <div class="app-wrapper">
         <div class="left-col">
             <div class="card main-card">
@@ -1151,7 +1141,7 @@
                         <div class="app-brand-subtitle">Network Printing Console</div>
                     </div>
                     <div class="app-brand-actions">
-                        <span class="app-version">v4.6.6</span>
+                        <span class="app-version">v4.6.7</span>
                         <button type="button" id="appSettingsBtn" class="app-settings-trigger" onclick="openAppSettings()" aria-controls="appSettingsPanel" aria-expanded="false">
                             <span id="appSettingsStatusDot" class="app-settings-status-dot" aria-hidden="true"></span>
                             <span>⚙ Pengaturan</span>
@@ -1166,7 +1156,7 @@
                 <div class="input-group">
                     <label>Alamat Server</label>
                     <div class="input-with-btn">
-                        <input type="text" id="ipAddress" placeholder="IP ditemukan otomatis · 192.168.1.x" onblur="updateIpAndFetchPrinters()" onkeyup="if(event.key === 'Enter') updateIpAndFetchPrinters()">
+                        <input type="text" id="ipAddress" placeholder="Contoh: 192.168.1.11" onblur="updateIpAndFetchPrinters()" onkeyup="if(event.key === 'Enter') updateIpAndFetchPrinters()">
                         <button class="btn-icon" id="scanBtn" onclick="showScanModal()" title="Pindai Subnet">🔎</button>
                     </div>
                     <div id="connectionStatusWrap" style="margin-top:10px; display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-muted);">
@@ -3494,7 +3484,7 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
                     ? '✓ Aplikasi sudah terpasang'
                     : deferredPrompt
                         ? 'Install Aplikasi'
-                        : 'Tambahkan ke layar utama';
+                        : 'Buat Pintasan Aplikasi';
             };
             refreshInstallButton();
             window.addEventListener('beforeinstallprompt', (e) => {
@@ -3505,7 +3495,7 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
             installBtn.addEventListener('click', async () => {
                 if (isStandalone()) return;
                 if (!deferredPrompt) {
-                    showToast('Jika dialog instalasi belum tersedia, buka menu Chrome ⋮ lalu pilih Tambahkan ke layar utama.', 'info');
+                    showToast('Browser belum menyediakan instalasi PWA. Gunakan menu Chrome ⋮ lalu pilih Buat pintasan atau Tambahkan ke layar utama.', 'info');
                     return;
                 }
                 deferredPrompt.prompt();
@@ -3521,7 +3511,7 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
         async function prepareLanBootstrap() {
             if (!('serviceWorker' in navigator)) return true;
             const controllerUrl = navigator.serviceWorker.controller?.scriptURL || '';
-            if (!controllerUrl || controllerUrl.includes('v=4.6.6')) return true;
+            if (!controllerUrl || controllerUrl.includes('v=4.6.7')) return true;
             try {
                 const registrations = await navigator.serviceWorker.getRegistrations();
                 const appScope = new URL('./', location.href).href;
@@ -3534,7 +3524,26 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
         }
         function registerPwaWorker() {
             if (!('serviceWorker' in navigator)) return;
-            navigator.serviceWorker.register('./sw.js?v=4.6.6', { scope: './' }).catch(() => {});
+            navigator.serviceWorker.register('./sw.js?v=4.6.7', { scope: './' }).catch(() => {});
+        }
+        function openManualStartup() {
+            initialDiscoveryActive = false;
+            cancelDiscoveryRequests(false);
+            const pairedHost = new URLSearchParams(location.search).get('server');
+            const sessionHost = sessionStorage.getItem('activePrintServerIp');
+            const rememberedHost = getKnownServers().map(item => item.ip).find(isSafeDiscoveryHost);
+            const suggestedHost = [pairedHost, sessionHost, rememberedHost].find(isSafeDiscoveryHost) || '';
+            const input = document.getElementById('ipAddress');
+            if (input && suggestedHost) input.value = suggestedHost;
+            setConnectionStatus('idle', suggestedHost
+                ? `Alamat ${suggestedHost} siap; tekan Enter untuk menghubungkan.`
+                : 'Masukkan alamat server lalu tekan Enter.');
+            setDiscoveryDiagnostics('Koneksi awal menggunakan mode manual. Masukkan IP server, atau gunakan tombol 🔎 untuk memindai 192.168.1.x.');
+            openAppSettings();
+            setTimeout(() => {
+                input?.focus();
+                input?.select();
+            }, 260);
         }
         async function connectFirstDiscoveredServer(servers) {
             for (const server of servers) {
@@ -3705,37 +3714,9 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
         window.addEventListener('load', async () => {
             setupBackNavigation(); applyProfessionalUiPolish(); loadHistory(); buildConsolidatedSettingsUi(); markAdvancedSettingGroups(); refreshPresetSelect();
             document.getElementById('settingsViewMode').value='compact'; applySettingsViewMode(); syncAdvancedPrintControls(); validatePrintSettings(false); updatePrintSettingsSummary(); updateAccordionSummaries();
+            openManualStartup();
             if (!await prepareLanBootstrap()) return;
-            const loadingWatchdog = setTimeout(() => {
-                const screen = document.getElementById('initialLoadingScreen');
-                if (!screen || screen.classList.contains('is-hidden')) return;
-                initialDiscoveryActive = false;
-                cancelDiscoveryRequests(false);
-                setConnectionStatus('failed', 'Pemuatan awal dihentikan setelah 20 detik');
-                setDiscoveryDiagnostics('Antarmuka dibuka oleh pengaman waktu. Periksa status server dan printer melalui tombol Pengaturan.');
-                setInitialLoading('Pemuatan awal dihentikan', 'Antarmuka tetap dibuka agar aplikasi tidak terkunci.', true, 'failed');
-                setTimeout(() => { hideInitialLoading(); openAppSettings(); }, 900);
-            }, 20000);
-            initialAutoDiscoverServer()
-                .catch(error => {
-                    setConnectionStatus('failed', 'Pemuatan awal gagal');
-                    setDiscoveryDiagnostics(`Pemuatan awal gagal: ${String(error?.message || error || 'kesalahan tidak diketahui')}`);
-                    hideInitialLoading();
-                    openAppSettings();
-                })
-                .finally(() => {
-                    clearTimeout(loadingWatchdog);
-                    const screen = document.getElementById('initialLoadingScreen');
-                    if (screen && !screen.classList.contains('is-hidden')) {
-                        initialDiscoveryActive = false;
-                        cancelDiscoveryRequests(false);
-                        setConnectionStatus('failed', 'Pencarian server telah selesai');
-                        setDiscoveryDiagnostics('Layar awal ditutup otomatis. Periksa hasil deteksi melalui tombol Pengaturan.');
-                        setInitialLoading('Pencarian selesai', 'Antarmuka dibuka agar aplikasi tidak terkunci.', true, 'failed');
-                        setTimeout(() => { hideInitialLoading(); openAppSettings(); }, 900);
-                    }
-                    registerPwaWorker();
-                });
+            registerPwaWorker();
         });
     </script>
 </body>
