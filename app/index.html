@@ -849,7 +849,7 @@
             .panel-heading { padding:14px; }
         }
 
-        /* v4.6.9 — Large Type Accessibility */
+        /* v4.6.10 — Large Type Accessibility */
         body { font-size:16px; line-height:1.5; }
         .app-brand-title { font-size:21px; line-height:1.25; }
         .app-brand-subtitle { font-size:13px; line-height:1.4; }
@@ -975,7 +975,7 @@
             .panel-heading { padding:15px; }
         }
 
-        /* v4.6.9 — Manual-first bootstrap and application settings */
+        /* v4.6.10 — Manual-first bootstrap and application settings */
         .initial-loading-screen {
             position:fixed;
             inset:0;
@@ -1115,7 +1115,6 @@
         #appSettingsPreset .dialog-preset-group { margin:0 0 10px; }
         #appSettingsPreset .preset-actions { margin-top:10px; }
         #appSettingsPreset #uxPresetManageBtn { width:100%; min-height:40px; }
-        .app-settings-help { width:100%; margin-top:10px; }
         body.app-settings-open { overflow:hidden; }
         @media (max-width:560px) {
             .app-brand { align-items:flex-start; flex-wrap:wrap; }
@@ -1128,7 +1127,7 @@
             .app-settings-section { padding:15px; }
         }
 
-        /* v4.6.9 — professional application and settings headers */
+        /* v4.6.10 — left-aligned settings and complete application guide */
         .app-brand {
             display:grid;
             grid-template-columns:48px minmax(0,1fr) 92px;
@@ -1203,7 +1202,7 @@
             box-shadow:0 7px 16px rgba(37,99,235,.13);
         }
         .app-settings-head-icon svg { width:22px; height:22px; stroke:currentColor; }
-        .app-settings-head-copy { min-width:0; }
+        .app-settings-head-copy { min-width:0; text-align:left; }
         .app-settings-kicker {
             display:block;
             margin-bottom:3px;
@@ -1215,7 +1214,14 @@
             text-transform:uppercase;
         }
         .app-settings-head h2, .app-settings-head p { text-align:left; }
-        .app-settings-head h2 { font-size:20px; letter-spacing:-.025em; }
+        .app-settings-head h2 {
+            display:block;
+            justify-content:flex-start;
+            width:100%;
+            font-size:20px;
+            letter-spacing:-.025em;
+            text-align:left;
+        }
         .app-settings-head p { margin-top:4px; font-size:11.5px; }
         .app-settings-close {
             width:42px;
@@ -1229,6 +1235,65 @@
         }
         .app-settings-close svg { width:18px; height:18px; stroke:currentColor; }
         .app-settings-close:hover { color:#b91c1c; border-color:#fecaca; background:#fff7f7; transform:translateY(-1px); }
+        .app-guide-modal {
+            width:min(760px,calc(100vw - 24px));
+            max-width:760px;
+            max-height:min(90dvh,820px);
+            padding:0;
+            overflow:hidden;
+            display:flex;
+            flex-direction:column;
+            text-align:left;
+        }
+        .app-guide-head {
+            display:grid;
+            grid-template-columns:44px minmax(0,1fr) 40px;
+            align-items:center;
+            gap:12px;
+            padding:18px 20px;
+            border-bottom:1px solid #dbe5f1;
+            background:linear-gradient(135deg,#fff 0%,#f7faff 100%);
+        }
+        .app-guide-head-icon {
+            width:44px;
+            height:44px;
+            display:grid;
+            place-items:center;
+            border:1px solid #bfdbfe;
+            border-radius:13px;
+            color:#1d4ed8;
+            background:#eff6ff;
+        }
+        .app-guide-head-icon svg,.app-guide-close svg { width:20px; height:20px; display:block; stroke:currentColor; }
+        .app-guide-head-copy { min-width:0; text-align:left; }
+        .app-guide-kicker { display:block; margin-bottom:4px; color:#2563eb; font-size:9.5px; font-weight:850; letter-spacing:.105em; text-transform:uppercase; }
+        .app-guide-head h3 { display:block; margin:0; color:#0f172a; font-size:20px; line-height:1.2; text-align:left; }
+        .app-guide-head p { margin:4px 0 0 !important; color:#64748b; font-size:11.5px !important; line-height:1.45 !important; text-align:left; }
+        .app-guide-close {
+            width:40px;
+            height:40px;
+            display:grid;
+            place-items:center;
+            padding:0;
+            border:1px solid #dbe3ec;
+            border-radius:11px;
+            background:#fff;
+            color:#334155;
+            cursor:pointer;
+        }
+        .app-guide-close:hover { color:#b91c1c; border-color:#fecaca; background:#fff7f7; }
+        .app-guide-body { padding:18px 20px 8px; overflow:auto; overscroll-behavior:contain; }
+        .app-guide-quickstart { margin-bottom:14px; padding:16px; border:1px solid #bfdbfe; border-radius:14px; background:#f8fbff; }
+        .app-guide-section h4 { margin:0 0 8px; color:#0f172a; font-size:14px; line-height:1.3; text-align:left; }
+        .app-guide-section p { margin:0 !important; color:#64748b; font-size:12px !important; line-height:1.55 !important; text-align:left; }
+        .app-guide-steps { margin:10px 0 0; padding-left:22px; color:#334155; font-size:12px; line-height:1.55; }
+        .app-guide-steps li { padding:2px 0 5px 3px; text-align:left; }
+        .app-guide-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+        .app-guide-card { padding:15px; border:1px solid #e2e8f0; border-radius:13px; background:#fff; }
+        .app-guide-list { margin:8px 0 0; padding-left:18px; color:#475569; font-size:11.5px; line-height:1.55; }
+        .app-guide-list li { margin:3px 0; text-align:left; }
+        .app-guide-footer { padding:13px 20px 18px; border-top:1px solid #eef2f7; background:#fff; }
+        .app-guide-footer .btn-block { margin:0; }
         @media (max-width:991px) { #printBtn { display:none; } }
         @media (max-width:560px) {
             .app-brand { grid-template-columns:44px minmax(0,1fr) 84px; align-items:start; gap:10px; }
@@ -1243,6 +1308,16 @@
             .app-settings-close { width:40px; height:40px; }
             .app-settings-head h2 { font-size:18px; }
             .app-settings-head p { font-size:10.5px; }
+            .app-guide-modal { width:calc(100vw - 16px); max-height:94dvh; }
+            .app-guide-head { grid-template-columns:40px minmax(0,1fr) 38px; gap:9px; padding:14px; }
+            .app-guide-head-icon { width:40px; height:40px; border-radius:11px; }
+            .app-guide-close { width:38px; height:38px; }
+            .app-guide-head h3 { font-size:17px; }
+            .app-guide-head p { font-size:10.5px !important; }
+            .app-guide-body { padding:13px 13px 4px; }
+            .app-guide-grid { grid-template-columns:1fr; gap:9px; }
+            .app-guide-quickstart,.app-guide-card { padding:13px; }
+            .app-guide-footer { padding:10px 13px 13px; }
         }
 
 </style>
@@ -1256,7 +1331,7 @@
                     <div class="app-brand-copy">
                         <div class="app-brand-heading">
                             <div class="app-brand-title">Print Server Pro</div>
-                            <span class="app-version">v4.6.9</span>
+                            <span class="app-version">v4.6.10</span>
                         </div>
                         <div class="app-brand-subtitle">Network Printing Console</div>
                     </div>
@@ -1715,9 +1790,8 @@
             </section>
             <section class="app-settings-section">
                 <h3 class="app-settings-section-title">Aplikasi</h3>
-                <p class="app-settings-section-copy">Pasang aplikasi ke perangkat atau buka panduan koneksi jaringan.</p>
+                <p class="app-settings-section-copy">Pasang aplikasi ke perangkat untuk akses yang lebih cepat.</p>
                 <div id="appSettingsGeneral"></div>
-                <button type="button" class="btn-block secondary app-settings-help" onclick="showHelpModal()">Bantuan Koneksi Server</button>
             </section>
         </div>
     </aside>
@@ -1769,37 +1843,92 @@
     </div>
 
     <div id="helpModal" class="modal">
-        <div class="modal-content" style="text-align:left;">
-            <h3 style="text-align:center; margin:0 0 15px 0;">Panduan Koneksi Server</h3>
-            <p style="font-size:13px; color:var(--text-muted); line-height:1.5;">Gunakan pemindaian prefix jaringan Wi-Fi/LAN atau masukkan alamat server secara manual. Deteksi tidak dapat menembus firewall, VLAN, client isolation, atau jaringan yang tidak memiliki rute.</p>
-            <div style="font-size:13px; line-height:1.6; color:var(--text-main); margin-top:12px;">
-                <strong>Windows</strong>
-                <ol style="padding-left:20px; margin:6px 0 12px 0;">
-                    <li>Tekan <strong>Windows + R</strong>.</li>
-                    <li>Ketik <strong>cmd</strong>, lalu Enter.</li>
-                    <li>Ketik <strong>ipconfig</strong>.</li>
-                    <li>Lihat <strong>IPv4 Address</strong> pada adapter Wi-Fi maupun Ethernet.</li>
-                </ol>
-                <strong>Android</strong>
-                <ol style="padding-left:20px; margin:6px 0 12px 0;">
-                    <li>Buka <strong>Pengaturan</strong> → <strong>Wi‑Fi</strong>.</li>
-                    <li>Ketuk jaringan yang sedang dipakai.</li>
-                    <li>Lihat detail <strong>IP Address</strong> atau <strong>Gateway</strong>.</li>
-                </ol>
-                <strong>iPhone / iPad</strong>
-                <ol style="padding-left:20px; margin:6px 0 0 0;">
-                    <li>Buka <strong>Settings</strong> → <strong>Wi‑Fi</strong>.</li>
-                    <li>Ketuk ikon <strong>i</strong> pada jaringan aktif.</li>
-                    <li>Lihat <strong>IP Address</strong> dan <strong>Router</strong>.</li>
-                </ol>
-                <strong>Jika Wi-Fi terdeteksi tetapi kabel tidak</strong>
-                <ol style="padding-left:20px; margin:6px 0 0 0;">
-                    <li>Bandingkan tiga blok awal IP kedua perangkat.</li>
-                    <li>Pastikan profil Windows PC server adalah Private/Domain dan TCP 3000 diizinkan.</li>
-                    <li>Periksa VLAN, AP/client isolation, dan routing antar-subnet pada router/switch.</li>
-                </ol>
+        <div class="modal-content app-guide-modal">
+            <div class="app-guide-head">
+                <div class="app-guide-head-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11v17H6.5A2.5 2.5 0 0 0 4 22V5.5Z"></path><path d="M20 5.5A2.5 2.5 0 0 0 17.5 3H13v17h4.5A2.5 2.5 0 0 1 20 22V5.5Z"></path></svg>
+                </div>
+                <div class="app-guide-head-copy">
+                    <span class="app-guide-kicker">Panduan Aplikasi</span>
+                    <h3>Panduan Print Server Pro</h3>
+                    <p>Alur penggunaan dari koneksi server sampai dokumen tercetak.</p>
+                </div>
+                <button type="button" class="app-guide-close" onclick="closeHelpModal()" aria-label="Tutup panduan" title="Tutup">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"></path></svg>
+                </button>
             </div>
-            <button class="btn-block secondary" style="margin-top:20px;" onclick="closeHelpModal()">Tutup</button>
+            <div class="app-guide-body">
+                <section class="app-guide-section app-guide-quickstart">
+                    <h4>Mulai Cepat</h4>
+                    <p>Ikuti urutan ini untuk pencetakan normal.</p>
+                    <ol class="app-guide-steps">
+                        <li>Buka <strong>Pengaturan</strong>, masukkan alamat server, lalu pilih printer.</li>
+                        <li>Pilih dokumen PDF atau gambar pada menu <strong>Dasar</strong>.</li>
+                        <li>Atur kertas, orientasi, skala, halaman, dan jumlah salinan.</li>
+                        <li>Periksa hasil pada <strong>View</strong>, lalu tekan <strong>Cetak</strong>.</li>
+                        <li>Masukkan PIN jika diminta, kemudian tekan <strong>Konfirmasi</strong>.</li>
+                    </ol>
+                </section>
+                <div class="app-guide-grid">
+                    <section class="app-guide-section app-guide-card">
+                        <h4>Koneksi Server</h4>
+                        <p>Hubungkan perangkat ke PC printer melalui jaringan lokal.</p>
+                        <ul class="app-guide-list">
+                            <li>Masukkan IP server, misalnya <strong>192.168.1.11</strong>.</li>
+                            <li>Gunakan tombol pindai untuk prefix <strong>192.168.1.x</strong> bila perlu.</li>
+                            <li>Pastikan perangkat berada di Wi-Fi/LAN yang dapat menjangkau server.</li>
+                        </ul>
+                    </section>
+                    <section class="app-guide-section app-guide-card">
+                        <h4>Printer & Preset</h4>
+                        <p>Pilih perangkat tujuan sebelum mengatur dokumen.</p>
+                        <ul class="app-guide-list">
+                            <li>Periksa status dan kemampuan printer yang terdeteksi.</li>
+                            <li>Pakai preset bawaan atau simpan pengaturan yang sering digunakan.</li>
+                            <li>Preset pengguna dapat diubah atau dihapus dari Pengaturan.</li>
+                        </ul>
+                    </section>
+                    <section class="app-guide-section app-guide-card">
+                        <h4>Pengaturan Cetak</h4>
+                        <p>Gunakan kategori sesuai kebutuhan, mulai dari yang paling dasar.</p>
+                        <ul class="app-guide-list">
+                            <li><strong>Dasar & Halaman:</strong> file, kertas, skala, salinan, dan rentang.</li>
+                            <li><strong>Layout & Duplex:</strong> margin, N-up, rotasi, jilid, dan booklet.</li>
+                            <li><strong>Dokumen, Poster, Printer, Expert:</strong> gunakan hanya bila diperlukan.</li>
+                        </ul>
+                    </section>
+                    <section class="app-guide-section app-guide-card">
+                        <h4>View & Proses Cetak</h4>
+                        <p>Periksa tampilan sebelum mengirim pekerjaan ke server.</p>
+                        <ul class="app-guide-list">
+                            <li>View menampilkan perkiraan susunan halaman.</li>
+                            <li>Gunakan mode kompatibilitas jika PDF gagal dicetak normal.</li>
+                            <li>Pantau pekerjaan melalui Antrean dan Riwayat Cetak.</li>
+                        </ul>
+                    </section>
+                    <section class="app-guide-section app-guide-card">
+                        <h4>Pemasangan Aplikasi</h4>
+                        <p>Aplikasi dapat dipasang atau dibuat sebagai pintasan dari browser.</p>
+                        <ul class="app-guide-list">
+                            <li>Pilih <strong>Install Aplikasi</strong> bila browser menyediakan PWA.</li>
+                            <li>Pilih <strong>Buat Pintasan Aplikasi</strong> bila instalasi PWA tidak tersedia.</li>
+                            <li>Versi terpasang tetap membutuhkan PC server yang aktif.</li>
+                        </ul>
+                    </section>
+                    <section class="app-guide-section app-guide-card">
+                        <h4>Jika Bermasalah</h4>
+                        <p>Lakukan pemeriksaan dasar sebelum mengubah konfigurasi printer.</p>
+                        <ul class="app-guide-list">
+                            <li>Pastikan server merespons pada port <strong>3000</strong>.</li>
+                            <li>Izinkan akses jaringan lokal saat browser memintanya.</li>
+                            <li>Periksa firewall, profil Private/Domain, VLAN, dan client isolation.</li>
+                        </ul>
+                    </section>
+                </div>
+            </div>
+            <div class="app-guide-footer">
+                <button class="btn-block secondary" onclick="closeHelpModal()">Tutup Panduan</button>
+            </div>
         </div>
     </div>
 
@@ -3643,7 +3772,7 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
         async function prepareLanBootstrap() {
             if (!('serviceWorker' in navigator)) return true;
             const controllerUrl = navigator.serviceWorker.controller?.scriptURL || '';
-            if (!controllerUrl || controllerUrl.includes('v=4.6.9')) return true;
+            if (!controllerUrl || controllerUrl.includes('v=4.6.10')) return true;
             try {
                 const registrations = await navigator.serviceWorker.getRegistrations();
                 const appScope = new URL('./', location.href).href;
@@ -3656,7 +3785,7 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
         }
         function registerPwaWorker() {
             if (!('serviceWorker' in navigator)) return;
-            navigator.serviceWorker.register('./sw.js?v=4.6.9', { scope: './' }).catch(() => {});
+            navigator.serviceWorker.register('./sw.js?v=4.6.10', { scope: './' }).catch(() => {});
         }
         function openManualStartup() {
             initialDiscoveryActive = false;

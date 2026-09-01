@@ -46,6 +46,12 @@ if (!index.includes('onclick="showHelpModal()" aria-label="Buka Panduan"')) thro
 if (!index.includes('class="app-settings-head-icon"')) throw new Error('Ikon profesional pada header Pengaturan belum ditemukan.');
 if (!index.includes('class="app-settings-kicker"')) throw new Error('Hierarki visual header Pengaturan belum lengkap.');
 if (!index.includes('grid-template-columns:46px minmax(0,1fr) 42px')) throw new Error('Header Pengaturan belum memakai grid tiga kolom simetris.');
+if (!index.includes('justify-content:flex-start')) throw new Error('Judul header Pengaturan belum dipaksa rata kiri.');
+if (index.includes('Bantuan Koneksi Server')) throw new Error('Tombol Bantuan Koneksi Server lama masih ditemukan.');
+if (!index.includes('class="modal-content app-guide-modal"')) throw new Error('Panduan aplikasi lengkap belum ditemukan.');
+for (const guideSection of ['Mulai Cepat','Koneksi Server','Printer & Preset','Pengaturan Cetak','View & Proses Cetak','Pemasangan Aplikasi','Jika Bermasalah']) {
+  if (!index.includes(`>${guideSection}<`)) throw new Error(`Bagian panduan ${guideSection} belum ditemukan.`);
+}
 if (!index.includes('<span>VIEW</span>')) throw new Error('Label preview belum diubah menjadi View.');
 if (/DOCUMENT PREVIEW/i.test(index)) throw new Error('Label Document Preview lama masih ditemukan.');
 if (/Cetak Dokumen/i.test(index)) throw new Error('Tombol Cetak Dokumen lama masih ditemukan.');

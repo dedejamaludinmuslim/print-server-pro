@@ -1,0 +1,9 @@
+Print Server Pro v4.6.10
+
+- Memperbaiki judul header Pengaturan agar benar-benar konsisten rata kiri.
+- Menghapus tombol Bantuan Koneksi Server dari panel Pengaturan Aplikasi.
+- Mengembangkan tombol Panduan menjadi panduan aplikasi lengkap.
+- Menambahkan alur mulai cepat, koneksi, printer, preset, pengaturan cetak, View,
+  proses cetak, pemasangan aplikasi, dan pemecahan masalah.
+- Membuat modal Panduan responsif dengan susunan dua kolom di desktop dan satu
+  kolom di HP.

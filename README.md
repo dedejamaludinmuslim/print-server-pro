@@ -3,7 +3,7 @@
 Print Server Pro menghubungkan printer Windows—termasuk printer USB—dengan HP
 dan komputer lain melalui jaringan lokal.
 
-- Aplikasi stabil: **v4.6.9 Professional Header**
+- Aplikasi stabil: **v4.6.10 Complete Guide**
 - Installer online: **v4.5.35-H4**
 - Repository: `dedejamaludinmuslim/print-server-pro`
 
@@ -14,7 +14,7 @@ dan komputer lain melalui jaringan lokal.
 | Source aplikasi | `app/` | UI, server Node.js, deteksi printer, dan mesin cetak |
 | GitHub Pages | `docs/` | Antarmuka publik yang menghubungi server lokal |
 | Installer | `installer/` | Instalasi, repair, startup otomatis, dan uninstall |
-| GitHub Release | `v4.6.9` | Menyediakan `Print_Server_Pro.zip` dan `manifest.json` |
+| GitHub Release | `v4.6.10` | Menyediakan `Print_Server_Pro.zip` dan `manifest.json` |
 | PC printer | `C:\ProgramData\PrintServerPro` | Menjalankan server lokal dan mengakses printer Windows |
 
 GitHub menyimpan source serta paket rilis. GitHub Pages menyediakan antarmuka
@@ -77,6 +77,12 @@ tombol ikon **Pengaturan**. Header panel Pengaturan memakai susunan tiga kolom
 agar ikon, judul, keterangan, dan tombol tutup tetap sejajar pada desktop maupun
 HP.
 
+Seluruh label pada header Pengaturan diratakan ke kiri. Tombol bantuan koneksi
+yang sebelumnya berada di dalam panel Pengaturan telah dihapus. Tombol ikon
+**Panduan** sekarang menyediakan alur mulai cepat serta panduan koneksi, printer,
+preset, pengaturan cetak, View, proses cetak, pemasangan aplikasi, dan penanganan
+masalah.
+
 Pada perangkat yang menyediakan tombol Kembali, aplikasi menutup modal atau
 panel aktif terlebih dahulu. Dari kategori cetak selain **Dasar**, tombol
 Kembali mengarah ke **Dasar**. Aplikasi hanya keluar setelah tombol Kembali
@@ -84,7 +90,7 @@ ditekan dua kali dalam jeda sekitar dua detik. Fitur Cari Cepat dan Preflight
 tidak lagi digunakan; koneksi awal dilakukan manual dan pemindaian prefix tetap
 tersedia sebagai tindakan pengguna.
 
-Startup v4.6.9 tidak menjalankan deteksi server di belakang layar. Service
+Startup v4.6.10 tidak menjalankan deteksi server di belakang layar. Service
 Worker didaftarkan segera setelah UI siap dan hanya menangani aset dari origin
 halaman, sehingga tidak mencegat permintaan menuju server LAN. Kegagalan
 koneksi tidak dapat lagi mengunci antarmuka.
