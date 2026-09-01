@@ -1,6 +1,6 @@
 # Source Aplikasi
 
-Folder ini berisi source Print Server Pro v4.6.8. Versi ini membuka antarmuka
+Folder ini berisi source Print Server Pro v4.6.9. Versi ini membuka antarmuka
 dan panel Pengaturan secara langsung tanpa pemindaian otomatis atau overlay
 loading. Pengguna memasukkan IP server lalu menekan Enter; pemindaian
 `192.168.1.x` tetap tersedia melalui tombol pencarian.

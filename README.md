@@ -3,7 +3,7 @@
 Print Server Pro menghubungkan printer Windows—termasuk printer USB—dengan HP
 dan komputer lain melalui jaringan lokal.
 
-- Aplikasi stabil: **v4.6.8 Balanced Header**
+- Aplikasi stabil: **v4.6.9 Professional Header**
 - Installer online: **v4.5.35-H4**
 - Repository: `dedejamaludinmuslim/print-server-pro`
 
@@ -14,7 +14,7 @@ dan komputer lain melalui jaringan lokal.
 | Source aplikasi | `app/` | UI, server Node.js, deteksi printer, dan mesin cetak |
 | GitHub Pages | `docs/` | Antarmuka publik yang menghubungi server lokal |
 | Installer | `installer/` | Instalasi, repair, startup otomatis, dan uninstall |
-| GitHub Release | `v4.6.8` | Menyediakan `Print_Server_Pro.zip` dan `manifest.json` |
+| GitHub Release | `v4.6.9` | Menyediakan `Print_Server_Pro.zip` dan `manifest.json` |
 | PC printer | `C:\ProgramData\PrintServerPro` | Menjalankan server lokal dan mengakses printer Windows |
 
 GitHub menyimpan source serta paket rilis. GitHub Pages menyediakan antarmuka
@@ -72,6 +72,11 @@ untuk memindai `192.168.1.1–254` secara opsional. Panel Pengaturan memuat alam
 server, printer, Preset, pemasangan aplikasi, dan bantuan koneksi. Semua opsi
 yang langsung memengaruhi hasil cetak tetap berada di area **Print Setup**.
 
+Header utama memakai ikon aplikasi, badge versi, tombol ikon **Panduan**, dan
+tombol ikon **Pengaturan**. Header panel Pengaturan memakai susunan tiga kolom
+agar ikon, judul, keterangan, dan tombol tutup tetap sejajar pada desktop maupun
+HP.
+
 Pada perangkat yang menyediakan tombol Kembali, aplikasi menutup modal atau
 panel aktif terlebih dahulu. Dari kategori cetak selain **Dasar**, tombol
 Kembali mengarah ke **Dasar**. Aplikasi hanya keluar setelah tombol Kembali
@@ -79,7 +84,7 @@ ditekan dua kali dalam jeda sekitar dua detik. Fitur Cari Cepat dan Preflight
 tidak lagi digunakan; koneksi awal dilakukan manual dan pemindaian prefix tetap
 tersedia sebagai tindakan pengguna.
 
-Startup v4.6.8 tidak menjalankan deteksi server di belakang layar. Service
+Startup v4.6.9 tidak menjalankan deteksi server di belakang layar. Service
 Worker didaftarkan segera setelah UI siap dan hanya menangani aset dari origin
 halaman, sehingga tidak mencegat permintaan menuju server LAN. Kegagalan
 koneksi tidak dapat lagi mengunci antarmuka.

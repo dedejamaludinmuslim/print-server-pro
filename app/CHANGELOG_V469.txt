@@ -1,0 +1,7 @@
+Print Server Pro v4.6.9
+
+- Mendesain ulang header Pengaturan Aplikasi dengan grid tiga kolom yang rapi.
+- Menambahkan ikon pengaturan, label hierarki, latar lembut, dan tombol tutup SVG.
+- Menambahkan tombol ikon Panduan tepat di samping tombol Pengaturan.
+- Menyamakan gaya tombol header dengan ikon SVG yang responsif di desktop dan HP.
+- Mempertahankan seluruh fungsi koneksi, printer, preset, PWA, dan pencetakan v4.6.8.

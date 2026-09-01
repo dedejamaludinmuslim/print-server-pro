@@ -849,7 +849,7 @@
             .panel-heading { padding:14px; }
         }
 
-        /* v4.6.8 — Large Type Accessibility */
+        /* v4.6.9 — Large Type Accessibility */
         body { font-size:16px; line-height:1.5; }
         .app-brand-title { font-size:21px; line-height:1.25; }
         .app-brand-subtitle { font-size:13px; line-height:1.4; }
@@ -975,7 +975,7 @@
             .panel-heading { padding:15px; }
         }
 
-        /* v4.6.8 — Manual-first bootstrap and application settings */
+        /* v4.6.9 — Manual-first bootstrap and application settings */
         .initial-loading-screen {
             position:fixed;
             inset:0;
@@ -1128,10 +1128,10 @@
             .app-settings-section { padding:15px; }
         }
 
-        /* v4.6.8 — balanced application header */
+        /* v4.6.9 — professional application and settings headers */
         .app-brand {
             display:grid;
-            grid-template-columns:48px minmax(0,1fr) 42px;
+            grid-template-columns:48px minmax(0,1fr) 92px;
             align-items:start;
             gap:13px;
         }
@@ -1160,7 +1160,13 @@
             font-weight:800;
             letter-spacing:.01em;
         }
-        .app-brand-actions { align-self:start; width:42px; }
+        .app-brand-actions {
+            align-self:start;
+            width:92px;
+            display:grid;
+            grid-template-columns:repeat(2,42px);
+            gap:8px;
+        }
         .app-settings-trigger {
             position:relative;
             width:42px;
@@ -1170,28 +1176,73 @@
             border-radius:11px;
             font-size:20px;
         }
-        .app-settings-trigger-icon { display:block; font-size:19px; line-height:1; }
+        .app-settings-trigger svg { width:19px; height:19px; display:block; stroke:currentColor; }
+        .app-guide-trigger { color:#1d4ed8; border-color:#bfdbfe; background:#f8fbff; }
+        .app-guide-trigger:hover { background:#eff6ff; border-color:#93c5fd; }
+        .app-settings-trigger-icon { display:block; line-height:1; }
         .app-settings-status-dot { position:absolute; right:5px; bottom:5px; width:8px; height:8px; border:2px solid #fff; }
         .app-settings-head {
             display:grid;
-            grid-template-columns:minmax(0,1fr) 42px;
-            align-items:start;
-            gap:14px;
-            padding:18px 18px 17px;
+            grid-template-columns:46px minmax(0,1fr) 42px;
+            align-items:center;
+            gap:13px;
+            padding:20px 18px;
+            background:linear-gradient(135deg,#fff 0%,#f7faff 100%);
+            border-bottom:1px solid #dbe5f1;
+            box-shadow:0 5px 18px rgba(15,23,42,.045);
         }
-        .app-settings-head > div { min-width:0; padding-top:1px; }
+        .app-settings-head-icon {
+            width:46px;
+            height:46px;
+            display:grid;
+            place-items:center;
+            border:1px solid #bfdbfe;
+            border-radius:13px;
+            color:#1d4ed8;
+            background:linear-gradient(145deg,#eff6ff,#dbeafe);
+            box-shadow:0 7px 16px rgba(37,99,235,.13);
+        }
+        .app-settings-head-icon svg { width:22px; height:22px; stroke:currentColor; }
+        .app-settings-head-copy { min-width:0; }
+        .app-settings-kicker {
+            display:block;
+            margin-bottom:3px;
+            color:#2563eb;
+            font-size:9.5px;
+            font-weight:850;
+            line-height:1;
+            letter-spacing:.105em;
+            text-transform:uppercase;
+        }
         .app-settings-head h2, .app-settings-head p { text-align:left; }
-        .app-settings-close { width:42px; height:42px; flex-basis:42px; justify-self:end; }
+        .app-settings-head h2 { font-size:20px; letter-spacing:-.025em; }
+        .app-settings-head p { margin-top:4px; font-size:11.5px; }
+        .app-settings-close {
+            width:42px;
+            height:42px;
+            flex-basis:42px;
+            display:grid;
+            place-items:center;
+            justify-self:end;
+            background:#fff;
+            transition:border-color .15s ease,color .15s ease,background .15s ease,transform .15s ease;
+        }
+        .app-settings-close svg { width:18px; height:18px; stroke:currentColor; }
+        .app-settings-close:hover { color:#b91c1c; border-color:#fecaca; background:#fff7f7; transform:translateY(-1px); }
         @media (max-width:991px) { #printBtn { display:none; } }
         @media (max-width:560px) {
-            .app-brand { grid-template-columns:44px minmax(0,1fr) 40px; align-items:start; gap:10px; }
+            .app-brand { grid-template-columns:44px minmax(0,1fr) 84px; align-items:start; gap:10px; }
             .app-brand-mark { width:44px; height:44px; border-radius:12px; }
             .app-brand-copy { padding-top:0; }
-            .app-brand-actions { width:40px; justify-content:flex-end; }
+            .app-brand-actions { width:84px; grid-template-columns:repeat(2,40px); gap:4px; justify-content:flex-end; }
             .app-settings-trigger { width:40px; height:40px; min-height:40px; padding:0; }
             .app-brand-heading { gap:6px; }
             .app-version { height:23px; padding:0 7px; font-size:9.5px; }
-            .app-settings-head { grid-template-columns:minmax(0,1fr) 42px; padding:16px; }
+            .app-settings-head { grid-template-columns:42px minmax(0,1fr) 40px; gap:10px; padding:15px 14px; }
+            .app-settings-head-icon { width:42px; height:42px; border-radius:12px; }
+            .app-settings-close { width:40px; height:40px; }
+            .app-settings-head h2 { font-size:18px; }
+            .app-settings-head p { font-size:10.5px; }
         }
 
 </style>
@@ -1205,14 +1256,21 @@
                     <div class="app-brand-copy">
                         <div class="app-brand-heading">
                             <div class="app-brand-title">Print Server Pro</div>
-                            <span class="app-version">v4.6.8</span>
+                            <span class="app-version">v4.6.9</span>
                         </div>
                         <div class="app-brand-subtitle">Network Printing Console</div>
                     </div>
                     <div class="app-brand-actions">
+                        <button type="button" id="headerGuideBtn" class="app-settings-trigger app-guide-trigger" onclick="showHelpModal()" aria-label="Buka Panduan" title="Panduan">
+                            <span class="app-settings-trigger-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M9.7 9a2.35 2.35 0 1 1 3.67 1.95c-.91.61-1.37 1.15-1.37 2.05"></path><path d="M12 17h.01"></path></svg>
+                            </span>
+                        </button>
                         <button type="button" id="appSettingsBtn" class="app-settings-trigger" onclick="openAppSettings()" aria-label="Buka Pengaturan" title="Pengaturan" aria-controls="appSettingsPanel" aria-expanded="false">
                             <span id="appSettingsStatusDot" class="app-settings-status-dot" aria-hidden="true"></span>
-                            <span class="app-settings-trigger-icon" aria-hidden="true">⚙</span>
+                            <span class="app-settings-trigger-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21H9.6v-.09A1.7 1.7 0 0 0 8.5 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3V9.6h.09A1.7 1.7 0 0 0 4.6 8.5a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3h4v.09A1.7 1.7 0 0 0 15.5 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9c.16.38.37.72.6 1 .3.35.7.56 1.1.6H21v4h-.09A1.7 1.7 0 0 0 19.4 15Z"></path></svg>
+                            </span>
                         </button>
                     </div>
                 </div>
@@ -1627,11 +1685,17 @@
     <div id="appSettingsOverlay" class="app-settings-overlay" onclick="closeAppSettings()"></div>
     <aside id="appSettingsPanel" class="app-settings-panel" role="dialog" aria-modal="true" aria-labelledby="appSettingsTitle" aria-hidden="true">
         <div class="app-settings-head">
-            <div>
+            <div class="app-settings-head-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h10"></path><path d="M18 7h2"></path><circle cx="16" cy="7" r="2"></circle><path d="M4 17h2"></path><path d="M10 17h10"></path><circle cx="8" cy="17" r="2"></circle><path d="M4 12h5"></path><path d="M13 12h7"></path><circle cx="11" cy="12" r="2"></circle></svg>
+            </div>
+            <div class="app-settings-head-copy">
+                <span class="app-settings-kicker">Kontrol Aplikasi</span>
                 <h2 id="appSettingsTitle">Pengaturan Aplikasi</h2>
                 <p>Koneksi server, printer, dan pemasangan aplikasi.</p>
             </div>
-            <button type="button" class="app-settings-close" onclick="closeAppSettings()" aria-label="Tutup pengaturan">×</button>
+            <button type="button" class="app-settings-close" onclick="closeAppSettings()" aria-label="Tutup pengaturan" title="Tutup">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"></path></svg>
+            </button>
         </div>
         <div class="app-settings-body">
             <section class="app-settings-section">
@@ -1706,7 +1770,7 @@
 
     <div id="helpModal" class="modal">
         <div class="modal-content" style="text-align:left;">
-            <h3 style="text-align:center; margin:0 0 15px 0;">Bantu Cari IP Server</h3>
+            <h3 style="text-align:center; margin:0 0 15px 0;">Panduan Koneksi Server</h3>
             <p style="font-size:13px; color:var(--text-muted); line-height:1.5;">Gunakan pemindaian prefix jaringan Wi-Fi/LAN atau masukkan alamat server secara manual. Deteksi tidak dapat menembus firewall, VLAN, client isolation, atau jaringan yang tidak memiliki rute.</p>
             <div style="font-size:13px; line-height:1.6; color:var(--text-main); margin-top:12px;">
                 <strong>Windows</strong>
@@ -3579,7 +3643,7 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
         async function prepareLanBootstrap() {
             if (!('serviceWorker' in navigator)) return true;
             const controllerUrl = navigator.serviceWorker.controller?.scriptURL || '';
-            if (!controllerUrl || controllerUrl.includes('v=4.6.8')) return true;
+            if (!controllerUrl || controllerUrl.includes('v=4.6.9')) return true;
             try {
                 const registrations = await navigator.serviceWorker.getRegistrations();
                 const appScope = new URL('./', location.href).href;
@@ -3592,7 +3656,7 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
         }
         function registerPwaWorker() {
             if (!('serviceWorker' in navigator)) return;
-            navigator.serviceWorker.register('./sw.js?v=4.6.8', { scope: './' }).catch(() => {});
+            navigator.serviceWorker.register('./sw.js?v=4.6.9', { scope: './' }).catch(() => {});
         }
         function openManualStartup() {
             initialDiscoveryActive = false;

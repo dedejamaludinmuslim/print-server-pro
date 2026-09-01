@@ -41,6 +41,11 @@ if (!index.includes('<img src="icons/icon-192.png" alt="Ikon Print Server Pro">'
 if (appIcon.readUInt32BE(16) !== 192 || appIcon.readUInt32BE(20) !== 192) throw new Error('Dimensi icon-192.png tidak valid.');
 if (!index.includes('class="app-brand-heading"')) throw new Error('Judul dan badge versi belum dikelompokkan.');
 if (!index.includes('class="app-settings-trigger-icon"')) throw new Error('Tombol Pengaturan belum memakai ikon tanpa label.');
+if (!index.includes('id="headerGuideBtn"')) throw new Error('Tombol Panduan pada header belum ditemukan.');
+if (!index.includes('onclick="showHelpModal()" aria-label="Buka Panduan"')) throw new Error('Tombol Panduan belum terhubung ke modal bantuan.');
+if (!index.includes('class="app-settings-head-icon"')) throw new Error('Ikon profesional pada header Pengaturan belum ditemukan.');
+if (!index.includes('class="app-settings-kicker"')) throw new Error('Hierarki visual header Pengaturan belum lengkap.');
+if (!index.includes('grid-template-columns:46px minmax(0,1fr) 42px')) throw new Error('Header Pengaturan belum memakai grid tiga kolom simetris.');
 if (!index.includes('<span>VIEW</span>')) throw new Error('Label preview belum diubah menjadi View.');
 if (/DOCUMENT PREVIEW/i.test(index)) throw new Error('Label Document Preview lama masih ditemukan.');
 if (/Cetak Dokumen/i.test(index)) throw new Error('Tombol Cetak Dokumen lama masih ditemukan.');
