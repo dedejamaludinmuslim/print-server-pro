@@ -849,7 +849,7 @@
             .panel-heading { padding:14px; }
         }
 
-        /* v4.6.10 — Large Type Accessibility */
+        /* v4.6.11 — Large Type Accessibility */
         body { font-size:16px; line-height:1.5; }
         .app-brand-title { font-size:21px; line-height:1.25; }
         .app-brand-subtitle { font-size:13px; line-height:1.4; }
@@ -975,7 +975,7 @@
             .panel-heading { padding:15px; }
         }
 
-        /* v4.6.10 — Manual-first bootstrap and application settings */
+        /* v4.6.11 — Manual-first bootstrap and application settings */
         .initial-loading-screen {
             position:fixed;
             inset:0;
@@ -1127,7 +1127,7 @@
             .app-settings-section { padding:15px; }
         }
 
-        /* v4.6.10 — left-aligned settings and complete application guide */
+        /* v4.6.11 — left-aligned settings and complete application guide */
         .app-brand {
             display:grid;
             grid-template-columns:48px minmax(0,1fr) 92px;
@@ -1331,7 +1331,7 @@
                     <div class="app-brand-copy">
                         <div class="app-brand-heading">
                             <div class="app-brand-title">Print Server Pro</div>
-                            <span class="app-version">v4.6.10</span>
+                            <span class="app-version">v4.6.11</span>
                         </div>
                         <div class="app-brand-subtitle">Network Printing Console</div>
                     </div>
@@ -1415,7 +1415,7 @@
                     <div class="settings-grid">
                         <div class="input-group"><label>Warna:</label><select id="colorMode" class="input-standard"><option value="color">Warna</option><option value="monochrome">Hitam Putih</option></select></div>
                         <div class="input-group"><label>Kertas Printer:</label>
-                            <select id="paperSize" class="input-standard"><option value="SOURCE">Sama dengan Dokumen</option><option value="A4">A4</option><option value="F4">F4 (210 × 330 mm)</option><option value="LETTER">Letter</option><option value="LEGAL">Legal</option></select>
+                            <select id="paperSize" class="input-standard"><option value="SOURCE">Sama dengan Dokumen</option><option value="A4">A4 (210 × 297 mm)</option><option value="A5">A5 (148 × 210 mm)</option><option value="B5">B5 / JIS (182 × 257 mm)</option><option value="F4">F4 (210 × 330 mm)</option><option value="LETTER">Letter</option><option value="LEGAL">Legal</option></select>
                         </div>
                         <div class="input-group"><label>Orientasi Kertas:</label>
                             <select id="orientation" class="input-standard"><option value="auto">Otomatis</option><option value="portrait">Portrait</option><option value="landscape">Landscape</option></select>
@@ -2157,7 +2157,7 @@ function buildConsolidatedSettingsUi(){
             const group=el.closest('.input-group');if(group)group.classList.toggle('capability-unavailable',!available);
         }
         function paperCapabilityMatch(data,key){
-            const targets={A4:[210,297],F4:[210,330],LETTER:[215.9,279.4],LEGAL:[215.9,355.6]},target=targets[key];
+            const targets={A4:[210,297],A5:[148,210],B5:[182,257],F4:[210,330],LETTER:[215.9,279.4],LEGAL:[215.9,355.6]},target=targets[key];
             const papers=asCapabilityArray(data?.paperSizes);if(!target||!papers.length)return null;
             return papers.some(x=>{const w=Number(x.widthMm),h=Number(x.heightMm);return (Math.abs(w-target[0])<=2&&Math.abs(h-target[1])<=2)||(Math.abs(w-target[1])<=2&&Math.abs(h-target[0])<=2);});
         }
@@ -2190,7 +2190,7 @@ function buildConsolidatedSettingsUi(){
             const colorOpt=color.querySelector('option[value="color"]'); if(colorOpt)colorOpt.disabled=data?.supportsColor===false;
             if(data?.supportsColor===false&&color.value==='color'){color.value='monochrome';adjustments.push('warna → hitam putih');}
             const paper=document.getElementById('paperSize');
-            ['A4','F4','LETTER','LEGAL'].forEach(key=>{const option=paper.querySelector(`option[value="${key}"]`),supported=paperCapabilityMatch(data,key);if(option)option.disabled=supported===false;});
+            ['A4','A5','B5','F4','LETTER','LEGAL'].forEach(key=>{const option=paper.querySelector(`option[value="${key}"]`),supported=paperCapabilityMatch(data,key);if(option)option.disabled=supported===false;});
             if(paper.selectedOptions[0]?.disabled){const old=paper.value;paper.value='SOURCE';adjustments.push(`${old} → sama dengan dokumen`);}
             for(const id of CAPABILITY_DRIVER_CONTROLS){const requested=preferred[id];if(requested!==undefined&&String(requested)!==document.getElementById(id).value&&!['','0','default'].includes(String(requested)))adjustments.push(`${id} → default driver`);}
             updateDriverExecutionHint();
@@ -2391,6 +2391,8 @@ function buildConsolidatedSettingsUi(){
         const SUPPORTED_PPS = [1, 2, 4, 6, 9, 16];
         const PAPER_DIMENSIONS = {
             A4: { width: 595.28, height: 841.89, label: 'A4' },
+            A5: { width: 419.53, height: 595.28, label: 'A5' },
+            B5: { width: 515.91, height: 728.50, label: 'B5 / JIS' },
             F4: { width: 595.28, height: 935.43, label: 'F4' },
             LETTER: { width: 612, height: 792, label: 'Letter' },
             LEGAL: { width: 612, height: 1008, label: 'Legal' }
@@ -3772,7 +3774,7 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
         async function prepareLanBootstrap() {
             if (!('serviceWorker' in navigator)) return true;
             const controllerUrl = navigator.serviceWorker.controller?.scriptURL || '';
-            if (!controllerUrl || controllerUrl.includes('v=4.6.10')) return true;
+            if (!controllerUrl || controllerUrl.includes('v=4.6.11')) return true;
             try {
                 const registrations = await navigator.serviceWorker.getRegistrations();
                 const appScope = new URL('./', location.href).href;
@@ -3785,7 +3787,7 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
         }
         function registerPwaWorker() {
             if (!('serviceWorker' in navigator)) return;
-            navigator.serviceWorker.register('./sw.js?v=4.6.10', { scope: './' }).catch(() => {});
+            navigator.serviceWorker.register('./sw.js?v=4.6.11', { scope: './' }).catch(() => {});
         }
         function openManualStartup() {
             initialDiscoveryActive = false;

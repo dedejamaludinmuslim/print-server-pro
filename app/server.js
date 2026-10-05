@@ -125,7 +125,7 @@ function connectionInfoPayload() {
     allowedOrigins,
     port,
     discovery: { mdns: Boolean(Bonjour), qr: Boolean(QRCode), service: '_printserverpro._tcp.local' },
-    version: '4.6.10',
+    version: '4.6.11',
   };
 }
 
@@ -138,6 +138,8 @@ const MAX_COPIES = 50;
 const PREVIEW_PADDING_RATIO = 0.04;
 const PAPER_DIMENSIONS = {
   A4: { width: 595.28, height: 841.89 },
+  A5: { width: 419.53, height: 595.28 },
+  B5: { width: 515.91, height: 728.50 },
   F4: { width: 595.28, height: 935.43 },
   LETTER: { width: 612, height: 792 },
   LEGAL: { width: 612, height: 1008 },
@@ -233,7 +235,7 @@ function parsePagesInput(pagesInput, total) {
 }
 function sanitizePrintOptions(body) {
   const orientation = ['auto', 'portrait', 'landscape'].includes(body.orientation) ? body.orientation : 'auto';
-  const paperSize = ['SOURCE', 'A4', 'F4', 'LETTER', 'LEGAL'].includes(body.paperSize) ? body.paperSize : 'SOURCE';
+  const paperSize = ['SOURCE', 'A4', 'A5', 'B5', 'F4', 'LETTER', 'LEGAL'].includes(body.paperSize) ? body.paperSize : 'SOURCE';
   const scaleMode = ['fit', 'shrink', 'actual', 'custom', 'fill'].includes(body.scaleMode) ? body.scaleMode : 'shrink';
   const customScale = Math.min(400, Math.max(10, parseFloat(body.customScale) || 100));
   const colorMode = body.colorMode === 'monochrome' ? 'monochrome' : 'color';
@@ -359,7 +361,7 @@ app.get('/ping', (req, res) => {
     hostname: os.hostname(),
     ipHint: localIps[0] || '',
     localIps,
-    version: '4.6.10',
+    version: '4.6.11',
   });
 });
 
@@ -408,7 +410,7 @@ app.get('/docx-converter-status', async (req, res) => {
       executable: libreOfficeExecutable || null,
       timeoutSeconds: Math.round(DOCX_CONVERT_TIMEOUT_MS / 1000),
     },
-    version: '4.6.10',
+    version: '4.6.11',
   });
 });
 
@@ -419,7 +421,7 @@ app.get('/limits', (req, res) => {
     largePdfThresholdMb: LARGE_PDF_THRESHOLD_MB,
     largePdfChunkPages: LARGE_PDF_CHUNK_PAGES,
     supportedFileTypes: ['pdf', 'png', 'jpg', 'jpeg', 'docx'],
-    version: '4.6.10',
+    version: '4.6.11',
   });
 });
 
@@ -507,7 +509,7 @@ async function getWindowsPrinterCapabilities(printerName, force = false) {
 
 app.get('/calibration-sheet', async (req,res) => {
   try{
-    const key=['A4','F4','LETTER','LEGAL'].includes(String(req.query.paperSize||'').toUpperCase())?String(req.query.paperSize).toUpperCase():'A4';
+    const key=['A4','A5','B5','F4','LETTER','LEGAL'].includes(String(req.query.paperSize||'').toUpperCase())?String(req.query.paperSize).toUpperCase():'A4';
     const base=PAPER_DIMENSIONS[key]||PAPER_DIMENSIONS.A4,landscape=String(req.query.orientation||'portrait')==='landscape';
     const size=landscape?{width:base.height,height:base.width}:base,doc=await PDFDocument.create(),p=doc.addPage([size.width,size.height]),font=await doc.embedFont(StandardFonts.Helvetica),bold=await doc.embedFont(StandardFonts.HelveticaBold),c=rgb(.08,.08,.08),mm=72/25.4;
     p.drawText('LEMBAR KALIBRASI PRINT SERVER',{x:30,y:size.height-35,size:14,font:bold,color:c});
@@ -1340,7 +1342,7 @@ async function tryCancelSpoolerJob(job) {
 
 function printerSupportsPaper(capabilities, paperKey) {
   const targets = {
-    A4: [210, 297], F4: [210, 330], LETTER: [215.9, 279.4], LEGAL: [215.9, 355.6],
+    A4: [210, 297], A5: [148, 210], B5: [182, 257], F4: [210, 330], LETTER: [215.9, 279.4], LEGAL: [215.9, 355.6],
   };
   const target = targets[String(paperKey || '').toUpperCase()];
   if (!target || !(capabilities.paperSizes || []).length) return null;
@@ -1428,9 +1430,10 @@ async function executePrintJob(job) {
 
     await assertPrintOptionsSupported(options, outputPaperKey);
 
+    const driverPaperSize={A4:'A4',A5:'A5',B5:'B5',F4:'210x330mm',LETTER:'Letter',LEGAL:'Legal'}[outputPaperKey]||'A4';
     const opts={
       printer:options.printerName, monochrome:options.colorMode==='monochrome', side:options.duplexMode,
-      paperSize:outputPaperKey==='F4'?'210x330mm':outputPaperKey==='LETTER'?'Letter':outputPaperKey==='LEGAL'?'Legal':'A4',
+      paperSize:driverPaperSize,
       scale:'shrink', silent:options.driverExecutionMode!=='dialog', printDialog:options.driverExecutionMode==='dialog'
     };
     if(options.driverBin)opts.bin=options.driverBin;
@@ -1524,7 +1527,7 @@ function startLocalDiscovery() {
   }
   try {
     const hostname = os.hostname();
-    const txt = { version: '4.6.10', path: '/', role: 'print-server-pro' };
+    const txt = { version: '4.6.11', path: '/', role: 'print-server-pro' };
     interfaces.forEach(item => {
       const instance = new Bonjour({ interface: item.address, bind: '0.0.0.0' }, error => {
         console.warn(`[DISCOVERY] mDNS ${item.address}: ${error.message}`);
@@ -1552,7 +1555,7 @@ function stopLocalDiscovery() {
 }
 
 server.listen(port, '0.0.0.0', () => {
-  console.log(`Print Server V4.6.10 Ready on ${port}`);
+  console.log(`Print Server V4.6.11 Ready on ${port}`);
   const info = connectionInfoPayload();
   info.urls.forEach(url => console.log(`[NETWORK] ${url}`));
   startLocalDiscovery();

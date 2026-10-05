@@ -1,6 +1,7 @@
 # Source Aplikasi
 
-Folder ini berisi source Print Server Pro v4.6.10. Versi ini membuka antarmuka
+Folder ini berisi source Print Server Pro v4.6.11. Versi ini menambahkan
+dukungan A5 dan B5/JIS secara menyeluruh serta membuka antarmuka
 dan panel Pengaturan secara langsung tanpa pemindaian otomatis atau overlay
 loading. Pengguna memasukkan IP server lalu menekan Enter; pemindaian
 `192.168.1.x` tetap tersedia melalui tombol pencarian.

@@ -1,0 +1,9 @@
+Print Server Pro v4.6.11
+
+- Menambahkan ukuran kertas A5 (148 × 210 mm).
+- Menambahkan ukuran kertas B5/JIS (182 × 257 mm) yang kompatibel dengan nama
+  kertas B5 pada mayoritas driver printer Windows.
+- Menambahkan kedua ukuran pada preview, pengolahan PDF, lembar kalibrasi,
+  validasi API, deteksi kemampuan printer, dan pemetaan driver cetak.
+- Opsi A5 atau B5 dinonaktifkan bila driver printer secara eksplisit tidak
+  melaporkan dukungannya.

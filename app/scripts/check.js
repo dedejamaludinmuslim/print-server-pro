@@ -25,6 +25,20 @@ if (index.includes('addPrintOptionExpansion')) throw new Error('Placeholder opsi
 if (index.includes('Auto sesuai ukuran halaman')) throw new Error('Opsi tray semu masih tersisa pada UI aktif.');
 if (!index.includes('refreshPrinterCapabilities(force=false)')) throw new Error('Deteksi kemampuan dinamis tidak ditemukan.');
 if (!server.includes('assertPrintOptionsSupported')) throw new Error('Validasi kemampuan di backend tidak ditemukan.');
+for (const paper of [
+  ['A5', 'A5 (148 × 210 mm)'],
+  ['B5', 'B5 / JIS (182 × 257 mm)'],
+]) {
+  if (!index.includes(`<option value="${paper[0]}">${paper[1]}</option>`)) throw new Error(`Pilihan kertas ${paper[0]} belum ditemukan.`);
+}
+if (!index.includes("A5: { width: 419.53, height: 595.28")) throw new Error('Dimensi preview A5 belum sesuai.');
+if (!index.includes("B5: { width: 515.91, height: 728.50")) throw new Error('Dimensi preview B5/JIS belum sesuai.');
+if (!server.includes("A5: { width: 419.53, height: 595.28 }")) throw new Error('Dimensi server A5 belum sesuai.');
+if (!server.includes("B5: { width: 515.91, height: 728.50 }")) throw new Error('Dimensi server B5/JIS belum sesuai.');
+if (!server.includes("A5:'A5',B5:'B5'")) throw new Error('Pemetaan driver A5/B5 belum ditemukan.');
+if (!server.includes("'SOURCE', 'A4', 'A5', 'B5', 'F4'")) throw new Error('Validasi API belum menerima A5/B5.');
+if (!server.includes("A5: [148, 210], B5: [182, 257]")) throw new Error('Deteksi kemampuan printer A5/B5 belum ditemukan.');
+if (!index.includes("A5:[148,210],B5:[182,257]")) throw new Error('Deteksi kemampuan UI A5/B5 belum ditemukan.');
 if (index.includes('startQuickDiscovery') || index.includes('Cari Cepat')) throw new Error('Fitur Cari Cepat masih ditemukan.');
 if (!index.includes("const DEFAULT_DISCOVERY_PREFIX = '192.168.1'")) throw new Error('Prefix pencarian server default belum ditetapkan.');
 if (!index.includes('Array.from({ length: 254 }')) throw new Error('Pemindaian 254 alamat pada prefix default tidak ditemukan.');

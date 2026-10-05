@@ -3,7 +3,7 @@
 Print Server Pro menghubungkan printer Windows—termasuk printer USB—dengan HP
 dan komputer lain melalui jaringan lokal.
 
-- Aplikasi stabil: **v4.6.10 Complete Guide**
+- Aplikasi stabil: **v4.6.11 A5/B5 Paper Support**
 - Installer online: **v4.5.35-H4**
 - Repository: `dedejamaludinmuslim/print-server-pro`
 
@@ -14,7 +14,7 @@ dan komputer lain melalui jaringan lokal.
 | Source aplikasi | `app/` | UI, server Node.js, deteksi printer, dan mesin cetak |
 | GitHub Pages | `docs/` | Antarmuka publik yang menghubungi server lokal |
 | Installer | `installer/` | Instalasi, repair, startup otomatis, dan uninstall |
-| GitHub Release | `v4.6.10` | Menyediakan `Print_Server_Pro.zip` dan `manifest.json` |
+| GitHub Release | `v4.6.11` | Menyediakan `Print_Server_Pro.zip` dan `manifest.json` |
 | PC printer | `C:\ProgramData\PrintServerPro` | Menjalankan server lokal dan mengakses printer Windows |
 
 GitHub menyimpan source serta paket rilis. GitHub Pages menyediakan antarmuka
@@ -83,6 +83,10 @@ yang sebelumnya berada di dalam panel Pengaturan telah dihapus. Tombol ikon
 preset, pengaturan cetak, View, proses cetak, pemasangan aplikasi, dan penanganan
 masalah.
 
+Pilihan kertas mencakup A4, **A5 (148 × 210 mm)**, **B5/JIS (182 × 257 mm)**,
+F4, Letter, dan Legal. Dukungan A5/B5 diterapkan pada preview, pemrosesan PDF,
+lembar kalibrasi, pemeriksaan kemampuan printer, dan perintah driver Windows.
+
 Pada perangkat yang menyediakan tombol Kembali, aplikasi menutup modal atau
 panel aktif terlebih dahulu. Dari kategori cetak selain **Dasar**, tombol
 Kembali mengarah ke **Dasar**. Aplikasi hanya keluar setelah tombol Kembali
@@ -90,7 +94,7 @@ ditekan dua kali dalam jeda sekitar dua detik. Fitur Cari Cepat dan Preflight
 tidak lagi digunakan; koneksi awal dilakukan manual dan pemindaian prefix tetap
 tersedia sebagai tindakan pengguna.
 
-Startup v4.6.10 tidak menjalankan deteksi server di belakang layar. Service
+Startup v4.6.11 tidak menjalankan deteksi server di belakang layar. Service
 Worker didaftarkan segera setelah UI siap dan hanya menangani aset dari origin
 halaman, sehingga tidak mencegat permintaan menuju server LAN. Kegagalan
 koneksi tidak dapat lagi mengunci antarmuka.
