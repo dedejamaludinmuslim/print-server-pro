@@ -849,7 +849,7 @@
             .panel-heading { padding:14px; }
         }
 
-        /* v4.6.11 — Large Type Accessibility */
+        /* v4.6.12 — Large Type Accessibility */
         body { font-size:16px; line-height:1.5; }
         .app-brand-title { font-size:21px; line-height:1.25; }
         .app-brand-subtitle { font-size:13px; line-height:1.4; }
@@ -975,7 +975,7 @@
             .panel-heading { padding:15px; }
         }
 
-        /* v4.6.11 — Manual-first bootstrap and application settings */
+        /* v4.6.12 — Manual-first bootstrap and application settings */
         .initial-loading-screen {
             position:fixed;
             inset:0;
@@ -1127,7 +1127,7 @@
             .app-settings-section { padding:15px; }
         }
 
-        /* v4.6.11 — left-aligned settings and complete application guide */
+        /* v4.6.12 — left-aligned settings and complete application guide */
         .app-brand {
             display:grid;
             grid-template-columns:48px minmax(0,1fr) 92px;
@@ -1331,7 +1331,7 @@
                     <div class="app-brand-copy">
                         <div class="app-brand-heading">
                             <div class="app-brand-title">Print Server Pro</div>
-                            <span class="app-version">v4.6.11</span>
+                            <span class="app-version">v4.6.12</span>
                         </div>
                         <div class="app-brand-subtitle">Network Printing Console</div>
                     </div>
@@ -3774,7 +3774,7 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
         async function prepareLanBootstrap() {
             if (!('serviceWorker' in navigator)) return true;
             const controllerUrl = navigator.serviceWorker.controller?.scriptURL || '';
-            if (!controllerUrl || controllerUrl.includes('v=4.6.11')) return true;
+            if (!controllerUrl || controllerUrl.includes('v=4.6.12')) return true;
             try {
                 const registrations = await navigator.serviceWorker.getRegistrations();
                 const appScope = new URL('./', location.href).href;
@@ -3787,7 +3787,7 @@ async function submitPrintRequest(ip, pin, fileObj, useCompatibilityMode = false
         }
         function registerPwaWorker() {
             if (!('serviceWorker' in navigator)) return;
-            navigator.serviceWorker.register('./sw.js?v=4.6.11', { scope: './' }).catch(() => {});
+            navigator.serviceWorker.register('./sw.js?v=4.6.12', { scope: './' }).catch(() => {});
         }
         function openManualStartup() {
             initialDiscoveryActive = false;
